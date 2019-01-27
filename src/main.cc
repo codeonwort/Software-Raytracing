@@ -2,25 +2,15 @@
 #include "file.h"
 #include "log.h"
 #include "ray.h"
+#include "sphere.h"
+#include <vector>
 
-bool HitSphere(const vec3& center, float radius, const ray& r)
+vec3 Scene(const ray& r, Hitable* world)
 {
-	vec3 oc = r.o - center;
-	float a = dot(r.d, r.d);
-	float b = 2.0f * dot(oc, r.d);
-	float c = dot(oc, oc) - radius * radius;
-	float D = b*b - 4*a*c;
-	return (D > 0);
-}
-
-vec3 Scene(const ray& r)
-{
-	const vec3 sphereCenter(0.0f, 0.0f, -1.0f);
-	const float sphereRadius = 0.5f;
-
-	if(HitSphere(sphereCenter, sphereRadius, r))
+	HitResult result;
+	if(world->Hit(r, 0.0f, FLOAT_MAX, result))
 	{
-		return vec3(1.0f, 0.0f, 0.0f);
+		return 0.5f * (result.n + 1.0f);
 	}
 
 	vec3 dir = r.d;
@@ -44,6 +34,12 @@ int main(int argc, char** argv)
 	vec3 horizontal(4.0f, 0.0f, 0.0f);
 	vec3 vertical(0.0f, -2.0f, 0.0f);
 	vec3 origin(0.0f, 0.0f, 0.0f);
+
+	std::vector<Hitable*> list;
+	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f));
+	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f));
+	Hitable* world = new HitableList(list.data(), list.size());
+
 	for(int y = 0; y < height; ++y)
 	{
 		for(int x = 0; x < width; ++x)
@@ -51,7 +47,7 @@ int main(int argc, char** argv)
 			float u = (float)x / float(width);
 			float v = (float)y / float(height);
 			ray r(origin, top_left + u * horizontal + v * vertical);
-			vec3 scene = Scene(r);
+			vec3 scene = Scene(r, world);
 			Pixel px(scene.x, scene.y, scene.z);
 			image.SetPixel(x, y, px);
 		}

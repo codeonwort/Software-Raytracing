@@ -30,7 +30,7 @@ class vec3
 {
 
 public:
-	vec3() {}
+	vec3() : vec3(0.0f, 0.0f, 0.0f) {}
 	vec3(float e0, float e1, float e2)
 	{
 		x = e0;
@@ -45,6 +45,8 @@ public:
 	inline vec3& operator-=(const vec3 &v2);
 	inline vec3& operator*=(const vec3 &v2);
 	inline vec3& operator/=(const vec3 &v2);
+	inline vec3& operator+=(const float t);
+	inline vec3& operator-=(const float t);
 	inline vec3& operator*=(const float t);
 	inline vec3& operator/=(const float t);
 
@@ -81,6 +83,23 @@ inline vec3 operator*(const vec3& v1, const vec3& v2)
 inline vec3 operator/(const vec3& v1, const vec3& v2)
 {
 	return vec3(v1.x / v2.x, v1.y / v2.y, v1.z / v2.z);
+}
+
+inline vec3 operator+(const vec3& v1, float t)
+{
+	return vec3(v1.x + t, v1.y + t, v1.z + t);
+}
+inline vec3 operator+(float t, const vec3& v1)
+{
+	return vec3(v1.x + t, v1.y + t, v1.z + t);
+}
+inline vec3 operator-(const vec3& v1, float t)
+{
+	return vec3(v1.x - t, v1.y - t, v1.z - t);
+}
+inline vec3 operator-(float t, const vec3& v1)
+{
+	return vec3(v1.x - t, v1.y - t, v1.z - t);
 }
 
 inline vec3 operator*(const vec3& v1, float t)
@@ -136,6 +155,20 @@ inline vec3& vec3::operator/=(const vec3& v)
 	x /= v.x;
 	y /= v.y;
 	z /= v.z;
+	return *this;
+}
+inline vec3& vec3::operator+=(const float t)
+{
+	x += t;
+	y += t;
+	z += t;
+	return *this;
+}
+inline vec3& vec3::operator-=(const float t)
+{
+	x -= t;
+	y -= t;
+	z -= t;
 	return *this;
 }
 inline vec3& vec3::operator*=(const float t)
