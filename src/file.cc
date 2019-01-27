@@ -68,7 +68,7 @@ void WriteBitmap(const HDRImage& image, const char* filepath)
 	File file;
 	file.Open(String(filepath));
 
-	log("write bitmap (width:%d height:%d)", image.GetWidth(), image.GetHeight());
+	log("write bitmap (width:%d, height:%d)", image.GetWidth(), image.GetHeight());
 
 	uint32 bufferSize = 3 * image.GetWidth() * image.GetHeight();
 
