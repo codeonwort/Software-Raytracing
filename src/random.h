@@ -62,3 +62,10 @@ vec3 RandomInUnitSphere()
 	return vec3(r * cos(phi), r * sin(phi), z);
 }
 
+float Random()
+{
+	static RNG randoms(1024 * 8);
+
+	return randoms.Peek();
+}
+

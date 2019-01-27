@@ -115,6 +115,13 @@ inline vec3 operator*(float t, const vec3& v1)
 	return vec3(v1.x * t, v1.y * t, v1.z * t);
 }
 
+inline vec3 normalize(const vec3& v)
+{
+	vec3 u = v;
+	u.Normalize();
+	return u;
+}
+
 inline float dot(const vec3& v1, const vec3& v2)
 {
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
@@ -132,6 +139,19 @@ inline vec3 cross(const vec3& v1, const vec3& v2)
 inline vec3 reflect(const vec3& v, const vec3& n)
 {
 	return v - 2.0f * dot(v, n) * n;
+}
+
+inline bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& outRefracted)
+{
+	vec3 uv = normalize(v);
+	float dt = dot(uv, n);
+	float D = 1.0f - ni_over_nt * ni_over_nt * (1.0f - dt * dt);
+	if(D > 0.0f)
+	{
+		outRefracted = ni_over_nt * (uv - n * dt) - n * sqrt(D);
+		return true;
+	}
+	return false;
 }
 
 inline vec3& vec3::operator+=(const vec3& v)
