@@ -39,6 +39,43 @@ vec3 Scene(const ray& r, Hitable* world)
 	return Scene(r, world, 0);
 }
 
+Hitable* CreateRandomScene()
+{
+	int n = 500;
+	Hitable** list = new Hitable*[n+1];
+	list[0] = (new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+	int32 i = 1;
+	for(int32 a = -11; a < 11; ++a)
+	{
+		for(int32 b = -11; b < 11; ++b)
+		{
+			float choose_material = Random();
+			vec3 center(a + 0.9f * Random(), 0.2f, b + 0.9f * Random());
+			if((center - vec3(4.0f, 0.2f, 0.0f)).Length() > 2.0f)
+			{
+				if(choose_material < 0.8f)
+				{
+					list[i++] = new sphere(center, 0.2f,
+						new Lambertian(vec3(Random()*Random(), Random()*Random(), Random()*Random())));
+				}
+				else if(choose_material < 0.95f)
+				{
+					list[i++] = new sphere(center, 0.2f,
+						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random()));
+				}
+				else
+				{
+					list[i++] = new sphere(center, 0.2, new Dielectric(1.5f));
+				}
+			}
+		}
+	}
+	list[i++] = new sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f));
+	list[i++] = new sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f)));
+	list[i++] = new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f));
+
+	return new HitableList(list, i);
+}
 
 int main(int argc, char** argv)
 {
@@ -51,6 +88,7 @@ int main(int argc, char** argv)
 	log("generate a test image (width: %d, height: %d)", width, height);
 
 	// Generate an image
+#if 0
 	float R = cos(pi<float> / 4.0f);
 	std::vector<Hitable*> list;
 	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f),    0.5f,   new Lambertian(vec3(0.8f, 0.3f, 0.3f))  ));
@@ -60,18 +98,18 @@ int main(int argc, char** argv)
 	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.5f,  new Dielectric(1.5f)                    ));
 	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
 	Hitable* world = new HitableList(list.data(), list.size());
+#else
+	Hitable* world = CreateRandomScene();
+#endif
 
-	vec3 camera_location(3.0f, 3.0f, 2.0f);
-	vec3 camera_lookAt(0.0f, 0.0f, -1.0f);
-
-	//vec3 camera_location(-2.0f, 2.0f, 1.0f);
-	//vec3 camera_lookAt(0.0f, 0.0f, -1.0f);
+	vec3 camera_location(3.0f, 1.0f, 3.0f);
+	vec3 camera_lookAt(0.0f, 1.0f, -1.0f);
 	vec3 camera_up(0.0f, 1.0f, 0.0f);
 	float dist_to_focus = (camera_location - camera_lookAt).Length();
-	float aperture = 0.5f;
+	float aperture = 0.01f;
 	Camera camera(
 		camera_location, camera_lookAt, camera_up,
-		20.0f, (float)width/(float)height,
+		45.0f, (float)width/(float)height,
 		aperture, dist_to_focus);
 
 #if ANTI_ALIASING
