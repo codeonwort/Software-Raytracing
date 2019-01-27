@@ -1,6 +1,6 @@
 # variables
 CC=g++
-CFLAGS=-std=c++14
+CFLAGS=-std=c++14 -O2
 SRC_DIR=src/
 SRC_FILES=$(wildcard $(SRC_DIR)*.cc)
 DST=bin/

@@ -51,6 +51,7 @@ int main(int argc, char** argv)
 	log("generate a test image (width: %d, height: %d)", width, height);
 
 	// Generate an image
+	float R = cos(pi<float> / 4.0f);
 	std::vector<Hitable*> list;
 	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f),    0.5f,   new Lambertian(vec3(0.8f, 0.3f, 0.3f))  ));
 	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, new Lambertian(vec3(0.8f, 0.8f, 0.0f))  ));
@@ -60,7 +61,10 @@ int main(int argc, char** argv)
 	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
 	Hitable* world = new HitableList(list.data(), list.size());
 
-	Camera camera;
+	vec3 camera_location(-2.0f, 2.0f, 1.0f);
+	vec3 camera_lookAt(0.0f, 0.0f, -1.0f);
+	vec3 camera_up(0.0f, 1.0f, 0.0f);
+	Camera camera(camera_location, camera_lookAt, camera_up, 60.0f, (float)width/(float)height);
 
 #if ANTI_ALIASING
 	RNG randoms(4096 * 8);
