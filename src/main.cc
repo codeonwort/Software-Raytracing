@@ -61,10 +61,18 @@ int main(int argc, char** argv)
 	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
 	Hitable* world = new HitableList(list.data(), list.size());
 
-	vec3 camera_location(-2.0f, 2.0f, 1.0f);
+	vec3 camera_location(3.0f, 3.0f, 2.0f);
 	vec3 camera_lookAt(0.0f, 0.0f, -1.0f);
+
+	//vec3 camera_location(-2.0f, 2.0f, 1.0f);
+	//vec3 camera_lookAt(0.0f, 0.0f, -1.0f);
 	vec3 camera_up(0.0f, 1.0f, 0.0f);
-	Camera camera(camera_location, camera_lookAt, camera_up, 60.0f, (float)width/(float)height);
+	float dist_to_focus = (camera_location - camera_lookAt).Length();
+	float aperture = 0.5f;
+	Camera camera(
+		camera_location, camera_lookAt, camera_up,
+		20.0f, (float)width/(float)height,
+		aperture, dist_to_focus);
 
 #if ANTI_ALIASING
 	RNG randoms(4096 * 8);

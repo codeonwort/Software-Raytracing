@@ -69,3 +69,13 @@ float Random()
 	return randoms.Peek();
 }
 
+vec3 RandomInUnitDisk()
+{
+	static RNG randoms(1024 * 8);
+	float u1 = randoms.Peek();
+	float u2 = randoms.Peek();
+	float r = sqrt(u1);
+	float theta = 2.0f * M_PI * u2;
+	return vec3(r * cos(theta), r * sin(theta), 0.0f);
+}
+
