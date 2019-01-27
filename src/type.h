@@ -129,6 +129,11 @@ inline vec3 cross(const vec3& v1, const vec3& v2)
 	);
 }
 
+inline vec3 reflect(const vec3& v, const vec3& n)
+{
+	return v - 2.0f * dot(v, n) * n;
+}
+
 inline vec3& vec3::operator+=(const vec3& v)
 {
 	x += v.x;

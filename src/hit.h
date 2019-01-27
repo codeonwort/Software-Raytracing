@@ -6,11 +6,14 @@
 #define FLOAT_MIN std::numeric_limits<float>::min()
 #define FLOAT_MAX std::numeric_limits<float>::max()
 
+class Material;
+
 struct HitResult
 {
-	float t; // ray.at(t) = p
-	vec3  p; // position
-	vec3  n; // normal
+	float     t; // ray.at(t) = p
+	vec3      p; // position
+	vec3      n; // normal
+	Material* material;
 };
 
 class Hitable

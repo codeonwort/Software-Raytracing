@@ -5,3 +5,5 @@ Study <Ray Tracing in a Weekend>
 * Language : C++
 * IDE      : vim
 * Build    : make (maybe replaced with cmake later)
+* OS       : WSL (Windows Subsystem for Linux)
+

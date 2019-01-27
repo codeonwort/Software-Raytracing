@@ -5,32 +5,28 @@
 #include "sphere.h"
 #include "camera.h"
 #include "random.h"
+#include "material.h"
 #include <vector>
 
 #define ANTI_ALIASING    1
 #define NUM_SAMPLES      100 // Valid only if ANTI_ALISING == 1
 #define GAMMA_CORRECTION 1
 
-vec3 RandomInUnitSphere()
-{
-	static RNG randoms(1024);
-	vec3 p;
-	do
-	{
-		p = 2.0f * vec3(randoms.Peek(), randoms.Peek(), randoms.Peek()) - vec3(1.0f, 1.0f, 1.0f);
-	}
-	while(p.LengthSquared() >= 1.0f);
-	return p;
-}
-
-vec3 Scene(const ray& r, Hitable* world)
+vec3 Scene(const ray& r, Hitable* world, int depth)
 {
 	HitResult result;
 	if(world->Hit(r, 0.001f, FLOAT_MAX, result))
 	{
-		vec3 target = result.p + result.n + RandomInUnitSphere();
-		return 0.5f * Scene(ray(result.p, target - result.p), world);
-		//return 0.5f * (result.n + 1.0f);
+		ray scattered;
+		vec3 attenuation;
+		if(depth < 50 && result.material->Scatter(r, result, attenuation, scattered))
+		{
+			return attenuation * Scene(scattered, world, depth + 1);
+		}
+		else
+		{
+			return vec3(0.0f, 0.0f, 0.0f);
+		}
 	}
 
 	vec3 dir = r.d;
@@ -38,6 +34,11 @@ vec3 Scene(const ray& r, Hitable* world)
 	float t = 0.5f * (dir.y + 1.0f);
 	return (1.0f-t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
+vec3 Scene(const ray& r, Hitable* world)
+{
+	return Scene(r, world, 0);
+}
+
 
 int main(int argc, char** argv)
 {
@@ -51,8 +52,10 @@ int main(int argc, char** argv)
 
 	// Generate an image
 	std::vector<Hitable*> list;
-	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f));
-	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f));
+	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f),    0.5f,   new Lambertian(vec3(0.8f, 0.3f, 0.3f))  ));
+	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, new Lambertian(vec3(0.8f, 0.8f, 0.0f))  ));
+	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f),    0.5f,   new Metal(vec3(0.8f, 0.6f, 0.2f), 1.0f) ));
+	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   0.5f,   new Metal(vec3(0.8f, 0.8f, 0.8f), 0.3f) ));
 	Hitable* world = new HitableList(list.data(), list.size());
 
 	Camera camera;
