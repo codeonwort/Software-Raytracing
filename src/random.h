@@ -4,7 +4,10 @@
 #include <random>
 #include <vector>
 #include <algorithm>
+#include <mutex>
 
+// #todo: Let each thread use its own RNG.
+// Those seekGuard and peekGuard cause unnecessary overhead.
 class RNG
 {
 
@@ -24,11 +27,24 @@ public:
 		Seek(0);
 	}
 
-	inline void Seek(int32 ix) { index = ix; }
+	inline void Seek(int32 ix)
+	{
+		seekGuard.lock();
+
+		index = ix;
+
+		seekGuard.unlock();
+	}
+
 	inline float Peek() const
 	{
+		peekGuard.lock();
+
 		float x = samples[index];
 		index = (index + 1) % samples.size();
+
+		peekGuard.unlock();
+
 		return x;
 	}
 
@@ -36,6 +52,8 @@ public:
 
 private:
 	mutable int32 index;
+	std::mutex seekGuard;
+	mutable std::mutex peekGuard;
 
 };
 

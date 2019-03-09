@@ -1,6 +1,6 @@
 # variables
 CC=g++
-CFLAGS=-std=c++14 -O2
+CFLAGS=-std=c++14 -O2 -pthread
 SRC_DIR=src/
 SRC_FILES=$(wildcard $(SRC_DIR)*.cc)
 DST=bin/

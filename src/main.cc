@@ -6,11 +6,14 @@
 #include "camera.h"
 #include "random.h"
 #include "material.h"
+#include "thread_pool.h"
 #include <vector>
+#include <thread>
 
 #define ANTI_ALIASING    1
 #define NUM_SAMPLES      100 // Valid only if ANTI_ALISING == 1
 #define GAMMA_CORRECTION 1
+#define MAX_RECURSION    10
 
 vec3 Scene(const ray& r, Hitable* world, int depth)
 {
@@ -19,7 +22,7 @@ vec3 Scene(const ray& r, Hitable* world, int depth)
 	{
 		ray scattered;
 		vec3 attenuation;
-		if(depth < 50 && result.material->Scatter(r, result, attenuation, scattered))
+		if(depth < MAX_RECURSION && result.material->Scatter(r, result, attenuation, scattered))
 		{
 			return attenuation * Scene(scattered, world, depth + 1);
 		}
@@ -77,8 +80,72 @@ Hitable* CreateRandomScene()
 	return new HitableList(list, i);
 }
 
+#if ANTI_ALIASING
+RNG randoms(4096 * 8);
+#endif
+
+struct WorkCell
+{
+	int32 x;
+	int32 y;
+	int32 width;
+	int32 height;
+
+	HDRImage* image;
+	Camera* camera;
+	Hitable* world;
+};
+
+void generateCell(const WorkItemParam* param)
+{
+	int32 threadID = param->threadID;
+	WorkCell* cell = reinterpret_cast<WorkCell*>(param->arg);
+
+	const int32 endY = cell->y + cell->height;
+	const int32 endX = cell->x + cell->width;
+
+	const float imageWidth = (float)cell->image->GetWidth();
+	const float imageHeight = (float)cell->image->GetHeight();
+
+	for(int32 y = cell->y; y < endY; ++y)
+	{
+		for(int32 x = cell->x; x < endX; ++x)
+		{
+			vec3 accum;
+#if ANTI_ALIASING
+			for(int32 s = 0; s < NUM_SAMPLES; ++s)
+			{
+				float u = (float)x / imageWidth;
+				float v = (float)y / imageHeight;
+				u += randoms.Peek() / imageWidth;
+				v += randoms.Peek() / imageHeight;
+				ray r = cell->camera->GetRay(u, v);
+				vec3 scene = Scene(r, cell->world);
+				accum += scene;
+			}
+			accum /= (float)NUM_SAMPLES;
+#else
+			float u = (float)x / imageWidth;
+			float v = (float)y / imageHeight;
+			ray r = cell->camera->GetRay(u, v);
+			accum = Scene(r, cell->world);
+#endif
+
+#if GAMMA_CORRECTION
+			accum.x = pow(accum.x, 1.0f / 2.2f);
+			accum.y = pow(accum.y, 1.0f / 2.2f);
+			accum.z = pow(accum.z, 1.0f / 2.2f);
+#endif
+
+			Pixel px(accum.x, accum.y, accum.z);
+			cell->image->SetPixel(x, y, px);
+		}
+	}
+}
+
 int main(int argc, char** argv)
 {
+
 	log("raytracing study");
 
 	const int32 width = 1024;
@@ -112,10 +179,46 @@ int main(int argc, char** argv)
 		45.0f, (float)width/(float)height,
 		aperture, dist_to_focus);
 
-#if ANTI_ALIASING
-	RNG randoms(4096 * 8);
-#endif
+	// Multi-threading
+	uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
+	log("number of cores: %u", numCores);
 
+	ThreadPool tp;
+	tp.initialize(numCores);
+
+	std::vector<WorkCell> workCells;
+	constexpr int32 cellWidth = 32;
+	constexpr int32 cellHeight = 32;
+	for(int32 x = 0; x < width; x += cellWidth)
+	{
+		for(int32 y = 0; y < height; y += cellHeight)
+		{
+			WorkCell cell;
+			cell.x = x;
+			cell.y = y;
+			cell.width = std::min(cellWidth, width - x);
+			cell.height = std::min(cellHeight, height - y);
+			cell.image = &image;
+			cell.camera = &camera;
+			cell.world = world;
+			workCells.emplace_back(cell);
+		}
+	}
+	for(auto i=0u; i<workCells.size(); ++i)
+	{
+		ThreadPoolWork work;
+		work.routine = generateCell;
+		work.arg = &workCells[i];
+
+		tp.addWork(work);
+	}
+
+	log("number of work items: %d", (int32)workCells.size());
+
+	constexpr bool blockingOperation = false;
+	tp.Start(blockingOperation);
+
+	// progress
 	int32 milestoneIx = 0;
 	std::vector<float> milestones(9);
 	for(int32 i = 1 ; i <= 9; ++i)
@@ -123,45 +226,22 @@ int main(int argc, char** argv)
 		milestones[i - 1] = (float)i / 10.0f;
 	}
 
-	for(int32 y = 0; y < height; ++y)
+	while(true)
 	{
-		for(int32 x = 0; x < width; ++x)
+		if(tp.Done())
 		{
-			vec3 accum;
-#if ANTI_ALIASING
-			for(int32 s = 0; s < NUM_SAMPLES; ++s)
-			{
-				float u = (float)x / (float)width;
-				float v = (float)y / (float)height;
-				u += randoms.Peek() / (float)width;
-				v += randoms.Peek() / (float)height;
-				ray r = camera.GetRay(u, v);
-				vec3 scene = Scene(r, world);
-				accum += scene;
-			}
-			accum /= (float)NUM_SAMPLES;
-#else
-			float u = (float)x / (float)width;
-			float v = (float)y / (float)height;
-			ray r = camera.GetRay(u, v);
-			accum = Scene(r, world);
-#endif
-
-#if GAMMA_CORRECTION
-			accum.x = pow(accum.x, 1.0f / 2.2f);
-			accum.y = pow(accum.y, 1.0f / 2.2f);
-			accum.z = pow(accum.z, 1.0f / 2.2f);
-#endif
-
-			Pixel px(accum.x, accum.y, accum.z);
-			image.SetPixel(x, y, px);
+			break;
 		}
-
-		float progress = (float)y / (float)height;
-		if(milestoneIx < milestones.size() && progress >= milestones[milestoneIx])
+		else
 		{
-			log("%d percent complete...", (int32)(progress * 100));
-			milestoneIx += 1;
+			float progress = tp.GetProgress();
+			if(milestoneIx < milestones.size() && progress >= milestones[milestoneIx])
+			{
+				log("%d percent complete...", (int32)(progress * 100));
+				milestoneIx += 1;
+			}
+			//pthread_yield();
+			sleep(1);
 		}
 	}
 
