@@ -1,3 +1,5 @@
 make
-bin/main
-mv test.bmp /mnt/c/Users/user/Desktop/test.bmp
+cd bin
+./main
+/mnt/c/Windows/System32/mspaint.exe test.bmp
+cd ..

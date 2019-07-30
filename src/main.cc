@@ -11,9 +11,10 @@
 #include <thread>
 
 #define ANTI_ALIASING    1
-#define NUM_SAMPLES      100 // Valid only if ANTI_ALISING == 1
+#define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
 #define GAMMA_CORRECTION 1
-#define MAX_RECURSION    10
+#define GAMMA_VALUE      2.2f
+#define MAX_RECURSION    5
 
 vec3 Scene(const ray& r, Hitable* world, int depth)
 {
@@ -132,9 +133,9 @@ void generateCell(const WorkItemParam* param)
 #endif
 
 #if GAMMA_CORRECTION
-			accum.x = pow(accum.x, 1.0f / 2.2f);
-			accum.y = pow(accum.y, 1.0f / 2.2f);
-			accum.z = pow(accum.z, 1.0f / 2.2f);
+			accum.x = pow(accum.x, 1.0f / GAMMA_VALUE);
+			accum.y = pow(accum.y, 1.0f / GAMMA_VALUE);
+			accum.z = pow(accum.z, 1.0f / GAMMA_VALUE);
 #endif
 
 			Pixel px(accum.x, accum.y, accum.z);
@@ -241,7 +242,7 @@ int main(int argc, char** argv)
 				milestoneIx += 1;
 			}
 			//pthread_yield();
-			sleep(1);
+			//sleep(1);
 		}
 	}
 
