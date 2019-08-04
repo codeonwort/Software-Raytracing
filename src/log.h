@@ -18,4 +18,3 @@ inline void log(const char* format, ...)
 
 	log_mutex.unlock();
 }
-

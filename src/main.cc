@@ -10,7 +10,8 @@
 #include <vector>
 #include <thread>
 
-#define ANTI_ALIASING    1
+
+#define ANTI_ALIASING    0
 #define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
 #define GAMMA_CORRECTION 1
 #define GAMMA_VALUE      2.2f
@@ -185,7 +186,7 @@ int main(int argc, char** argv)
 	log("number of cores: %u", numCores);
 
 	ThreadPool tp;
-	tp.initialize(numCores);
+	tp.Initialize(numCores);
 
 	std::vector<WorkCell> workCells;
 	constexpr int32 cellWidth = 32;
@@ -211,7 +212,7 @@ int main(int argc, char** argv)
 		work.routine = generateCell;
 		work.arg = &workCells[i];
 
-		tp.addWork(work);
+		tp.AddWork(work);
 	}
 
 	log("number of work items: %d", (int32)workCells.size());
@@ -229,7 +230,7 @@ int main(int argc, char** argv)
 
 	while(true)
 	{
-		if(tp.Done())
+		if(tp.IsDone())
 		{
 			break;
 		}
@@ -241,8 +242,6 @@ int main(int argc, char** argv)
 				log("%d percent complete...", (int32)(progress * 100));
 				milestoneIx += 1;
 			}
-			//pthread_yield();
-			//sleep(1);
 		}
 	}
 
@@ -252,4 +251,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
