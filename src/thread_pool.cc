@@ -67,6 +67,7 @@ void ThreadPool::Start(bool blocking)
 	for(int32 i=0; i<n; ++i)
 	{
 		threads[i] = std::thread(pooledThreadMain, (void*)&threadParams[i]);
+		threads[i].detach();
 		threadParams[i].started = true;
 	}
 
