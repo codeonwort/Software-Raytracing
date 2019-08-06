@@ -9,11 +9,14 @@
 #include "thread_pool.h"
 #include <vector>
 #include <thread>
+#include <chrono>
+
 
 #define ANTI_ALIASING    1
-#define NUM_SAMPLES      100 // Valid only if ANTI_ALISING == 1
+#define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
 #define GAMMA_CORRECTION 1
-#define MAX_RECURSION    10
+#define GAMMA_VALUE      2.2f
+#define MAX_RECURSION    5
 
 vec3 Scene(const ray& r, Hitable* world, int depth)
 {
@@ -44,13 +47,13 @@ vec3 Scene(const ray& r, Hitable* world)
 
 Hitable* CreateRandomScene()
 {
-	int n = 500;
+	int n = 100;
 	Hitable** list = new Hitable*[n+1];
 	list[0] = (new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
 	int32 i = 1;
-	for(int32 a = -11; a < 11; ++a)
+	for(int32 a = -6; a < 6; ++a)
 	{
-		for(int32 b = -11; b < 11; ++b)
+		for(int32 b = -6; b < 6; ++b)
 		{
 			float choose_material = Random();
 			vec3 center(a + 0.9f * Random(), 0.2f, b + 0.9f * Random());
@@ -96,7 +99,7 @@ struct WorkCell
 	Hitable* world;
 };
 
-void generateCell(const WorkItemParam* param)
+void GenerateCell(const WorkItemParam* param)
 {
 	int32 threadID = param->threadID;
 	WorkCell* cell = reinterpret_cast<WorkCell*>(param->arg);
@@ -132,9 +135,9 @@ void generateCell(const WorkItemParam* param)
 #endif
 
 #if GAMMA_CORRECTION
-			accum.x = pow(accum.x, 1.0f / 2.2f);
-			accum.y = pow(accum.y, 1.0f / 2.2f);
-			accum.z = pow(accum.z, 1.0f / 2.2f);
+			accum.x = pow(accum.x, 1.0f / GAMMA_VALUE);
+			accum.y = pow(accum.y, 1.0f / GAMMA_VALUE);
+			accum.z = pow(accum.z, 1.0f / GAMMA_VALUE);
 #endif
 
 			Pixel px(accum.x, accum.y, accum.z);
@@ -145,6 +148,7 @@ void generateCell(const WorkItemParam* param)
 
 int main(int argc, char** argv)
 {
+	StartLogThread();
 
 	log("raytracing study");
 
@@ -184,7 +188,7 @@ int main(int argc, char** argv)
 	log("number of cores: %u", numCores);
 
 	ThreadPool tp;
-	tp.initialize(numCores);
+	tp.Initialize(numCores);
 
 	std::vector<WorkCell> workCells;
 	constexpr int32 cellWidth = 32;
@@ -207,10 +211,10 @@ int main(int argc, char** argv)
 	for(auto i=0u; i<workCells.size(); ++i)
 	{
 		ThreadPoolWork work;
-		work.routine = generateCell;
+		work.routine = GenerateCell;
 		work.arg = &workCells[i];
 
-		tp.addWork(work);
+		tp.AddWork(work);
 	}
 
 	log("number of work items: %d", (int32)workCells.size());
@@ -221,14 +225,14 @@ int main(int argc, char** argv)
 	// progress
 	int32 milestoneIx = 0;
 	std::vector<float> milestones(9);
-	for(int32 i = 1 ; i <= 9; ++i)
+	for(int32 i = 1; i <= 9; ++i)
 	{
 		milestones[i - 1] = (float)i / 10.0f;
 	}
 
 	while(true)
 	{
-		if(tp.Done())
+		if(tp.IsDone())
 		{
 			break;
 		}
@@ -240,9 +244,8 @@ int main(int argc, char** argv)
 				log("%d percent complete...", (int32)(progress * 100));
 				milestoneIx += 1;
 			}
-			//pthread_yield();
-			sleep(1);
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 	WriteBitmap(image, "test.bmp");
@@ -251,4 +254,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-

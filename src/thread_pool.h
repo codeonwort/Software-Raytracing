@@ -5,8 +5,8 @@
 #include <mutex>
 #include <atomic>
 #include <vector>
+#include <thread>
 #include <functional>
-#include <pthread.h>
 
 class ThreadPool;
 struct WorkItemParam;
@@ -54,13 +54,13 @@ public:
 	ThreadPool(const ThreadPool&) = delete;
 	ThreadPool& operator=(const ThreadPool&) = delete;
 
-	void initialize(int32 numWorkerThreads);
+	void Initialize(int32 numWorkerThreads);
 
 	// Do not add any work after Start()
-	void addWork(const ThreadPoolWork& workItem);
+	void AddWork(const ThreadPoolWork& workItem);
 
 	void Start(bool blocking);
-	bool Done() const;
+	bool IsDone() const;
 
 	// Returns false if no work
 	bool PopWork(ThreadPoolWork& work);
@@ -71,7 +71,7 @@ public:
 	}
 
 public:
-	std::vector<pthread_t>                   threads;
+	std::vector<std::thread>                 threads;
 	std::vector<PooledThreadParam>           threadParams;
 
 	std::vector<ThreadPoolWork>              queue;

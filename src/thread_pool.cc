@@ -9,29 +9,22 @@ static void* pooledThreadMain(void* _param)
 	int32 threadID           = param->threadID;
 	ThreadPool* pool         = param->pool;
 
-	log("Thread %d is pending...", threadID);
-
-	while(param->started == false)
-	{
-		pthread_yield();
-	}
-
 	log("Thread %d started to work", threadID);
 
-	while(true)
+	bool hasWork = true;
+
+	while(hasWork)
 	{
 		ThreadPoolWork work;
-		if(pool->PopWork(work))
+		hasWork = pool->PopWork(work);
+
+		if(hasWork)
 		{
 			WorkItemParam param;
 			param.threadID = threadID;
 			param.arg      = work.arg;
 
 			work.routine(&param);
-		}
-		else
-		{
-			break;
 		}
 	}
 
@@ -48,7 +41,7 @@ ThreadPool::~ThreadPool()
 {
 }
 
-void ThreadPool::initialize(int32 numWorkerThreads)
+void ThreadPool::Initialize(int32 numWorkerThreads)
 {
 	threads.resize(numWorkerThreads);
 	threadParams.resize(numWorkerThreads);
@@ -57,13 +50,10 @@ void ThreadPool::initialize(int32 numWorkerThreads)
 	{
 		threadParams[i].threadID = i;
 		threadParams[i].pool = this;
-
-		int ret = pthread_create(&threads[i], NULL, pooledThreadMain, (void*)&threadParams[i]);
-		assert(ret == 0);
 	}
 }
 
-void ThreadPool::addWork(const ThreadPoolWork& workItem)
+void ThreadPool::AddWork(const ThreadPoolWork& workItem)
 {
 	queue.push_back(workItem);
 }
@@ -76,10 +66,8 @@ void ThreadPool::Start(bool blocking)
 
 	for(int32 i=0; i<n; ++i)
 	{
-		if(blocking == false)
-		{
-			pthread_detach(threads[i]);
-		}
+		threads[i] = std::thread(pooledThreadMain, (void*)&threadParams[i]);
+		threads[i].detach();
 		threadParams[i].started = true;
 	}
 
@@ -87,12 +75,12 @@ void ThreadPool::Start(bool blocking)
 	{
 		for(int32 i=0; i<n; ++i)
 		{
-			pthread_join(threads[i], NULL);
+			threads[i].join();
 		}
 	}
 }
 
-bool ThreadPool::Done() const
+bool ThreadPool::IsDone() const
 {
 	bool done = true;
 	for(auto i=0u; i<threadParams.size(); ++i)
@@ -122,4 +110,3 @@ bool ThreadPool::PopWork(ThreadPoolWork& work)
 
 	return ret;
 }
-
