@@ -3,9 +3,9 @@ Study <Ray Tracing in a Weekend>
 
 # Environment
 * Language : C++
-* IDE      : vim
-* Build    : make (maybe replaced with cmake later)
-* OS       : WSL (Windows Subsystem for Linux)
+* IDE      : Visual Studio
+* Build    : cmake
+* OS       : Windows 10, WSL
 
 # Screenshots
 ![preview1](https://user-images.githubusercontent.com/11644393/51799554-8e8a9980-2265-11e9-98d4-9fde313faa11.jpg)
