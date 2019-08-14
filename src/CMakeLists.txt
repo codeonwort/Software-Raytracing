@@ -8,9 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 # Add source to this project's executable.
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/source)
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty/tinyobjloader/source)
 
-# Link libraries
 link_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries)
 
 file(GLOB_RECURSE SRCFILES "*.cc" "*.cpp")
@@ -24,4 +22,3 @@ add_custom_command(TARGET RayTracer POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	"${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries/FreeImage.dll"
 	$<TARGET_FILE_DIR:RayTracer>)
-	

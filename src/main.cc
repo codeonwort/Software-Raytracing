@@ -1,4 +1,5 @@
 #include "image.h"
+#include "image_loader.h"
 #include "file.h"
 #include "log.h"
 #include "camera.h"
@@ -6,13 +7,6 @@
 #include "material.h"
 #include "transform.h"
 #include "thread_pool.h"
-#include "util/resource_finder.h"
-#include "geom/ray.h"
-#include "geom/sphere.h"
-#include "geom/triangle.h"
-#include "geom/static_mesh.h"
-#include "loader/obj_loader.h"
-#include "loader/image_loader.h"
 
 #include <vector>
 #include <thread>
@@ -214,15 +208,11 @@ void GenerateCell(const WorkItemParam* param)
 void InitializeSubsystems()
 {
 	StartLogThread();
-	ResourceFinder::Get().AddDirectory("./content/");
 	ImageLoader::Initialize();
-	OBJLoader::Initialize();
 }
 void DestroySubsystems()
 {
-	OBJLoader::Destroy();
 	ImageLoader::Destroy();
-	StopLogThread();
 }
 
 int main(int argc, char** argv)
