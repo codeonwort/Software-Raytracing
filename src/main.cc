@@ -1,4 +1,5 @@
 #include "image.h"
+#include "image_loader.h"
 #include "file.h"
 #include "log.h"
 #include "ray.h"
@@ -7,6 +8,7 @@
 #include "random.h"
 #include "material.h"
 #include "thread_pool.h"
+
 #include <vector>
 #include <thread>
 #include <chrono>
@@ -146,9 +148,19 @@ void GenerateCell(const WorkItemParam* param)
 	}
 }
 
-int main(int argc, char** argv)
+void InitializeSubsystems()
 {
 	StartLogThread();
+	ImageLoader::Initialize();
+}
+void DestroySubsystems()
+{
+	ImageLoader::Destroy();
+}
+
+int main(int argc, char** argv)
+{
+	InitializeSubsystems();
 
 	log("raytracing study");
 
@@ -252,5 +264,8 @@ int main(int argc, char** argv)
 
 	log("image has been written as bitmap");
 
+	//////////////////////////////////////////////////////////////////////////
+	// Cleanup
+	DestroySubsystems();
 	return 0;
 }
