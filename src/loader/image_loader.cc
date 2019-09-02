@@ -1,5 +1,5 @@
 #include "image_loader.h"
-#include "log.h"
+#include "../log.h"
 
 #pragma comment(lib, "FreeImage.lib")
 
@@ -24,7 +24,6 @@ void ImageLoader::SyncLoad(const char* filepath, HDRImage& outImage)
 
 ImageLoader::ImageLoader()
 {
-	//
 }
 
 ImageLoader::~ImageLoader()

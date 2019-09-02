@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 using int8   = int8_t;
@@ -50,7 +51,7 @@ public:
 	inline vec3& operator*=(const float t);
 	inline vec3& operator/=(const float t);
 
-	inline float Length() const { return sqrt(x*x + y*y + z*z); }
+	inline float Length() const { return sqrtf(x*x + y*y + z*z); }
 	inline float LengthSquared() const { return (x*x + y*y + z*z); }
 	inline void Normalize();
 
@@ -148,7 +149,7 @@ inline bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& outRef
 	float D = 1.0f - ni_over_nt * ni_over_nt * (1.0f - dt * dt);
 	if(D > 0.0f)
 	{
-		outRefracted = ni_over_nt * (uv - n * dt) - n * sqrt(D);
+		outRefracted = ni_over_nt * (uv - n * dt) - n * sqrtf(D);
 		return true;
 	}
 	return false;

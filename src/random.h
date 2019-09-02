@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+
 #include <random>
 #include <vector>
 #include <algorithm>
@@ -21,7 +22,7 @@ public:
 		samples.resize(nSamples);
 		for(uint32 i = 0; i < nSamples; ++i)
 		{
-			samples[i] = dist(gen);
+			samples[i] = (float)dist(gen);
 		}
 
 		Seek(0);
@@ -93,7 +94,7 @@ vec3 RandomInUnitDisk()
 	float u1 = randoms.Peek();
 	float u2 = randoms.Peek();
 	float r = sqrt(u1);
-	float theta = 2.0f * M_PI * u2;
+	float theta = 2.0f * (float)M_PI * u2;
 	return vec3(r * cos(theta), r * sin(theta), 0.0f);
 }
 

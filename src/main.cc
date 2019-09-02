@@ -1,5 +1,4 @@
 #include "image.h"
-#include "image_loader.h"
 #include "file.h"
 #include "log.h"
 #include "ray.h"
@@ -8,6 +7,9 @@
 #include "random.h"
 #include "material.h"
 #include "thread_pool.h"
+#include "util/resource_finder.h"
+#include "loader/obj_loader.h"
+#include "loader/image_loader.h"
 
 #include <vector>
 #include <thread>
@@ -73,7 +75,7 @@ Hitable* CreateRandomScene()
 				}
 				else
 				{
-					list[i++] = new sphere(center, 0.2, new Dielectric(1.5f));
+					list[i++] = new sphere(center, 0.2f, new Dielectric(1.5f));
 				}
 			}
 		}
@@ -151,11 +153,19 @@ void GenerateCell(const WorkItemParam* param)
 void InitializeSubsystems()
 {
 	StartLogThread();
+	ResourceFinder::Get().AddDirectory("./content/");
 	ImageLoader::Initialize();
+	OBJLoader::Initialize();
 }
 void DestroySubsystems()
 {
+	OBJLoader::Destroy();
 	ImageLoader::Destroy();
+}
+
+void LoadOBJ(const char* objFilepath)
+{
+	//
 }
 
 int main(int argc, char** argv)
@@ -163,6 +173,8 @@ int main(int argc, char** argv)
 	InitializeSubsystems();
 
 	log("raytracing study");
+
+	LoadOBJ("content/Toadttee/Toadttee.obj");
 
 	const int32 width = 1024;
 	const int32 height = 512;
@@ -197,7 +209,7 @@ int main(int argc, char** argv)
 
 	// Multi-threading
 	uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
-	log("number of cores: %u", numCores);
+	log("number of logical cores: %u", numCores);
 
 	ThreadPool tp;
 	tp.Initialize(numCores);

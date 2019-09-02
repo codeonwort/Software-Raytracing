@@ -1,10 +1,11 @@
 #pragma once
 
-#include "image.h"
+#include "../image.h"
+#include "../template/noncopyable.h"
 
 #include "FreeImage.h"
 
-class ImageLoader
+class ImageLoader : public Noncopyable
 {
 
 public:
@@ -18,9 +19,6 @@ public:
 	explicit ImageLoader();
 	~ImageLoader();
 
-	ImageLoader(const ImageLoader&) = delete;
-	ImageLoader& operator=(const ImageLoader&) = delete;
-
 	void LoadSynchronous(const char* filepath, HDRImage& outImage);
 
 	/*
@@ -28,5 +26,5 @@ public:
 	 * ThreadHandle LoadAsync(std::vector<const char*> filepathArray);
 	 * AsyncLoadProgress GetProgress();
 	 */
-
+	
 };
