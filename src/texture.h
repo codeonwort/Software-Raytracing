@@ -1,11 +1,24 @@
 #pragma once
 
 #include "type.h"
-#include "image.h"
 #include "template/noncopyable.h"
 
 #include <vector>
 
+struct Texel
+{
+	Texel(float inR, float inG, float inB, float inA)
+		: r(inR)
+		, g(inG)
+		, b(inB)
+		, a(inA)
+	{
+	}
+	float r;
+	float g;
+	float b;
+	float a;
+};
 
 enum class ETextureFilter : uint8
 {
@@ -21,36 +34,26 @@ enum class ETextureWrap : uint8
 
 struct SamplerState
 {
-	SamplerState()
-		: filter(ETextureFilter::Linear)
-		, wrap(ETextureWrap::Repeat)
-	{
-	}
-
 	ETextureFilter filter;
 	ETextureWrap wrap;
 };
 
-// Collection of mipmaps
 class Texture2D : public Noncopyable
 {
-
-public:
-	// Create a texture from single mipmap
-	static Texture2D* CreateFromImage2D(const Image2D& inImage);
 	
 public:
-	Texture2D(uint32 numMipmaps);
+	Texture2D(uint32 width, uint32 height);
 
-	void SetData(uint32 mipLevel, const Image2D& image);
+	void Clear(const Texel& texel);
+	void SetData(const std::vector<Texel>& inData);
 	void SetSamplerState(const SamplerState& inSampler) { sampler = inSampler; }
 
-	Pixel Sample(float u, float v);
+	Texel Sample(float u, float v);
 
 private:
 	void FixUV(float& u, float& v);
 
-	std::vector<Image2D> mipmaps;
+	std::vector<Texel> data;
 	SamplerState sampler;
 
 };

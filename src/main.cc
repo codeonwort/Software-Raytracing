@@ -1,5 +1,4 @@
 #include "image.h"
-#include "image_loader.h"
 #include "file.h"
 #include "log.h"
 #include "camera.h"
@@ -7,6 +6,9 @@
 #include "material.h"
 #include "transform.h"
 #include "thread_pool.h"
+#include "util/resource_finder.h"
+#include "loader/obj_loader.h"
+#include "loader/image_loader.h"
 
 #include <vector>
 #include <thread>
@@ -130,7 +132,7 @@ Hitable* CreateRandomScene()
 				}
 				else
 				{
-					list.push_back(new sphere(center, 0.2f, new Dielectric(1.5f)));
+					list[i++] = new sphere(center, 0.2f, new Dielectric(1.5f));
 				}
 			}
 		}
@@ -208,11 +210,19 @@ void GenerateCell(const WorkItemParam* param)
 void InitializeSubsystems()
 {
 	StartLogThread();
+	ResourceFinder::Get().AddDirectory("./content/");
 	ImageLoader::Initialize();
+	OBJLoader::Initialize();
 }
 void DestroySubsystems()
 {
+	OBJLoader::Destroy();
 	ImageLoader::Destroy();
+}
+
+void LoadOBJ(const char* objFilepath)
+{
+	//
 }
 
 int main(int argc, char** argv)
@@ -221,14 +231,7 @@ int main(int argc, char** argv)
 
 	log("raytracing study");
 
-#if 0 // ImageLoader test
-	Image2D test;
-	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
-	{
-		WriteBitmap(test, "test.bmp");
-		return 0;
-	}
-#endif
+	LoadOBJ("content/Toadttee/Toadttee.obj");
 
 	const int32 width = 1024;
 	const int32 height = 512;

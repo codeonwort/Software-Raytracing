@@ -1,25 +1,7 @@
 #pragma once
 
-#include "src/template/noncopyable.h"
-#include "src/type.h"
+#include "../template/noncopyable.h"
 #include "tiny_obj_loader.h"
-
-class Material;
-class StaticMesh;
-
-struct OBJModel
-{
-	OBJModel()
-		: staticMesh(nullptr)
-		, minBound(vec3(0.0f, 0.0f, 0.0f))
-		, maxBound(vec3(0.0f, 0.0f, 0.0f))
-	{
-	}
-
-	StaticMesh* staticMesh;
-	vec3 minBound;
-	vec3 maxBound;
-};
 
 class OBJLoader : public Noncopyable
 {
@@ -28,13 +10,13 @@ public:
 	static void Initialize();
 	static void Destroy();
 
-	static bool SyncLoad(const char* filepath, OBJModel& outModel);
+	static void SyncLoad(const char* filepath);
 
 public:
 	explicit OBJLoader();
 	~OBJLoader();
 
-	bool LoadSynchronous(const char* filepath, OBJModel& outModel);
+	void LoadSynchronous(const char* filepath);
 
 	/*
 	 * #todo: async load
@@ -43,9 +25,6 @@ public:
 	 */
 
 private:
-	void ParseMaterials(const std::string& objpath, const std::vector<tinyobj::material_t>& inRawMaterials, std::vector<Material*>& outMaterials);
-
-	std::vector<Material*> materials;
 	tinyobj::ObjReader internalLoader;
 
 };
