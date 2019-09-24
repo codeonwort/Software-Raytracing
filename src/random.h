@@ -43,6 +43,9 @@ private:
 	std::vector<float> samples;
 	std::random_device rd;
 
+private:
+	std::random_device rd;
+
 	mutable int32 index;
 
 };
@@ -84,5 +87,3 @@ vec3 RandomInUnitDisk()
 	float theta = 2.0f * (float)M_PI * u2;
 	return vec3(r * cos(theta), r * sin(theta), 0.0f);
 }
-
-vec3 RandomInUnitDisk();

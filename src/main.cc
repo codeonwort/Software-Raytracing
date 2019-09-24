@@ -132,7 +132,7 @@ Hitable* CreateRandomScene()
 				}
 				else
 				{
-					list[i++] = new sphere(center, 0.2f, new Dielectric(1.5f));
+					list.push_back(new sphere(center, 0.2f, new Dielectric(1.5f)));
 				}
 			}
 		}
@@ -218,6 +218,7 @@ void DestroySubsystems()
 {
 	OBJLoader::Destroy();
 	ImageLoader::Destroy();
+	StopLogThread();
 }
 
 void LoadOBJ(const char* objFilepath)
