@@ -6,6 +6,9 @@
 #include <vector>
 #include <algorithm>
 
+// #todo: Let each thread use its own RNG.
+// Those seekGuard and peekGuard cause unnecessary overhead.
+#define RANDOM_LOCK_GUARD 0
 class RNG
 {
 
@@ -26,15 +29,28 @@ public:
 
 	inline void Seek(int32 ix)
 	{
+#if RANDOM_LOCK_GUARD
+		seekGuard.lock();
+#endif
+
 		index = ix;
+
+#if RANDOM_LOCK_GUARD
+		seekGuard.unlock();
+#endif
 	}
 
 	inline float Peek() const
 	{
+#if RANDOM_LOCK_GUARD
+		peekGuard.lock();
+#endif
+
 		float x = samples[index];
 
-		// #todo: Regenerate on starvation?
-		index = (index + 1) % samples.size();
+#if RANDOM_LOCK_GUARD
+		peekGuard.unlock();
+#endif
 
 		return x;
 	}
@@ -48,9 +64,16 @@ private:
 
 	mutable int32 index;
 
+#if RANDOM_LOCK_GUARD
+	std::mutex seekGuard;
+	mutable std::mutex peekGuard;
+#endif
+
 };
 
-vec3 RandomInUnitSphere();
+vec3 RandomInUnitSphere()
+{
+	static thread_local RNG randoms(1024);
 
 #if 0 // original impl. of the tutorial
 	vec3 p;
@@ -73,14 +96,14 @@ vec3 RandomInUnitSphere();
 
 float Random()
 {
-	static RNG randoms(1024 * 8);
+	static thread_local RNG randoms(1024 * 8);
 
 	return randoms.Peek();
 }
 
 vec3 RandomInUnitDisk()
 {
-	static RNG randoms(1024 * 8);
+	static thread_local RNG randoms(1024 * 8);
 	float u1 = randoms.Peek();
 	float u2 = randoms.Peek();
 	float r = sqrt(u1);
