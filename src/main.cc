@@ -51,10 +51,10 @@ vec3 Scene(const ray& r, Hitable* world)
 
 Hitable* CreateRandomScene()
 {
-	int n = 100;
-	Hitable** list = new Hitable*[n+1];
-	list[0] = (new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
-	int32 i = 1;
+	std::vector<Hitable*> list;
+
+	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+
 	for(int32 a = -6; a < 6; ++a)
 	{
 		for(int32 b = -6; b < 6; ++b)
@@ -65,26 +65,26 @@ Hitable* CreateRandomScene()
 			{
 				if(choose_material < 0.8f)
 				{
-					list[i++] = new sphere(center, 0.2f,
-						new Lambertian(vec3(Random()*Random(), Random()*Random(), Random()*Random())));
+					list.push_back(new sphere(center, 0.2f,
+						new Lambertian(vec3(Random()*Random(), Random()*Random(), Random()*Random()))));
 				}
 				else if(choose_material < 0.95f)
 				{
-					list[i++] = new sphere(center, 0.2f,
-						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random()));
+					list.push_back(new sphere(center, 0.2f,
+						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random())));
 				}
 				else
 				{
-					list[i++] = new sphere(center, 0.2f, new Dielectric(1.5f));
+					list.push_back(new sphere(center, 0.2f, new Dielectric(1.5f)));
 				}
 			}
 		}
 	}
-	list[i++] = new sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f));
-	list[i++] = new sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f)));
-	list[i++] = new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f));
+	list.push_back(new sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f)));
+	list.push_back(new sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f))));
+	list.push_back(new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f)));
 
-	return new HitableList(list, i);
+	return new HitableList(list);
 }
 
 #if ANTI_ALIASING
@@ -161,6 +161,7 @@ void DestroySubsystems()
 {
 	OBJLoader::Destroy();
 	ImageLoader::Destroy();
+	StopLogThread();
 }
 
 void LoadOBJ(const char* objFilepath)

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ray.h"
+#include "util/assertion.h"
+
 #include <limits>
 
 #define FLOAT_MIN std::numeric_limits<float>::min()
@@ -29,15 +31,13 @@ class HitableList : public Hitable
 
 public:
 	HitableList() {}
-	HitableList(Hitable** inList, int inNum)
+	HitableList(std::vector<Hitable*> inList)
 		: list(inList)
-		, n(inNum)
 	{}
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& result) const;
 
-	Hitable** list;
-	int n;
+	std::vector<Hitable*> list;
 };
 
 bool HitableList::Hit(const ray& r, float t_min, float t_max, HitResult& result) const
@@ -45,6 +45,7 @@ bool HitableList::Hit(const ray& r, float t_min, float t_max, HitResult& result)
 	HitResult temp;
 	bool anyHit = false;
 	float closest = t_max;
+	int32 n = (int32)list.size();
 	for(int32 i = 0; i < n; ++i)
 	{
 		if(list[i]->Hit(r, t_min, closest, temp))

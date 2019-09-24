@@ -1,5 +1,6 @@
 #include "log.h"
 #include "type.h"
+#include "util/assertion.h"
 
 #include <list>
 #include <mutex>
@@ -12,6 +13,7 @@
 
 
 static bool logThreadStarted = false;
+static bool logThreadPendingKill = false;
 static std::mutex log_mutex;
 static std::list<std::string> logQueue;
 
@@ -26,6 +28,12 @@ void StartLogThread()
 	void LogMain();
 	std::thread logThread(LogMain);
 	logThread.detach();
+}
+
+void StopLogThread()
+{
+	CHECK(logThreadStarted);
+	logThreadPendingKill = true;
 }
 
 void log(const char* format, ...)
@@ -47,7 +55,7 @@ void log(const char* format, ...)
 
 void LogMain()
 {
-	while (true)
+	while (!logThreadPendingKill)
 	{
 		int32 n = std::min((int32)logQueue.size(), 1000);
 		while (n --> 0)

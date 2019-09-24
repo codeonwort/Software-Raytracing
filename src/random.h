@@ -15,7 +15,6 @@ class RNG
 public:
 	RNG(uint32 nSamples)
 	{
-		std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_real_distribution<> dist(0.0, 1.0);
 
@@ -52,6 +51,8 @@ public:
 	std::vector<float> samples;
 
 private:
+	std::random_device rd;
+
 	mutable int32 index;
 	std::mutex seekGuard;
 	mutable std::mutex peekGuard;
@@ -97,4 +98,3 @@ vec3 RandomInUnitDisk()
 	float theta = 2.0f * (float)M_PI * u2;
 	return vec3(r * cos(theta), r * sin(theta), 0.0f);
 }
-
