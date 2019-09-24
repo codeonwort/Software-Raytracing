@@ -87,10 +87,6 @@ Hitable* CreateRandomScene()
 	return new HitableList(list);
 }
 
-#if ANTI_ALIASING
-RNG randoms(4096 * 8);
-#endif
-
 struct WorkCell
 {
 	int32 x;
@@ -105,6 +101,10 @@ struct WorkCell
 
 void GenerateCell(const WorkItemParam* param)
 {
+#if ANTI_ALIASING
+	static thread_local RNG randomsAA(4096 * 8);
+#endif
+
 	int32 threadID = param->threadID;
 	WorkCell* cell = reinterpret_cast<WorkCell*>(param->arg);
 
@@ -124,8 +124,8 @@ void GenerateCell(const WorkItemParam* param)
 			{
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
-				u += randoms.Peek() / imageWidth;
-				v += randoms.Peek() / imageHeight;
+				u += randomsAA.Peek() / imageWidth;
+				v += randomsAA.Peek() / imageHeight;
 				ray r = cell->camera->GetRay(u, v);
 				vec3 scene = Scene(r, cell->world);
 				accum += scene;
