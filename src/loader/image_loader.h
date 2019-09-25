@@ -13,13 +13,13 @@ public:
 	static void Destroy();
 
 	// Simple load. Create an ImageLoader instance for advanced functionality.
-	static void SyncLoad(const char* filepath, HDRImage& outImage);
+	static bool SyncLoad(const char* filepath, Image2D& outImage);
 
 public:
 	explicit ImageLoader();
 	~ImageLoader();
 
-	void LoadSynchronous(const char* filepath, HDRImage& outImage);
+	bool LoadSynchronous(const char* filepath, Image2D& outImage);
 
 	/*
 	 * #todo: async load

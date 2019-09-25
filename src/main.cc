@@ -232,6 +232,15 @@ int main(int argc, char** argv)
 
 	log("raytracing study");
 
+#if 0 // ImageLoader test
+	Image2D test;
+	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
+	{
+		WriteBitmap(test, "test.bmp");
+		return 0;
+	}
+#endif
+
 	LoadOBJ("content/Toadttee/Toadttee.obj");
 
 	const int32 width = 1024;
