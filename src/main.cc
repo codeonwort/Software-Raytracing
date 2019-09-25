@@ -94,7 +94,7 @@ struct WorkCell
 	int32 width;
 	int32 height;
 
-	HDRImage* image;
+	Image2D* image;
 	Camera* camera;
 	Hitable* world;
 };
@@ -175,11 +175,20 @@ int main(int argc, char** argv)
 
 	log("raytracing study");
 
+#if 0 // ImageLoader test
+	Image2D test;
+	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
+	{
+		WriteBitmap(test, "test.bmp");
+		return 0;
+	}
+#endif
+
 	LoadOBJ("content/Toadttee/Toadttee.obj");
 
 	const int32 width = 1024;
 	const int32 height = 512;
-	HDRImage image(width, height, 0x123456);
+	Image2D image(width, height, 0x123456);
 
 	log("generate a test image (width: %d, height: %d)", width, height);
 

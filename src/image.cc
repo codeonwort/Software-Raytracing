@@ -1,29 +1,33 @@
 #include "image.h"
 
-HDRImage::HDRImage(int32 inWidth, int32 inHeight, const Pixel& inPixel)
+Image2D::Image2D()
 {
-	width  = inWidth;
+	Reallocate(0, 0);
+}
+
+Image2D::Image2D(uint32 inWidth, uint32 inHeight, const Pixel& inPixel)
+{
+	Reallocate(inWidth, inHeight, inPixel);
+}
+
+Image2D::Image2D(uint32 inWidth, uint32 inHeight, uint32 inColor)
+	: Image2D(inWidth, inHeight, Pixel(inColor))
+{
+}
+
+void Image2D::Reallocate(uint32 inWidth, uint32 inHeight, const Pixel& clearColor /*= Pixel(0xff000000)*/)
+{
+	width = inWidth;
 	height = inHeight;
-	image.resize(width * height, inPixel);
-
-	Pixel px = inPixel;
-	uint8 r  = (int32)(px.r * 255.0f) & 0xff;
-	uint8 g  = (int32)(px.g * 255.0f) & 0xff;
-	uint8 b  = (int32)(px.b * 255.0f) & 0xff;
+	image.resize(width * height, clearColor);
 }
 
-HDRImage::HDRImage(int32 inWidth, int32 inHeight, uint32 inColor)
-	: HDRImage(inWidth, inHeight, Pixel(inColor))
-{
-}
-
-void HDRImage::SetPixel(int32 x, int32 y, const Pixel& pixel)
+void Image2D::SetPixel(int32 x, int32 y, const Pixel& pixel)
 {
 	image[ix(x, y)] = pixel;
 }
 
-void HDRImage::SetPixel(int32 x, int32 y, uint32 rgb)
+void Image2D::SetPixel(int32 x, int32 y, uint32 argb)
 {
-	image[ix(x, y)] = Pixel(rgb);
+	image[ix(x, y)] = Pixel(argb);
 }
-

@@ -6,19 +6,19 @@ Texture2D::Texture2D(uint32 width, uint32 height)
 	//
 }
 
-void Texture2D::Clear(const Texel& texel)
+void Texture2D::Clear(const Pixel& texel)
 {
 
 }
 
-void Texture2D::SetData(const std::vector<Texel>& inData)
+void Texture2D::SetData(const std::vector<Pixel>& inData)
 {
 
 }
 
-Texel Texture2D::Sample(float u, float v)
+Pixel Texture2D::Sample(float u, float v)
 {
-	return Texel(1.0f, 0.0f, 0.0f, 1.0f);
+	return Pixel(1.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void Texture2D::FixUV(float& u, float& v)

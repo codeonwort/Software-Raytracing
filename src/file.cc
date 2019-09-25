@@ -63,7 +63,7 @@ struct BITMAPINFOHEADER
 };
 #pragma pack(pop)
 
-void WriteBitmap(const HDRImage& image, const char* filepath)
+void WriteBitmap(const Image2D& image, const char* filepath)
 {
 	File file;
 	file.Open(String(filepath));
@@ -93,9 +93,9 @@ void WriteBitmap(const HDRImage& image, const char* filepath)
 	uint8* buffer = new uint8[bufferSize];
 	uint8* it     = buffer;
 
-	for(int y = image.GetHeight() - 1; y >= 0; --y)
+	for(int32 y = (int32)image.GetHeight() - 1; y >= 0; --y)
 	{
-		for(int x = 0; x < image.GetWidth(); ++x)
+		for(int32 x = 0; x < (int32)image.GetWidth(); ++x)
 		{
 			Pixel px = image.GetPixel(x, y);
 			uint8 r  = (int32)(px.r * 255.0f) & 0xff;

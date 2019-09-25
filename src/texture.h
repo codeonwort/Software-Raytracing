@@ -1,24 +1,11 @@
 #pragma once
 
 #include "type.h"
+#include "image.h"
 #include "template/noncopyable.h"
 
 #include <vector>
 
-struct Texel
-{
-	Texel(float inR, float inG, float inB, float inA)
-		: r(inR)
-		, g(inG)
-		, b(inB)
-		, a(inA)
-	{
-	}
-	float r;
-	float g;
-	float b;
-	float a;
-};
 
 enum class ETextureFilter : uint8
 {
@@ -44,16 +31,16 @@ class Texture2D : public Noncopyable
 public:
 	Texture2D(uint32 width, uint32 height);
 
-	void Clear(const Texel& texel);
-	void SetData(const std::vector<Texel>& inData);
+	void Clear(const Pixel& texel);
+	void SetData(const std::vector<Pixel>& inData);
 	void SetSamplerState(const SamplerState& inSampler) { sampler = inSampler; }
 
-	Texel Sample(float u, float v);
+	Pixel Sample(float u, float v);
 
 private:
 	void FixUV(float& u, float& v);
 
-	std::vector<Texel> data;
+	std::vector<Pixel> data;
 	SamplerState sampler;
 
 };
