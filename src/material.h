@@ -1,8 +1,8 @@
 #pragma once
 
-#include "ray.h"
-#include "hit.h"
 #include "random.h"
+#include "geom/ray.h"
+#include "geom/hit.h"
 
 class Material
 {
