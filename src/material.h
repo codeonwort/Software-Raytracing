@@ -4,10 +4,6 @@
 #include "geom/ray.h"
 #include "geom/hit.h"
 
-// TextureMaterial
-#include "image.h"
-#include "texture.h"
-
 class Material
 {
 

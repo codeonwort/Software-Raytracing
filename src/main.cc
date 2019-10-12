@@ -7,6 +7,8 @@
 #include "transform.h"
 #include "thread_pool.h"
 #include "util/resource_finder.h"
+#include "geom/ray.h"
+#include "geom/sphere.h"
 #include "loader/obj_loader.h"
 #include "loader/image_loader.h"
 
