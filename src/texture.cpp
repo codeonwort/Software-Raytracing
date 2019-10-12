@@ -1,19 +1,21 @@
 #include "texture.h"
 
 
-Texture2D::Texture2D(uint32 width, uint32 height)
+Texture2D* Texture2D::CreateFromImage2D(const Image2D& inImage)
 {
-	//
+	Texture2D* texture = new Texture2D(1);
+	texture->SetData(0, inImage);
+	return texture;
 }
 
-void Texture2D::Clear(const Pixel& texel)
+Texture2D::Texture2D(uint32 numMipmaps)
 {
-
+	mipmaps.resize(numMipmaps);
 }
 
-void Texture2D::SetData(const std::vector<Pixel>& inData)
+void Texture2D::SetData(uint32 mipLevel, const Image2D& image)
 {
-
+	mipmaps[mipLevel] = image;
 }
 
 Pixel Texture2D::Sample(float u, float v)

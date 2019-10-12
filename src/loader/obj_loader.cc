@@ -1,5 +1,6 @@
 #include "obj_loader.h"
-#include "../log.h"
+#include "src/log.h"
+#include "src/util/resource_finder.h"
 
 
 void OBJLoader::Initialize()
@@ -12,10 +13,12 @@ void OBJLoader::Destroy()
 	log("Destroy obj loader");
 }
 
-void OBJLoader::SyncLoad(const char* filepath)
+bool OBJLoader::SyncLoad(const char* filepath)
 {
 	OBJLoader loader;
-	loader.LoadSynchronous(filepath);
+	bool bLoaded = loader.LoadSynchronous(filepath);
+	// #todo: create obj model
+	return bLoaded;
 }
 
 OBJLoader::OBJLoader()
@@ -27,7 +30,22 @@ OBJLoader::~OBJLoader()
 	// #todo: cancel async load
 }
 
-void OBJLoader::LoadSynchronous(const char* filepath)
+bool OBJLoader::LoadSynchronous(const char* filepath)
 {
-	internalLoader.ParseFromFile(filepath);
+	std::string file = ResourceFinder::Get().Find(filepath);
+	if (file.size() == 0)
+	{
+		return false;
+	}
+
+	if (!internalLoader.ParseFromFile(file))
+	{
+		return false;
+	}
+
+	const tinyobj::attrib_t& attrib = internalLoader.GetAttrib();
+	const std::vector<tinyobj::shape_t>& shapes = internalLoader.GetShapes();
+	const std::vector<tinyobj::material_t>& materials = internalLoader.GetMaterials();
+
+	return true;
 }

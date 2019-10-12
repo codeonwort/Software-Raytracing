@@ -80,6 +80,7 @@ public:
 	inline uint32 GetWidth() const { return width; }
 	inline uint32 GetHeight() const { return height; }
 	inline Pixel GetPixel(int32 x, int32 y) const { return image[ix(x, y)]; }
+	inline const std::vector<Pixel>& GetPixelArray() const { return image; }
 
 //private:
 public:

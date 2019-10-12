@@ -10,13 +10,13 @@ public:
 	static void Initialize();
 	static void Destroy();
 
-	static void SyncLoad(const char* filepath);
+	static bool SyncLoad(const char* filepath);
 
 public:
 	explicit OBJLoader();
 	~OBJLoader();
 
-	void LoadSynchronous(const char* filepath);
+	bool LoadSynchronous(const char* filepath);
 
 	/*
 	 * #todo: async load
