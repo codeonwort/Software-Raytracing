@@ -21,18 +21,28 @@ enum class ETextureWrap : uint8
 
 struct SamplerState
 {
+	SamplerState()
+		: filter(ETextureFilter::Linear)
+		, wrap(ETextureWrap::Repeat)
+	{
+	}
+
 	ETextureFilter filter;
 	ETextureWrap wrap;
 };
 
+// Collection of mipmaps
 class Texture2D : public Noncopyable
 {
+
+public:
+	// Create a texture from single mipmap
+	static Texture2D* CreateFromImage2D(const Image2D& inImage);
 	
 public:
-	Texture2D(uint32 width, uint32 height);
+	Texture2D(uint32 numMipmaps);
 
-	void Clear(const Pixel& texel);
-	void SetData(const std::vector<Pixel>& inData);
+	void SetData(uint32 mipLevel, const Image2D& image);
 	void SetSamplerState(const SamplerState& inSampler) { sampler = inSampler; }
 
 	Pixel Sample(float u, float v);
@@ -40,7 +50,7 @@ public:
 private:
 	void FixUV(float& u, float& v);
 
-	std::vector<Pixel> data;
+	std::vector<Image2D> mipmaps;
 	SamplerState sampler;
 
 };

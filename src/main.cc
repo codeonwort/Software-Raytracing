@@ -223,7 +223,10 @@ void DestroySubsystems()
 
 void LoadOBJ(const char* objFilepath)
 {
-	//
+	if (OBJLoader::SyncLoad(objFilepath))
+	{
+		//
+	}
 }
 
 int main(int argc, char** argv)
@@ -241,7 +244,9 @@ int main(int argc, char** argv)
 	}
 #endif
 
-	LoadOBJ("content/Toadttee/Toadttee.obj");
+#if 0 // OBJLoader test
+	LoadOBJ("content/Toadette/Toadette.obj");
+#endif
 
 	const int32 width = 1024;
 	const int32 height = 512;
