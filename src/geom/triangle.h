@@ -1,7 +1,7 @@
 #pragma once
 
 #include "hit.h"
-#include "src/material.h"
+#include "material.h"
 
 class Triangle : public Hitable
 {
@@ -11,47 +11,60 @@ public:
 		: v0(inV0)
 		, v1(inV1)
 		, v2(inV2)
-		, s0(0.0f), t0(0.0f), s1(0.0f), t1(0.0f), s2(0.0f), t2(0.0f)
 		, material(inMaterial)
-	{
-		UpdateNormal();
-	}
-
-	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
-
-	inline void SetParameterization(float inS0, float inT0, float inS1, float inT1, float inS2, float inT2)
-	{
-		s0 = inS0; t0 = inT0;
-		s1 = inS1; t1 = inT1;
-		s2 = inS2; t2 = inT2;
-	}
-	inline void GetParameterization(float& outS0, float& outT0, float& outS1, float& outT1, float& outS2, float& outT2) const
-	{
-		outS0 = s0; outT0 = t0;
-		outS1 = s1; outT1 = t1;
-		outS2 = s2; outT2 = t2;
-	}
-
-	void GetVertices(vec3& outV0, vec3& outV1, vec3& outV2) const;
-	void SetVertices(const vec3& inV0, const vec3& inV1, const vec3& inV2);
-
-private:
-	inline void UpdateNormal()
 	{
 		n = cross(v1 - v0, v2 - v0);
 		n.Normalize();
 	}
 
+	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
+
+private:
 	vec3 v0;
 	vec3 v1;
 	vec3 v2;
 	vec3 n;
-
-	// Surface parameterization
-	// Oops. v for vertex :(
-	// Let's use 's' and 't'
-	float s0, t0, s1, t1, s2, t2; 
-	
 	Material* material;
 	
 };
+
+// http://geomalgorithms.com/a06-_intersect-2.html
+bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
+{
+	float s1, t1;
+
+	float t = dot((v0 - r.o), n) / dot(r.d, n);
+	vec3 p = r.o + t * r.d;
+
+	if (t < t_min || t > t_max)
+	{
+		return false;
+	}
+
+	vec3 u = v1 - v0;
+	vec3 v = v2 - v0;
+	vec3 w = p - v0;
+
+	float uv = dot(u, v);
+	float wv = dot(w, v);
+	float uu = dot(u, u);
+	float vv = dot(v, v);
+	float wu = dot(w, u);
+	float uvuv = uv * uv;
+	float uuvv = uu * vv;
+
+	s1 = (uv * wv - vv * wu) / (uvuv - uuvv);
+	t1 = (uv * wu - uu * wv) / (uvuv - uuvv);
+
+	if (0.0f <= s1 && 0.0f <= t1 && s1 + t1 <= 1.0f)
+	{
+		outResult.t = t;
+		outResult.p = p;
+		outResult.n = n;
+		outResult.material = material;
+
+		return true;
+	}
+
+	return false;
+}
