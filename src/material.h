@@ -1,8 +1,8 @@
 #pragma once
 
-#include "ray.h"
-#include "hit.h"
 #include "random.h"
+#include "geom/ray.h"
+#include "geom/hit.h"
 
 class Material
 {
@@ -22,7 +22,8 @@ class Lambertian : public Material
 public:
 	Lambertian(const vec3& inAlbedo)
 		: albedo(inAlbedo)
-	{}
+	{
+	}
 
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "ray.h"
 #include "random.h"
+#include "geom/ray.h"
+
 #include <math.h>
 
 template<typename T>

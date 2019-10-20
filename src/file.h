@@ -21,5 +21,5 @@ private:
 
 ///////////////////////////////////////////////////////
 
-void WriteBitmap(const HDRImage& image, const char* filepath);
+void WriteBitmap(const Image2D& image, const char* filepath);
 

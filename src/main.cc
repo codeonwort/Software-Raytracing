@@ -1,16 +1,26 @@
 #include "image.h"
 #include "file.h"
 #include "log.h"
-#include "ray.h"
-#include "sphere.h"
 #include "camera.h"
 #include "random.h"
 #include "material.h"
 #include "thread_pool.h"
+#include "util/resource_finder.h"
+#include "geom/ray.h"
+#include "geom/sphere.h"
+#include "geom/triangle.h"
+#include "loader/obj_loader.h"
+#include "loader/image_loader.h"
+
 #include <vector>
 #include <thread>
 #include <chrono>
 
+// Test scene settings
+#define CREATE_RANDOM_SCENE CreateRandomScene2
+#define CAMERA_LOCATION     vec3(3.0f, 1.0f, 3.0f)
+#define CAMERA_LOOKAT       vec3(0.0f, 1.0f, -1.0f)
+#define CAMERA_UP           vec3(0.0f, 1.0f, 0.0f)
 
 #define ANTI_ALIASING    1
 #define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
@@ -45,12 +55,35 @@ vec3 Scene(const ray& r, Hitable* world)
 	return Scene(r, world, 0);
 }
 
+Hitable* CreateRandomScene2()
+{
+	std::vector<Hitable*> list;
+
+	const int32 numFans = 8;
+	const float fanAngle = 1.0f / (float)(numFans + 1);
+	for (int32 i = 0; i <= numFans; ++i)
+	{
+		float fanBegin = pi<float>* fanAngle* i;
+		float fanEnd = pi<float> * fanAngle * (i + 1);
+		float fanRadius = 1.0f + 2.0f * (float)i / numFans;
+		float z = 0.0f;
+		vec3 v0(fanRadius * std::cos(fanBegin), fanRadius * std::sin(fanBegin), z);
+		vec3 v1(0.0f, 0.0f, 0.0f);
+		vec3 v2(fanRadius * std::cos(fanEnd), fanRadius * std::sin(fanEnd), z);
+		vec3 color = RandomInUnitSphere();
+		list.push_back(new Triangle(v0, v1, v2, new Lambertian(color)));
+	}
+	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+
+	return new HitableList(list);
+}
+
 Hitable* CreateRandomScene()
 {
-	int n = 100;
-	Hitable** list = new Hitable*[n+1];
-	list[0] = (new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
-	int32 i = 1;
+	std::vector<Hitable*> list;
+
+	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+
 	for(int32 a = -6; a < 6; ++a)
 	{
 		for(int32 b = -6; b < 6; ++b)
@@ -61,31 +94,27 @@ Hitable* CreateRandomScene()
 			{
 				if(choose_material < 0.8f)
 				{
-					list[i++] = new sphere(center, 0.2f,
-						new Lambertian(vec3(Random()*Random(), Random()*Random(), Random()*Random())));
+					list.push_back(new sphere(center, 0.2f,
+						new Lambertian(vec3(Random()*Random(), Random()*Random(), Random()*Random()))));
 				}
 				else if(choose_material < 0.95f)
 				{
-					list[i++] = new sphere(center, 0.2f,
-						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random()));
+					list.push_back(new sphere(center, 0.2f,
+						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random())));
 				}
 				else
 				{
-					list[i++] = new sphere(center, 0.2, new Dielectric(1.5f));
+					list.push_back(new sphere(center, 0.2f, new Dielectric(1.5f)));
 				}
 			}
 		}
 	}
-	list[i++] = new sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f));
-	list[i++] = new sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f)));
-	list[i++] = new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f));
+	list.push_back(new sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f)));
+	list.push_back(new sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f))));
+	list.push_back(new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f)));
 
-	return new HitableList(list, i);
+	return new HitableList(list);
 }
-
-#if ANTI_ALIASING
-RNG randoms(4096 * 8);
-#endif
 
 struct WorkCell
 {
@@ -94,13 +123,17 @@ struct WorkCell
 	int32 width;
 	int32 height;
 
-	HDRImage* image;
+	Image2D* image;
 	Camera* camera;
 	Hitable* world;
 };
 
 void GenerateCell(const WorkItemParam* param)
 {
+#if ANTI_ALIASING
+	static thread_local RNG randomsAA(4096 * 8);
+#endif
+
 	int32 threadID = param->threadID;
 	WorkCell* cell = reinterpret_cast<WorkCell*>(param->arg);
 
@@ -120,8 +153,8 @@ void GenerateCell(const WorkItemParam* param)
 			{
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
-				u += randoms.Peek() / imageWidth;
-				v += randoms.Peek() / imageHeight;
+				u += randomsAA.Peek() / imageWidth;
+				v += randomsAA.Peek() / imageHeight;
 				ray r = cell->camera->GetRay(u, v);
 				vec3 scene = Scene(r, cell->world);
 				accum += scene;
@@ -146,15 +179,50 @@ void GenerateCell(const WorkItemParam* param)
 	}
 }
 
-int main(int argc, char** argv)
+void InitializeSubsystems()
 {
 	StartLogThread();
+	ResourceFinder::Get().AddDirectory("./content/");
+	ImageLoader::Initialize();
+	OBJLoader::Initialize();
+}
+void DestroySubsystems()
+{
+	OBJLoader::Destroy();
+	ImageLoader::Destroy();
+	StopLogThread();
+}
+
+void LoadOBJ(const char* objFilepath)
+{
+	if (OBJLoader::SyncLoad(objFilepath))
+	{
+		//
+	}
+}
+
+int main(int argc, char** argv)
+{
+	InitializeSubsystems();
 
 	log("raytracing study");
 
+#if 0 // ImageLoader test
+	Image2D test;
+	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
+	{
+		WriteBitmap(test, "test.bmp");
+		return 0;
+	}
+#endif
+
+#if 0 // OBJLoader test
+	LoadOBJ("content/Toadette/Toadette.obj");
+#endif
+
 	const int32 width = 1024;
 	const int32 height = 512;
-	HDRImage image(width, height, 0x123456);
+	Image2D image(width, height, 0x123456);
 
 	log("generate a test image (width: %d, height: %d)", width, height);
 
@@ -170,22 +238,19 @@ int main(int argc, char** argv)
 	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
 	Hitable* world = new HitableList(list.data(), list.size());
 #else
-	Hitable* world = CreateRandomScene();
+	Hitable* world = CREATE_RANDOM_SCENE();
 #endif
 
-	vec3 camera_location(3.0f, 1.0f, 3.0f);
-	vec3 camera_lookAt(0.0f, 1.0f, -1.0f);
-	vec3 camera_up(0.0f, 1.0f, 0.0f);
-	float dist_to_focus = (camera_location - camera_lookAt).Length();
+	float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
 	float aperture = 0.01f;
 	Camera camera(
-		camera_location, camera_lookAt, camera_up,
+		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
 		45.0f, (float)width/(float)height,
 		aperture, dist_to_focus);
 
 	// Multi-threading
 	uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
-	log("number of cores: %u", numCores);
+	log("number of logical cores: %u", numCores);
 
 	ThreadPool tp;
 	tp.Initialize(numCores);
@@ -252,5 +317,8 @@ int main(int argc, char** argv)
 
 	log("image has been written as bitmap");
 
+	//////////////////////////////////////////////////////////////////////////
+	// Cleanup
+	DestroySubsystems();
 	return 0;
 }

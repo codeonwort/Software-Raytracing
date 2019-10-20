@@ -3,7 +3,7 @@ Study <Ray Tracing in a Weekend>
 
 # Environment
 * Language : C++
-* IDE      : Visual Studio
+* IDE      : Visual Studio 2019
 * Build    : cmake
 * OS       : Windows 10, WSL
 

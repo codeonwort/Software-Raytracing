@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+
 #include <random>
 #include <vector>
 #include <algorithm>
@@ -8,20 +9,20 @@
 
 // #todo: Let each thread use its own RNG.
 // Those seekGuard and peekGuard cause unnecessary overhead.
+#define RANDOM_LOCK_GUARD 0
 class RNG
 {
 
 public:
 	RNG(uint32 nSamples)
 	{
-		std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_real_distribution<> dist(0.0, 1.0);
 
 		samples.resize(nSamples);
 		for(uint32 i = 0; i < nSamples; ++i)
 		{
-			samples[i] = dist(gen);
+			samples[i] = (float)dist(gen);
 		}
 
 		Seek(0);
@@ -29,21 +30,29 @@ public:
 
 	inline void Seek(int32 ix)
 	{
+#if RANDOM_LOCK_GUARD
 		seekGuard.lock();
+#endif
 
 		index = ix;
 
+#if RANDOM_LOCK_GUARD
 		seekGuard.unlock();
+#endif
 	}
 
 	inline float Peek() const
 	{
+#if RANDOM_LOCK_GUARD
 		peekGuard.lock();
+#endif
 
 		float x = samples[index];
 		index = (index + 1) % samples.size();
 
+#if RANDOM_LOCK_GUARD
 		peekGuard.unlock();
+#endif
 
 		return x;
 	}
@@ -51,15 +60,20 @@ public:
 	std::vector<float> samples;
 
 private:
+	std::random_device rd;
+
 	mutable int32 index;
+
+#if RANDOM_LOCK_GUARD
 	std::mutex seekGuard;
 	mutable std::mutex peekGuard;
+#endif
 
 };
 
 vec3 RandomInUnitSphere()
 {
-	static RNG randoms(1024);
+	static thread_local RNG randoms(4096);
 
 #if 0 // original impl. of the tutorial
 	vec3 p;
@@ -82,18 +96,17 @@ vec3 RandomInUnitSphere()
 
 float Random()
 {
-	static RNG randoms(1024 * 8);
+	static thread_local RNG randoms(4096 * 8);
 
 	return randoms.Peek();
 }
 
 vec3 RandomInUnitDisk()
 {
-	static RNG randoms(1024 * 8);
+	static thread_local RNG randoms(4096 * 8);
 	float u1 = randoms.Peek();
 	float u2 = randoms.Peek();
 	float r = sqrt(u1);
-	float theta = 2.0f * M_PI * u2;
+	float theta = 2.0f * (float)M_PI * u2;
 	return vec3(r * cos(theta), r * sin(theta), 0.0f);
 }
-

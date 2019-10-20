@@ -30,6 +30,8 @@ static void* pooledThreadMain(void* _param)
 
 	log("Thread %d has finished", threadID);
 	param->done = true;
+
+	return 0;
 }
 
 ThreadPool::ThreadPool()
