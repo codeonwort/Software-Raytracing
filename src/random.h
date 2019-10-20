@@ -73,7 +73,7 @@ private:
 
 vec3 RandomInUnitSphere()
 {
-	static thread_local RNG randoms(1024);
+	static thread_local RNG randoms(4096);
 
 #if 0 // original impl. of the tutorial
 	vec3 p;
@@ -96,14 +96,14 @@ vec3 RandomInUnitSphere()
 
 float Random()
 {
-	static thread_local RNG randoms(1024 * 8);
+	static thread_local RNG randoms(4096 * 8);
 
 	return randoms.Peek();
 }
 
 vec3 RandomInUnitDisk()
 {
-	static thread_local RNG randoms(1024 * 8);
+	static thread_local RNG randoms(4096 * 8);
 	float u1 = randoms.Peek();
 	float u2 = randoms.Peek();
 	float r = sqrt(u1);

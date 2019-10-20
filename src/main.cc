@@ -8,6 +8,7 @@
 #include "util/resource_finder.h"
 #include "geom/ray.h"
 #include "geom/sphere.h"
+#include "geom/triangle.h"
 #include "loader/obj_loader.h"
 #include "loader/image_loader.h"
 
@@ -15,6 +16,11 @@
 #include <thread>
 #include <chrono>
 
+// Test scene settings
+#define CREATE_RANDOM_SCENE CreateRandomScene2
+#define CAMERA_LOCATION     vec3(3.0f, 1.0f, 3.0f)
+#define CAMERA_LOOKAT       vec3(0.0f, 1.0f, -1.0f)
+#define CAMERA_UP           vec3(0.0f, 1.0f, 0.0f)
 
 #define ANTI_ALIASING    1
 #define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
@@ -47,6 +53,29 @@ vec3 Scene(const ray& r, Hitable* world, int depth)
 vec3 Scene(const ray& r, Hitable* world)
 {
 	return Scene(r, world, 0);
+}
+
+Hitable* CreateRandomScene2()
+{
+	std::vector<Hitable*> list;
+
+	const int32 numFans = 8;
+	const float fanAngle = 1.0f / (float)(numFans + 1);
+	for (int32 i = 0; i <= numFans; ++i)
+	{
+		float fanBegin = pi<float>* fanAngle* i;
+		float fanEnd = pi<float> * fanAngle * (i + 1);
+		float fanRadius = 1.0f + 2.0f * (float)i / numFans;
+		float z = 0.0f;
+		vec3 v0(fanRadius * std::cos(fanBegin), fanRadius * std::sin(fanBegin), z);
+		vec3 v1(0.0f, 0.0f, 0.0f);
+		vec3 v2(fanRadius * std::cos(fanEnd), fanRadius * std::sin(fanEnd), z);
+		vec3 color = RandomInUnitSphere();
+		list.push_back(new Triangle(v0, v1, v2, new Lambertian(color)));
+	}
+	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+
+	return new HitableList(list);
 }
 
 Hitable* CreateRandomScene()
@@ -209,16 +238,13 @@ int main(int argc, char** argv)
 	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
 	Hitable* world = new HitableList(list.data(), list.size());
 #else
-	Hitable* world = CreateRandomScene();
+	Hitable* world = CREATE_RANDOM_SCENE();
 #endif
 
-	vec3 camera_location(3.0f, 1.0f, 3.0f);
-	vec3 camera_lookAt(0.0f, 1.0f, -1.0f);
-	vec3 camera_up(0.0f, 1.0f, 0.0f);
-	float dist_to_focus = (camera_location - camera_lookAt).Length();
+	float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
 	float aperture = 0.01f;
 	Camera camera(
-		camera_location, camera_lookAt, camera_up,
+		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
 		45.0f, (float)width/(float)height,
 		aperture, dist_to_focus);
 
