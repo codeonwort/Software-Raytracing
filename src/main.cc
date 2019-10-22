@@ -10,6 +10,7 @@
 #include "geom/ray.h"
 #include "geom/sphere.h"
 #include "geom/triangle.h"
+#include "geom/static_mesh.h"
 #include "loader/obj_loader.h"
 #include "loader/image_loader.h"
 
@@ -61,16 +62,24 @@ Hitable* CreateRandomScene2()
 {
 	std::vector<Hitable*> list;
 
+#if 1 // OBJLoader test
+	OBJModel model;
+	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
+	{
+		list.push_back(model.staticMesh);
+	}
+#endif
+
 	const int32 numFans = 8;
 	const float fanAngle = 1.0f / (float)(numFans + 1);
 	for (int32 i = 0; i <= numFans; ++i)
 	{
 		float fanBegin = pi<float>* fanAngle* i;
 		float fanEnd = pi<float> * fanAngle * (i + 1);
-		float fanRadius = 1.0f + 2.0f * (float)i / numFans;
-		float z = 0.0f;
+		float fanRadius = 2.0f + 1.0f * (float)i / numFans;
+		float z = -2.0f;
 		vec3 v0(fanRadius * std::cos(fanBegin), fanRadius * std::sin(fanBegin), z);
-		vec3 v1(0.0f, 0.0f, 0.0f);
+		vec3 v1(0.0f, 0.0f, z);
 		vec3 v2(fanRadius * std::cos(fanEnd), fanRadius * std::sin(fanEnd), z);
 		vec3 color = RandomInUnitSphere();
 		list.push_back(new Triangle(v0, v1, v2, new Lambertian(color)));
@@ -195,14 +204,6 @@ void DestroySubsystems()
 	StopLogThread();
 }
 
-void LoadOBJ(const char* objFilepath)
-{
-	if (OBJLoader::SyncLoad(objFilepath))
-	{
-		//
-	}
-}
-
 int main(int argc, char** argv)
 {
 	InitializeSubsystems();
@@ -216,10 +217,6 @@ int main(int argc, char** argv)
 		WriteBitmap(test, "test.bmp");
 		return 0;
 	}
-#endif
-
-#if 0 // OBJLoader test
-	LoadOBJ("content/Toadette/Toadette.obj");
 #endif
 
 	const int32 width = 1024;
