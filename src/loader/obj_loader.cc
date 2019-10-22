@@ -56,6 +56,8 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	log("\tmaterials: %d", (int32)materials.size());
 
 	StaticMesh* mesh = new StaticMesh;
+	vec3 minBound(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
+	vec3 maxBound(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
 
 	// #todo: Parse material info
 	Lambertian* temp_material = new Lambertian(vec3(1.0f, 0.2f, 0.2f));
@@ -81,6 +83,9 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			vec3 v1(attrib.vertices[i1 * 3], attrib.vertices[i1 * 3 + 1], attrib.vertices[i1 * 3 + 2]);
 			vec3 v2(attrib.vertices[i2 * 3], attrib.vertices[i2 * 3 + 1], attrib.vertices[i2 * 3 + 2]);
 
+			minBound = min(min(min(minBound, v0), v1), v2);
+			maxBound = max(max(max(maxBound, v0), v1), v2);
+
 			v0 *= 0.07f;
 			v1 *= 0.07f;
 			v2 *= 0.07f;
@@ -93,6 +98,8 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	}
 
 	outModel.staticMesh = mesh;
+	outModel.minBound = minBound;
+	outModel.maxBound = maxBound;
 
 	log("\t> loading done");
 
