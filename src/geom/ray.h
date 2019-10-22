@@ -1,6 +1,6 @@
 #pragma once
 
-#include "type.h"
+#include "src/type.h"
 
 class ray
 {
