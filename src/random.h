@@ -57,9 +57,8 @@ public:
 		return x;
 	}
 
-	std::vector<float> samples;
-
 private:
+	std::vector<float> samples;
 	std::random_device rd;
 
 	mutable int32 index;

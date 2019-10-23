@@ -83,12 +83,9 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			vec3 v1(attrib.vertices[i1 * 3], attrib.vertices[i1 * 3 + 1], attrib.vertices[i1 * 3 + 2]);
 			vec3 v2(attrib.vertices[i2 * 3], attrib.vertices[i2 * 3 + 1], attrib.vertices[i2 * 3 + 2]);
 
+			// #todo: Just min/max attrib.vertices. We're checking same vertices again and again here.
 			minBound = min(min(min(minBound, v0), v1), v2);
 			maxBound = max(max(max(maxBound, v0), v1), v2);
-
-			v0 *= 0.07f;
-			v1 *= 0.07f;
-			v2 *= 0.07f;
 
 			mesh->AddTriangle(Triangle(v0, v1, v2, temp_material));
 		}

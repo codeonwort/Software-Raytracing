@@ -4,6 +4,7 @@
 #include "camera.h"
 #include "random.h"
 #include "material.h"
+#include "transform.h"
 #include "thread_pool.h"
 #include "util/resource_finder.h"
 #include "geom/ray.h"
@@ -64,6 +65,9 @@ Hitable* CreateRandomScene2()
 	OBJModel model;
 	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
 	{
+		Transform transform;
+		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
+		model.staticMesh->ApplyTransform(transform);
 		list.push_back(model.staticMesh);
 	}
 #endif
