@@ -29,6 +29,7 @@ private:
 
 };
 
+// #todo: May need to separate into vec3.h
 class vec3
 {
 
