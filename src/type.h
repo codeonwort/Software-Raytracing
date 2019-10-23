@@ -4,6 +4,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <algorithm>
+
 using int8   = int8_t;
 using int16  = int16_t;
 using int32  = int32_t;
@@ -155,6 +157,21 @@ inline bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& outRef
 	return false;
 }
 
+inline vec3 min(const vec3& v1, const vec3& v2)
+{
+	float x = std::min(v1.x, v2.x);
+	float y = std::min(v1.y, v2.y);
+	float z = std::min(v1.z, v2.z);
+	return vec3(x, y, z);
+}
+inline vec3 max(const vec3& v1, const vec3& v2)
+{
+	float x = std::max(v1.x, v2.x);
+	float y = std::max(v1.y, v2.y);
+	float z = std::max(v1.z, v2.z);
+	return vec3(x, y, z);
+}
+
 inline vec3& vec3::operator+=(const vec3& v)
 {
 	x += v.x;
@@ -212,5 +229,3 @@ inline vec3& vec3::operator/=(const float t)
 	z *= k;
 	return *this;
 }
-
-
