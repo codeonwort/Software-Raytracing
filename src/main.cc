@@ -66,6 +66,9 @@ Hitable* CreateRandomScene2()
 	OBJModel model;
 	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
 	{
+		Transform transform;
+		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
+		model.staticMesh->ApplyTransform(transform);
 		list.push_back(model.staticMesh);
 	}
 #endif

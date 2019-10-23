@@ -59,9 +59,6 @@ private:
 	std::vector<float> samples;
 	std::random_device rd;
 
-private:
-	std::random_device rd;
-
 	mutable int32 index;
 
 #if RANDOM_LOCK_GUARD

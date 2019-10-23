@@ -40,3 +40,18 @@ bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult)
 
 	return false;
 }
+
+void Triangle::GetVertices(vec3& outV0, vec3& outV1, vec3& outV2) const
+{
+	outV0 = v0;
+	outV1 = v1;
+	outV2 = v2;
+}
+
+void Triangle::SetVertices(const vec3& inV0, const vec3& inV1, const vec3& inV2)
+{
+	v0 = inV0;
+	v1 = inV1;
+	v2 = inV2;
+	UpdateNormal();
+}
