@@ -4,7 +4,7 @@
 #include "src/type.h"
 #include "tiny_obj_loader.h"
 
-
+class Material;
 class StaticMesh;
 
 struct OBJModel
@@ -43,6 +43,9 @@ public:
 	 */
 
 private:
+	void ParseMaterials(const std::string& objpath, const std::vector<tinyobj::material_t>& inRawMaterials, std::vector<Material*>& outMaterials);
+
+	std::vector<Material*> materials;
 	tinyobj::ObjReader internalLoader;
 
 };
