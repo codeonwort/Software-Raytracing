@@ -33,6 +33,8 @@ bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult)
 		outResult.t = t;
 		outResult.p = p;
 		outResult.n = n;
+		outResult.paramU = s1;
+		outResult.paramV = t1;
 		outResult.material = material;
 
 		return true;

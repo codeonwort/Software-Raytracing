@@ -4,6 +4,10 @@
 #include "geom/ray.h"
 #include "geom/hit.h"
 
+// TextureMaterial
+#include "image.h"
+#include "texture.h"
+
 class Material
 {
 
@@ -36,6 +40,33 @@ public:
 	}
 
 	vec3 albedo;
+
+};
+
+class TextureMaterial : public Material
+{
+
+public:
+	TextureMaterial(const Image2D& inAlbedo)
+	{
+		albedo = Texture2D::CreateFromImage2D(inAlbedo);
+	}
+
+	virtual bool Scatter(
+		const ray& inRay, const HitResult& inResult,
+		vec3& outAttenuation, ray& outScattered) const override
+	{
+		Pixel sample = albedo->Sample(inResult.paramU, inResult.paramV);
+		// #todo: Pre-multiply alpha?
+
+		vec3 target = inResult.p + inResult.n + RandomInUnitSphere();
+		outScattered = ray(inResult.p, target - inResult.p);
+		outAttenuation = vec3(sample.r, sample.g, sample.b);
+		return true;
+	}
+
+private:
+	Texture2D* albedo;
 
 };
 
