@@ -31,5 +31,6 @@ bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResul
 			outResult = temp;
 		}
 	}
+
 	return anyHit;
 }

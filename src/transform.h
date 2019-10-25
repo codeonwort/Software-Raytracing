@@ -3,6 +3,7 @@
 #include "type.h"
 #include <vector>
 
+// #todo: Generate matrix internally
 // #todo: Support rotation (needs quaternion)
 // #todo: Utilize SIMD
 class Transform

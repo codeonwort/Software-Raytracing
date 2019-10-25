@@ -16,6 +16,11 @@ struct HitResult
 	float     t; // ray.at(t) = p
 	vec3      p; // position
 	vec3      n; // normal
+
+	// surface parameterization
+	float     paramU;
+	float     paramV;
+
 	Material* material;
 };
 

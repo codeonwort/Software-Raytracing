@@ -5,11 +5,7 @@
 #include <random>
 #include <vector>
 #include <algorithm>
-#include <mutex>
 
-// #todo: Let each thread use its own RNG.
-// Those seekGuard and peekGuard cause unnecessary overhead.
-#define RANDOM_LOCK_GUARD 0
 class RNG
 {
 
@@ -30,29 +26,15 @@ public:
 
 	inline void Seek(int32 ix)
 	{
-#if RANDOM_LOCK_GUARD
-		seekGuard.lock();
-#endif
-
 		index = ix;
-
-#if RANDOM_LOCK_GUARD
-		seekGuard.unlock();
-#endif
 	}
 
 	inline float Peek() const
 	{
-#if RANDOM_LOCK_GUARD
-		peekGuard.lock();
-#endif
-
 		float x = samples[index];
-		index = (index + 1) % samples.size();
 
-#if RANDOM_LOCK_GUARD
-		peekGuard.unlock();
-#endif
+		// #todo: Regenerate on starvation?
+		index = (index + 1) % samples.size();
 
 		return x;
 	}
@@ -62,11 +44,6 @@ private:
 	std::random_device rd;
 
 	mutable int32 index;
-
-#if RANDOM_LOCK_GUARD
-	std::mutex seekGuard;
-	mutable std::mutex peekGuard;
-#endif
 
 };
 
