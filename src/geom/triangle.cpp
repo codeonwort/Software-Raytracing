@@ -3,7 +3,7 @@
 // http://geomalgorithms.com/a06-_intersect-2.html
 bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 {
-	float s1, t1;
+	float paramU, paramV;
 
 	float t = dot((v0 - r.o), n) / dot(r.d, n);
 	vec3 p = r.o + t * r.d;
@@ -25,16 +25,16 @@ bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult)
 	float uvuv = uv * uv;
 	float uuvv = uu * vv;
 
-	s1 = (uv * wv - vv * wu) / (uvuv - uuvv);
-	t1 = (uv * wu - uu * wv) / (uvuv - uuvv);
+	paramU = (uv * wv - vv * wu) / (uvuv - uuvv);
+	paramV = (uv * wu - uu * wv) / (uvuv - uuvv);
 
-	if (0.0f <= s1 && 0.0f <= t1 && s1 + t1 <= 1.0f)
+	if (0.0f <= paramU && 0.0f <= paramV && paramU + paramV <= 1.0f)
 	{
 		outResult.t = t;
 		outResult.p = p;
 		outResult.n = n;
-		outResult.paramU = s1;
-		outResult.paramV = t1;
+		outResult.paramU = (1 - paramU - paramV) * s0 + paramU * s1 + paramV * s2;
+		outResult.paramV = (1 - paramU - paramV) * t0 + paramU * t1 + paramV * t2;
 		outResult.material = material;
 
 		return true;

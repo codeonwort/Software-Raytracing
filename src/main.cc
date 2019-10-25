@@ -29,11 +29,12 @@
 #define GAMMA_CORRECTION 1
 #define GAMMA_VALUE      2.2f
 #define MAX_RECURSION    5
+#define RAY_T_MIN        0.001f
 
 vec3 Scene(const ray& r, Hitable* world, int depth)
 {
 	HitResult result;
-	if(world->Hit(r, 0.001f, FLOAT_MAX, result))
+	if(world->Hit(r, RAY_T_MIN, FLOAT_MAX, result))
 	{
 		ray scattered;
 		vec3 attenuation;
@@ -69,6 +70,24 @@ Hitable* CreateRandomScene2()
 		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
 		model.staticMesh->ApplyTransform(transform);
 		list.push_back(model.staticMesh);
+	}
+#endif
+
+#if 0 // Texture mapping test
+	Image2D img;
+	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
+	{
+		TextureMaterial* tm = new TextureMaterial(img);
+ 		{
+ 			Triangle* T = new Triangle(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.0f), tm);
+ 			T->SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
+			list.push_back(T);
+ 		}
+ 		{
+ 			Triangle* T = new Triangle(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), tm);
+ 			T->SetParameterization(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
+			list.push_back(T);
+ 		}
 	}
 #endif
 
