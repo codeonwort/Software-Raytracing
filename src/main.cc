@@ -73,6 +73,24 @@ Hitable* CreateRandomScene2()
 	}
 #endif
 
+#if 0 // Texture mapping test
+	Image2D img;
+	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
+	{
+		TextureMaterial* tm = new TextureMaterial(img);
+ 		{
+ 			Triangle* T = new Triangle(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.0f), tm);
+ 			T->SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
+			list.push_back(T);
+ 		}
+ 		{
+ 			Triangle* T = new Triangle(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), tm);
+ 			T->SetParameterization(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
+			list.push_back(T);
+ 		}
+	}
+#endif
+
 	const int32 numFans = 8;
 	const float fanAngle = 1.0f / (float)(numFans + 1);
 	for (int32 i = 0; i <= numFans; ++i)
