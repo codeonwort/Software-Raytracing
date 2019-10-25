@@ -22,7 +22,6 @@ bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResul
 	bool anyHit = false;
 	float closest = t_max;
 	int32 n = (int32)triangles.size();
-	int32 ix;
 	for (int32 i = 0; i < n; ++i)
 	{
 		if (triangles[i].Hit(r, t_min, closest, temp))
@@ -30,7 +29,6 @@ bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResul
 			anyHit = true;
 			closest = temp.t;
 			outResult = temp;
-			ix = i;
 		}
 	}
 
