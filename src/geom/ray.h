@@ -19,4 +19,3 @@ public:
 	vec3 d; // direction
 
 };
-

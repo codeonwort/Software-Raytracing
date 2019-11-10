@@ -1,7 +1,8 @@
 #pragma once
 
 #include "hit.h"
-#include "src/material.h"
+
+class Material;
 
 class Triangle : public Hitable
 {

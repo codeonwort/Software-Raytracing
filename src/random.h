@@ -6,6 +6,8 @@
 #include <vector>
 #include <algorithm>
 
+#define RESET_RNG_ON_STARVATION 1
+
 class RNG
 {
 
@@ -29,12 +31,26 @@ public:
 		index = ix;
 	}
 
-	inline float Peek() const
+	inline float Peek()
 	{
 		float x = samples[index];
 
 		// #todo: Regenerate on starvation?
 		index = (index + 1) % samples.size();
+
+#if RESET_RNG_ON_STARVATION
+		if (index == 0)
+		{
+			std::mt19937 gen(rd());
+			std::uniform_real_distribution<> dist(0.0, 1.0);
+
+			uint32 nSamples = (uint32)samples.size();
+			for (uint32 i = 0; i < nSamples; ++i)
+			{
+				samples[i] = (float)dist(gen);
+			}
+		}
+#endif
 
 		return x;
 	}
