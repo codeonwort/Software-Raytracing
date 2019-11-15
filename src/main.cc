@@ -64,13 +64,14 @@ Hitable* CreateRandomScene2()
 {
 	std::vector<Hitable*> list;
 
-#if 0 // OBJLoader test
+#if 1 // OBJLoader test
 	OBJModel model;
 	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
 	{
 		Transform transform;
 		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
 		model.staticMesh->ApplyTransform(transform);
+		model.staticMesh->CalculateBounds();
 		list.push_back(model.staticMesh);
 	}
 #endif

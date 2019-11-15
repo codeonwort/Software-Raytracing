@@ -1,11 +1,12 @@
 #pragma once
 
 #include "hit.h"
-#include "material.h"
+#include "src/material.h"
 
 class Cube : public Hitable
 {
 
+public:
 	__forceinline static Cube FromMinMaxBounds(const vec3& inMinBounds, const vec3& inMaxBounds, Material* inMaterial)
 	{
 		return Cube(inMinBounds, inMaxBounds, inMaterial);
@@ -22,6 +23,8 @@ public:
 		, material(inMaterial)
 	{
 	}
+
+	Cube() : Cube(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), nullptr) {}
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 	{
