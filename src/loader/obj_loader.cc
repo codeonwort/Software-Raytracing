@@ -119,6 +119,8 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	outModel.minBound = minBound;
 	outModel.maxBound = maxBound;
 
+	outModel.staticMesh->SetBounds(Cube::FromMinMaxBounds(minBound, maxBound, nullptr));
+
 	log("\t> loading done");
 
 	return true;

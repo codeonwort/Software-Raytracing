@@ -8,6 +8,7 @@
 #include "thread_pool.h"
 #include "util/resource_finder.h"
 #include "geom/ray.h"
+#include "geom/cube.h"
 #include "geom/sphere.h"
 #include "geom/triangle.h"
 #include "geom/static_mesh.h"
@@ -17,6 +18,7 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+
 
 // Test scene settings
 #define CREATE_RANDOM_SCENE CreateRandomScene2
@@ -69,8 +71,16 @@ Hitable* CreateRandomScene2()
 		Transform transform;
 		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
 		model.staticMesh->ApplyTransform(transform);
+		model.staticMesh->CalculateBounds();
 		list.push_back(model.staticMesh);
 	}
+#endif
+
+#if 1 // Cube test
+	Material* cube_mat = new Lambertian(vec3(0.9f, 0.1f, 0.1f));
+	Material* cube_mat2 = new Lambertian(vec3(0.1f, 0.1f, 0.9f));
+	list.push_back(new Cube(vec3(-4.0f, 0.3f, 0.0f), vec3(-3.0f, 0.5f, 1.0f), cube_mat));
+	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), cube_mat2));
 #endif
 
 #if 0 // Texture mapping test

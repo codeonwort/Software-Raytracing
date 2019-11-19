@@ -3,7 +3,10 @@
 #include "../image.h"
 #include "../template/noncopyable.h"
 
+#pragma warning(push)
+#pragma warning(disable: 4819)
 #include "FreeImage.h"
+#pragma warning(pop)
 
 class ImageLoader : public Noncopyable
 {

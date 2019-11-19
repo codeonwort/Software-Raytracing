@@ -1,4 +1,5 @@
 #include "triangle.h"
+#include "src/material.h"
 
 // http://geomalgorithms.com/a06-_intersect-2.html
 bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
@@ -33,7 +34,6 @@ bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult)
 		outResult.t = t;
 		outResult.p = p;
 		outResult.n = n;
-
 		outResult.paramU = (1 - paramU - paramV) * s0 + paramU * s1 + paramV * s2;
 		outResult.paramV = (1 - paramU - paramV) * t0 + paramU * t1 + paramV * t2;
 		outResult.material = material;
