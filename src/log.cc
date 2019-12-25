@@ -37,6 +37,7 @@ void StopLogThread()
 	logThreadPendingKill = true;
 
 	// Print out all logs remaining in queue
+	// #todo-thread: It seems logQueue here is not thread-safe, colliding with LogMain()
 	int32 n = (int32)logQueue.size();
 	while (n --> 0)
 	{
