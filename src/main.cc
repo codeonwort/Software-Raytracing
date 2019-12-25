@@ -6,6 +6,7 @@
 #include "material.h"
 #include "transform.h"
 #include "thread_pool.h"
+#include "util/stat.h"
 #include "util/resource_finder.h"
 #include "geom/ray.h"
 #include "geom/cube.h"
@@ -26,6 +27,12 @@
 #define CAMERA_LOOKAT       vec3(0.0f, 1.0f, -1.0f)
 #define CAMERA_UP           vec3(0.0f, 1.0f, 0.0f)
 
+#define INCLUDE_TOADTTE         1
+#define INCLUDE_CUBE            1
+#define TEST_TEXTURE_MAPPING    0
+#define TEST_IMAGE_LOADER       0
+
+// Rendering configuration
 #define ANTI_ALIASING    1
 #define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
 #define GAMMA_CORRECTION 1
@@ -62,9 +69,11 @@ vec3 Scene(const ray& r, Hitable* world)
 
 Hitable* CreateRandomScene2()
 {
+	SCOPED_CPU_COUNTER(CreateRandomScene)
+
 	std::vector<Hitable*> list;
 
-#if 1 // OBJLoader test
+#if INCLUDE_TOADTTE
 	OBJModel model;
 	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
 	{
@@ -76,14 +85,14 @@ Hitable* CreateRandomScene2()
 	}
 #endif
 
-#if 1 // Cube test
+#if INCLUDE_CUBE
 	Material* cube_mat = new Lambertian(vec3(0.9f, 0.1f, 0.1f));
 	Material* cube_mat2 = new Lambertian(vec3(0.1f, 0.1f, 0.9f));
 	list.push_back(new Cube(vec3(-4.0f, 0.3f, 0.0f), vec3(-3.0f, 0.5f, 1.0f), cube_mat));
 	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), cube_mat2));
 #endif
 
-#if 0 // Texture mapping test
+#if TEST_TEXTURE_MAPPING
 	Image2D img;
 	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
 	{
@@ -223,6 +232,8 @@ void GenerateCell(const WorkItemParam* param)
 
 void InitializeSubsystems()
 {
+	SCOPED_CPU_COUNTER(InitializeSubsystems);
+
 	StartLogThread();
 	ResourceFinder::Get().AddDirectory("./content/");
 	ImageLoader::Initialize();
@@ -237,11 +248,13 @@ void DestroySubsystems()
 
 int main(int argc, char** argv)
 {
+	SCOPED_CPU_COUNTER(main);
+
 	InitializeSubsystems();
 
 	log("raytracing study");
 
-#if 0 // ImageLoader test
+#if TEST_IMAGE_LOADER
 	Image2D test;
 	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
 	{
@@ -314,33 +327,37 @@ int main(int argc, char** argv)
 
 	log("number of work items: %d", (int32)workCells.size());
 
-	constexpr bool blockingOperation = false;
-	tp.Start(blockingOperation);
-
-	// progress
-	int32 milestoneIx = 0;
-	std::vector<float> milestones(9);
-	for(int32 i = 1; i <= 9; ++i)
 	{
-		milestones[i - 1] = (float)i / 10.0f;
-	}
+		SCOPED_CPU_COUNTER(ThreadPoolWorkTime);
 
-	while(true)
-	{
-		if(tp.IsDone())
+		constexpr bool blockingOperation = false;
+		tp.Start(blockingOperation);
+
+		// progress
+		int32 milestoneIx = 0;
+		std::vector<float> milestones(9);
+		for(int32 i = 1; i <= 9; ++i)
 		{
-			break;
+			milestones[i - 1] = (float)i / 10.0f;
 		}
-		else
+
+		while (true)
 		{
-			float progress = tp.GetProgress();
-			if(milestoneIx < milestones.size() && progress >= milestones[milestoneIx])
+			if (tp.IsDone())
 			{
-				log("%d percent complete...", (int32)(progress * 100));
-				milestoneIx += 1;
+				break;
 			}
+			else
+			{
+				float progress = tp.GetProgress();
+				if (milestoneIx < milestones.size() && progress >= milestones[milestoneIx])
+				{
+					log("%d percent complete...", (int32)(progress * 100));
+					milestoneIx += 1;
+				}
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 	WriteBitmap(image, "test.bmp");
@@ -350,5 +367,6 @@ int main(int argc, char** argv)
 	//////////////////////////////////////////////////////////////////////////
 	// Cleanup
 	DestroySubsystems();
+
 	return 0;
 }

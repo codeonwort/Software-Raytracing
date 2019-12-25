@@ -17,6 +17,7 @@ static bool logThreadPendingKill = false;
 static std::mutex log_mutex;
 static std::list<std::string> logQueue;
 
+
 void StartLogThread()
 {
 	if (logThreadStarted)
@@ -34,10 +35,23 @@ void StopLogThread()
 {
 	CHECK(logThreadStarted);
 	logThreadPendingKill = true;
+
+	// Print out all logs remaining in queue
+	int32 n = (int32)logQueue.size();
+	while (n --> 0)
+	{
+		printf("%s\n", logQueue.front().data());
+		logQueue.pop_front();
+	}
 }
 
 void log(const char* format, ...)
 {
+	if(logThreadPendingKill)
+	{
+		return;
+	}
+
 	char buffer[1024];
 
 	log_mutex.lock();
