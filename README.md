@@ -11,4 +11,4 @@ Study <Ray Tracing in a Weekend>
 ![preview1](https://user-images.githubusercontent.com/11644393/51799554-8e8a9980-2265-11e9-98d4-9fde313faa11.jpg)
 ![preview2](https://user-images.githubusercontent.com/11644393/51799555-90545d00-2265-11e9-83b2-248f035ab4fa.jpg)
 ![preview3](https://user-images.githubusercontent.com/11644393/51801447-49746080-2281-11e9-9d56-2954ab4039c1.jpg)
-![preview4](https://user-images.githubusercontent.com/11644393/67572198-b6fde080-f770-11e9-88c5-98b944f1ecd4.jpg)
+![preview4](https://user-images.githubusercontent.com/11644393/71446509-75d17f00-2767-11ea-9fb1-dbf79bf59e9e.jpg)
