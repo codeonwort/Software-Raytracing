@@ -24,7 +24,7 @@ void StaticMesh::CalculateBounds()
 		maxBounds = max(max(max(maxBounds, v0), v1), v2);
 	}
 
-	bounds = Cube::FromMinMaxBounds(minBounds, maxBounds, nullptr);
+	bounds = Cube::FromMinMaxBounds(minBounds, maxBounds, 0.0f, vec3(0.0f, 0.0f, 0.0f), nullptr);
 	boundsValid = true;
 }
 

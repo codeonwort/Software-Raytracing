@@ -7,35 +7,41 @@ class Cube : public Hitable
 {
 
 public:
-	__forceinline static Cube FromMinMaxBounds(const vec3& inMinBounds, const vec3& inMaxBounds, Material* inMaterial)
+	__forceinline static Cube FromMinMaxBounds(const vec3& inMinBounds, const vec3& inMaxBounds, float inTimeStartMove, vec3 inVelocity, Material* inMaterial)
 	{
-		return Cube(inMinBounds, inMaxBounds, inMaterial);
+		return Cube(inMinBounds, inMaxBounds, inTimeStartMove, inVelocity, inMaterial);
 	}
-	__forceinline static Cube FromOriginAndExtent(const vec3& inOrigin, const vec3& inExtent, Material* inMaterial)
+	__forceinline static Cube FromOriginAndExtent(const vec3& inOrigin, const vec3& inExtent, float inTimeStartMove, vec3 inVelocity, Material* inMaterial)
 	{
-		return Cube(inOrigin - inExtent, inOrigin + inExtent, inMaterial);
+		return Cube(inOrigin - inExtent, inOrigin + inExtent, inTimeStartMove, inVelocity, inMaterial);
 	}
 
 public:
-	Cube(const vec3& inMinBounds, const vec3& inMaxBounds, Material* inMaterial)
+	Cube(const vec3& inMinBounds, const vec3& inMaxBounds, float inTimeStartMove, vec3 inVelocity, Material* inMaterial)
 		: minBounds(inMinBounds)
 		, maxBounds(inMaxBounds)
+		, timeStartMove(inTimeStartMove)
+		, velocity(inVelocity)
 		, material(inMaterial)
 	{
 	}
 
-	Cube() : Cube(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), nullptr) {}
+	Cube() : Cube(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, vec3(0.0f, 0.0f, 0.0f), nullptr) {}
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 	{
+		const vec3 movement = velocity * fmax(0.0f, r.t - timeStartMove);
+		vec3 minBoundsT = minBounds + movement;
+		vec3 maxBoundsT = maxBounds + movement;
+
 		// https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
 		float t[9];
-		t[1] = (minBounds.x - r.o.x) / r.d.x;
-		t[2] = (maxBounds.x - r.o.x) / r.d.x;
-		t[3] = (minBounds.y - r.o.y) / r.d.y;
-		t[4] = (maxBounds.y - r.o.y) / r.d.y;
-		t[5] = (minBounds.z - r.o.z) / r.d.z;
-		t[6] = (maxBounds.z - r.o.z) / r.d.z;
+		t[1] = (minBoundsT.x - r.o.x) / r.d.x;
+		t[2] = (maxBoundsT.x - r.o.x) / r.d.x;
+		t[3] = (minBoundsT.y - r.o.y) / r.d.y;
+		t[4] = (maxBoundsT.y - r.o.y) / r.d.y;
+		t[5] = (minBoundsT.z - r.o.z) / r.d.z;
+		t[6] = (maxBoundsT.z - r.o.z) / r.d.z;
 		t[7] = fmax(fmax(fmin(t[1], t[2]), fmin(t[3], t[4])), fmin(t[5], t[6]));
 		t[8] = fmin(fmin(fmax(t[1], t[2]), fmax(t[3], t[4])), fmax(t[5], t[6]));
 
@@ -120,6 +126,8 @@ public:
 
 	vec3 minBounds;
 	vec3 maxBounds;
+	float timeStartMove;
+	vec3 velocity;
 	Material* material;
 
 };

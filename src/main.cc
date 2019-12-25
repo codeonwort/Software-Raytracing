@@ -23,9 +23,11 @@
 
 // Test scene settings
 #define CREATE_RANDOM_SCENE CreateRandomScene2
-#define CAMERA_LOCATION     vec3(3.0f, 1.0f, 3.0f)
-#define CAMERA_LOOKAT       vec3(0.0f, 1.0f, -1.0f)
-#define CAMERA_UP           vec3(0.0f, 1.0f, 0.0f)
+#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
+#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
+#define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
+#define CAMERA_BEGIN_CAPTURE    0.0f
+#define CAMERA_END_CAPTURE      5.0f
 
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
@@ -88,8 +90,8 @@ Hitable* CreateRandomScene2()
 #if INCLUDE_CUBE
 	Material* cube_mat = new Lambertian(vec3(0.9f, 0.1f, 0.1f));
 	Material* cube_mat2 = new Lambertian(vec3(0.1f, 0.1f, 0.9f));
-	list.push_back(new Cube(vec3(-4.0f, 0.3f, 0.0f), vec3(-3.0f, 0.5f, 1.0f), cube_mat));
-	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), cube_mat2));
+	list.push_back(new Cube(vec3(-4.0f, 0.3f, 0.0f), vec3(-3.0f, 0.5f, 1.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat));
+	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat2));
 #endif
 
 #if TEST_TEXTURE_MAPPING
@@ -289,7 +291,8 @@ int main(int argc, char** argv)
 	Camera camera(
 		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
 		45.0f, (float)width/(float)height,
-		aperture, dist_to_focus);
+		aperture, dist_to_focus,
+		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 
 	// Multi-threading
 	uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());

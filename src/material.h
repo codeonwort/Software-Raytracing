@@ -34,7 +34,7 @@ public:
 		vec3& outAttenuation, ray& outScattered) const override
 	{
 		vec3 target = inResult.p + inResult.n + RandomInUnitSphere();
-		outScattered = ray(inResult.p, target - inResult.p);
+		outScattered = ray(inResult.p, target - inResult.p, inRay.t);
 		outAttenuation = albedo;
 		return true;
 	}
@@ -60,7 +60,7 @@ public:
 		// #todo: Pre-multiply alpha?
 
 		vec3 target = inResult.p + inResult.n + RandomInUnitSphere();
-		outScattered = ray(inResult.p, target - inResult.p);
+		outScattered = ray(inResult.p, target - inResult.p, inRay.t);
 		outAttenuation = vec3(sample.r, sample.g, sample.b);
 		return true;
 	}
@@ -88,7 +88,7 @@ public:
 		vec3 ud = inRay.d;
 		ud.Normalize();
 		vec3 reflected = reflect(ud, inResult.n);
-		outScattered = ray(inResult.p, reflected + fuzziness * RandomInUnitSphere());
+		outScattered = ray(inResult.p, reflected + fuzziness * RandomInUnitSphere(), inRay.t);
 		outAttenuation = albedo;
 		return (dot(outScattered.d, inResult.n) > 0.0f);
 	}
@@ -144,11 +144,11 @@ public:
 		}
 		if(Random() < reflect_prob)
 		{
-			outScattered = ray(inResult.p, reflected);
+			outScattered = ray(inResult.p, reflected, inRay.t);
 		}
 		else
 		{
-			outScattered = ray(inResult.p, refracted);
+			outScattered = ray(inResult.p, refracted, inRay.t);
 		}
 		return true;
 	}
