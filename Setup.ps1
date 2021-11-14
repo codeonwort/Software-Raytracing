@@ -17,8 +17,13 @@ $freeimage_path     = "$external_dir/FreeImage.zip"
 $tinyobjloader_url  = "https://github.com/syoyo/tinyobjloader/archive/v2.0.0-rc1.zip"
 $tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
 
-# TODO: Auto-detect
-$msbuild_path = "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/MSBuild/15.0/Bin/MSBuild.exe"
+
+#
+# Find MSBuild.exe
+# https://stackoverflow.com/questions/328017/path-to-msbuild
+$vswhere_path = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$msbuild_path = &$vswhere_path -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
+#$msbuild_path = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe"
 
 
 #
