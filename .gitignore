@@ -1,4 +1,6 @@
 # Project
+out/
+thirdparty/
 bin/
 external/
 .vs/

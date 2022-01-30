@@ -19,12 +19,15 @@ $tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
 
 
 #
-# Find MSBuild.exe
+# Find MSBuild.exe and devenv.exe
 # https://stackoverflow.com/questions/328017/path-to-msbuild
 $vswhere_path = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 $msbuild_path = &$vswhere_path -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
 #$msbuild_path = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe"
-
+Write-Host "msbuild.exe:", $msbuild_path -ForegroundColor Green
+$devenv_path = &$vswhere_path | Select-String -Pattern 'productPath' -SimpleMatch
+$devenv_path = $devenv_path.ToString().Substring(13)
+Write-Host "devenv.exe:", $devenv_path -ForegroundColor Green
 
 #
 # Utilities
@@ -62,7 +65,6 @@ if ($should_download) {
 	#$webclient.Close()
 }
 
-
 #
 # Build third party libraries
 #
@@ -78,7 +80,8 @@ if ($should_build) {
 	}
 	# 2. Build
 	Write-Host "Build FreeImage (x64 | release)"
-	& $msbuild_path ./external/FreeImage/FreeImage.2017.sln -t:FreeImage -p:Configuration=Release -p:Platform=x64
+	& $devenv_path ./external/FreeImage/FreeImage.2017.sln /Upgrade
+	& $msbuild_path ./external/FreeImage/FreeImage.2017.sln -t:FreeImage -p:Configuration=Release -p:Platform=x64 -p:WindowsTargetPlatformVersion=10.0
 	# 3. Copy
 	$freeimage_source_dir = "./thirdparty/FreeImage/source"
 	$freeimage_binary_dir = "./thirdparty/FreeImage/binaries"
@@ -106,3 +109,5 @@ if ($should_build) {
 	Copy-Item "./external/tinyobjloader-2.0.0-rc1/tiny_obj_loader.h" -Destination $tinyobjloader_source_dir
 	Copy-Item "./external/tinyobjloader-2.0.0-rc1/tiny_obj_loader.cc" -Destination $tinyobjloader_source_dir
 }
+
+Write-Host "> Done" -ForegroundColor Green
