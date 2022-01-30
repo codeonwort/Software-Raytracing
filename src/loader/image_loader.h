@@ -25,7 +25,7 @@ public:
 	bool LoadSynchronous(const char* filepath, Image2D& outImage);
 
 	/*
-	 * #todo: async load
+	 * #todo-imageloader: async load
 	 * ThreadHandle LoadAsync(std::vector<const char*> filepathArray);
 	 * AsyncLoadProgress GetProgress();
 	 */

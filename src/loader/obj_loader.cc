@@ -32,7 +32,7 @@ OBJLoader::OBJLoader()
 
 OBJLoader::~OBJLoader()
 {
-	// #todo: cancel async load
+	// #todo-obj: cancel async load
 }
 
 bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
@@ -56,7 +56,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	log("\tvertices: %d", (int32)(attrib.vertices.size() / 3));
 	log("\tmaterials: %d", (int32)raw_materials.size());
 
-	// #todo: Parse material info
+	// #todo-obj: Parse material info
 	Lambertian* fallbackMaterial = new Lambertian(vec3(1.0f, 0.2f, 0.2f));
 	ParseMaterials(filepath, raw_materials, materials);
 
@@ -74,7 +74,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			int32 fv = shape.mesh.num_face_vertices[f];
 			if (fv != 3)
 			{
-				// #todo: deal with non-triangle
+				// #todo-obj: deal with non-triangle
 				log("%s: (%s) %d-th face is non-triangle", __FUNCTION__, shape.name.data(), f);
 				continue;
 			}
@@ -85,7 +85,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			vec3 v1(attrib.vertices[i1 * 3], attrib.vertices[i1 * 3 + 1], attrib.vertices[i1 * 3 + 2]);
 			vec3 v2(attrib.vertices[i2 * 3], attrib.vertices[i2 * 3 + 1], attrib.vertices[i2 * 3 + 2]);
 
-			// #todo: Just min/max attrib.vertices. We're checking same vertices again and again here.
+			// #todo-obj: Just min/max attrib.vertices. We're checking same vertices again and again here.
 			minBound = min(min(min(minBound, v0), v1), v2);
 			maxBound = max(max(max(maxBound, v0), v1), v2);
 
@@ -111,8 +111,8 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			p += 3;
 		}
 
-		// #todo: lines
-		// #todo: points
+		// #todo-obj: lines
+		// #todo-obj: points
 	}
 
 	outModel.staticMesh = mesh;
@@ -138,13 +138,13 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 	}
 	else
 	{
-		// #todo: error handling
+		// #todo-obj: error handling
 		CHECK(false);
 	}
 
 	for (int32 i = 0; i < n; ++i)
 	{
-		// #todo: Parse every data in the material
+		// #todo-obj: Parse every data in the material
 		std::string albedoName = inRawMaterials[i].diffuse_texname;
 		if (albedoName.size() == 0)
 		{
@@ -160,7 +160,7 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		}
 		else
 		{
-			// #todo: error handling
+			// #todo-obj: error handling
 			CHECK(false);
 		}
 	}

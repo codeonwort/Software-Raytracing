@@ -4,7 +4,7 @@
 #include "triangle.h"
 #include "src/transform.h"
 
-// #todo-staticmesh: acceleration structure (maybe a simple octree will work fine)
+// #todo-staticmesh: acceleration structure (A simple octree will work fine)
 class StaticMesh : public Hitable
 {
 
@@ -29,7 +29,7 @@ public:
 private:
 	std::vector<Triangle> triangles;
 
-	// #todo: Implement BVH
+	// #todo-staticmesh: Implement BVH
 	// conservative bounds
 	Cube bounds;
 	bool boundsValid;

@@ -24,7 +24,7 @@ Pixel Texture2D::Sample(float u, float v)
 	{
 		return Pixel(0.0f, 0.0f, 0.0f, 0.0f);
 	}
-	// #todo: Filtering and wrapping
+	// #todo-texture: Filtering and wrapping
 	const Image2D& image = mipmaps[0];
 	int32 x = (int32)(image.GetWidth() * u);
 	int32 y = (int32)(image.GetHeight() * v);

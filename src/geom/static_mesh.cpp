@@ -44,7 +44,7 @@ bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResul
 {
 	if (!boundsValid)
 	{
-		// #todo: Warning for performance?
+		// #todo-staticmesh: Warning for performance?
 	}
 	else
 	{

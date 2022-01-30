@@ -37,7 +37,7 @@ public:
 	bool LoadSynchronous(const char* filepath, OBJModel& outModel);
 
 	/*
-	 * #todo: async load
+	 * #todo-obj: async load
 	 * ThreadHandle LoadAsync(std::vector<const char*> filepathArray);
 	 * AsyncLoadProgress GetProgress();
 	 */

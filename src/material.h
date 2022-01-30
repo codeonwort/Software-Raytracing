@@ -57,7 +57,7 @@ public:
 		vec3& outAttenuation, ray& outScattered) const override
 	{
 		Pixel sample = albedo->Sample(inResult.paramU, inResult.paramV);
-		// #todo: Pre-multiply alpha?
+		// #todo-texture: Pre-multiply alpha?
 
 		vec3 target = inResult.p + inResult.n + RandomInUnitSphere();
 		outScattered = ray(inResult.p, target - inResult.p, inRay.t);

@@ -30,7 +30,7 @@ ImageLoader::ImageLoader()
 
 ImageLoader::~ImageLoader()
 {
-	// #todo: cancel async load
+	// #todo-imageloader: cancel async load
 }
 
 bool ImageLoader::LoadSynchronous(const char* filepath, Image2D& outImage)
