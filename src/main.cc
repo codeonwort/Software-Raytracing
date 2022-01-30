@@ -22,12 +22,13 @@
 
 
 // Test scene settings
-#define CREATE_RANDOM_SCENE CreateRandomScene2
+#define CREATE_RANDOM_SCENE     CreateRandomScene2
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 #define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
 #define CAMERA_BEGIN_CAPTURE    0.0f
 #define CAMERA_END_CAPTURE      5.0f
+#define FOV_Y                   45.0f
 
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
@@ -290,7 +291,7 @@ int main(int argc, char** argv)
 	float aperture = 0.01f;
 	Camera camera(
 		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
-		45.0f, (float)width/(float)height,
+		FOV_Y, (float)width/(float)height,
 		aperture, dist_to_focus,
 		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 
