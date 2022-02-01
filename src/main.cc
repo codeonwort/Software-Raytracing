@@ -22,7 +22,7 @@
 
 
 // Test scene settings
-#define CREATE_RANDOM_SCENE     CreateRandomScene2
+#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 #define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
@@ -34,6 +34,7 @@
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    0
 #define TEST_IMAGE_LOADER       0
+#define RESULT_FILENAME         "test.bmp"
 
 // Rendering configuration
 #define ANTI_ALIASING    1
@@ -70,7 +71,7 @@ vec3 TraceScene(const ray& r, Hitable* world)
 	return TraceScene(r, world, 0);
 }
 
-Hitable* CreateRandomScene2()
+Hitable* CreateScene_ObjModel()
 {
 	SCOPED_CPU_COUNTER(CreateRandomScene)
 
@@ -132,7 +133,7 @@ Hitable* CreateRandomScene2()
 	return new HitableList(list);
 }
 
-Hitable* CreateRandomScene()
+Hitable* CreateScene_RandomSpheres()
 {
 	std::vector<Hitable*> list;
 
@@ -168,6 +169,20 @@ Hitable* CreateRandomScene()
 	list.push_back(new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f)));
 
 	return new HitableList(list);
+}
+
+Hitable* CreateScene_FourSpheres()
+{
+	//float R = cos(pi<float> / 4.0f);
+	std::vector<Hitable*> list;
+	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, new Lambertian(vec3(0.8f, 0.8f, 0.0f))));
+	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, new Lambertian(vec3(0.8f, 0.3f, 0.3f))));
+	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, new Metal(vec3(0.8f, 0.6f, 0.2f), 1.0f)));
+	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Metal(vec3(0.8f, 0.8f, 0.8f), 0.3f)));
+	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   0.5f,  new Dielectric(1.5f)                    ));
+	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
+	Hitable* world = new HitableList(list);
+	return world;
 }
 
 struct WorkCell
@@ -261,7 +276,7 @@ int main(int argc, char** argv)
 	Image2D test;
 	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
 	{
-		WriteBitmap(test, "test.bmp");
+		WriteBitmap(test, RESULT_FILENAME);
 		return 0;
 	}
 #endif
@@ -273,19 +288,7 @@ int main(int argc, char** argv)
 	log("generate a test image (width: %d, height: %d)", width, height);
 
 	// Generate an image
-#if 0
-	float R = cos(pi<float> / 4.0f);
-	std::vector<Hitable*> list;
-	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f),    0.5f,   new Lambertian(vec3(0.8f, 0.3f, 0.3f))  ));
-	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, new Lambertian(vec3(0.8f, 0.8f, 0.0f))  ));
-	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f),    0.5f,   new Metal(vec3(0.8f, 0.6f, 0.2f), 1.0f) ));
-	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   0.5f,   new Metal(vec3(0.8f, 0.8f, 0.8f), 0.3f) ));
-	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.5f,  new Dielectric(1.5f)                    ));
-	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
-	Hitable* world = new HitableList(list.data(), list.size());
-#else
 	Hitable* world = CREATE_RANDOM_SCENE();
-#endif
 
 	float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
 	float aperture = 0.01f;
@@ -364,7 +367,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	WriteBitmap(image, "test.bmp");
+	WriteBitmap(image, RESULT_FILENAME);
 
 	log("image has been written as bitmap");
 
