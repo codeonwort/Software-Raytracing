@@ -43,7 +43,7 @@
 #define MAX_RECURSION    5
 #define RAY_T_MIN        0.001f
 
-vec3 Scene(const ray& r, Hitable* world, int depth)
+vec3 TraceScene(const ray& r, Hitable* world, int depth)
 {
 	HitResult result;
 	if(world->Hit(r, RAY_T_MIN, FLOAT_MAX, result))
@@ -52,7 +52,7 @@ vec3 Scene(const ray& r, Hitable* world, int depth)
 		vec3 attenuation;
 		if(depth < MAX_RECURSION && result.material->Scatter(r, result, attenuation, scattered))
 		{
-			return attenuation * Scene(scattered, world, depth + 1);
+			return attenuation * TraceScene(scattered, world, depth + 1);
 		}
 		else
 		{
@@ -65,9 +65,9 @@ vec3 Scene(const ray& r, Hitable* world, int depth)
 	float t = 0.5f * (dir.y + 1.0f);
 	return (1.0f-t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
-vec3 Scene(const ray& r, Hitable* world)
+vec3 TraceScene(const ray& r, Hitable* world)
 {
-	return Scene(r, world, 0);
+	return TraceScene(r, world, 0);
 }
 
 Hitable* CreateRandomScene2()
@@ -210,7 +210,7 @@ void GenerateCell(const WorkItemParam* param)
 				u += randomsAA.Peek() / imageWidth;
 				v += randomsAA.Peek() / imageHeight;
 				ray r = cell->camera->GetRay(u, v);
-				vec3 scene = Scene(r, cell->world);
+				vec3 scene = TraceScene(r, cell->world);
 				accum += scene;
 			}
 			accum /= (float)NUM_SAMPLES;
@@ -218,7 +218,7 @@ void GenerateCell(const WorkItemParam* param)
 			float u = (float)x / imageWidth;
 			float v = (float)y / imageHeight;
 			ray r = cell->camera->GetRay(u, v);
-			accum = Scene(r, cell->world);
+			accum = TraceScene(r, cell->world);
 #endif
 
 #if GAMMA_CORRECTION
