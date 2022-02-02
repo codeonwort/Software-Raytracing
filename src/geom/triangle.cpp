@@ -44,6 +44,12 @@ bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult)
 	return false;
 }
 
+bool Triangle::BoundingBox(float t0, float t1, AABB& outBox) const
+{
+	outBox = bounds;
+	return true;
+}
+
 void Triangle::GetVertices(vec3& outV0, vec3& outV1, vec3& outV2) const
 {
 	outV0 = v0;

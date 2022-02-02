@@ -70,6 +70,15 @@ public:
 		return false;
 	}
 
+	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override
+	{
+		const vec3 movement0 = velocity * fmax(0.0f, t0 - timeStartMove);
+		const vec3 movement1 = velocity * fmax(0.0f, t1 - timeStartMove);
+		outBox = AABB(minBounds + movement0, maxBounds + movement0)
+			   + AABB(minBounds + movement1, maxBounds + movement1);
+		return true;
+	}
+
 	/*
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 	{

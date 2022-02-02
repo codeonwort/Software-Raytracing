@@ -1,5 +1,7 @@
 #pragma once
 
+#include "util/assertion.h"
+
 #include <stdint.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -53,6 +55,8 @@ public:
 	inline vec3& operator-=(const float t);
 	inline vec3& operator*=(const float t);
 	inline vec3& operator/=(const float t);
+
+	inline float operator[](int32 ix) const;
 
 	inline float Length() const { return sqrtf(x*x + y*y + z*z); }
 	inline float LengthSquared() const { return (x*x + y*y + z*z); }
@@ -233,4 +237,14 @@ inline vec3& vec3::operator/=(const float t)
 	y *= k;
 	z *= k;
 	return *this;
+}
+
+inline float vec3::operator[](int32 ix) const
+{
+	if (ix == 0) return x;
+	else if (ix == 1) return y;
+	else if (ix == 2) return z;
+
+	CHECK_NO_ENTRY();
+	return NAN;
 }

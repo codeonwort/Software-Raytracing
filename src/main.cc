@@ -9,6 +9,7 @@
 #include "util/stat.h"
 #include "util/resource_finder.h"
 #include "geom/ray.h"
+#include "geom/bvh.h"
 #include "geom/cube.h"
 #include "geom/sphere.h"
 #include "geom/triangle.h"
@@ -22,7 +23,7 @@
 
 
 // Test scene settings
-#define CREATE_RANDOM_SCENE     CreateRandomScene2
+#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 #define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
@@ -30,10 +31,13 @@
 #define CAMERA_END_CAPTURE      5.0f
 #define FOV_Y                   45.0f
 
+// Debug configuration (features under development)
+#define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    0
 #define TEST_IMAGE_LOADER       0
+#define RESULT_FILENAME         "test.bmp"
 
 // Rendering configuration
 #define ANTI_ALIASING    1
@@ -43,7 +47,7 @@
 #define MAX_RECURSION    5
 #define RAY_T_MIN        0.001f
 
-vec3 Scene(const ray& r, Hitable* world, int depth)
+vec3 TraceScene(const ray& r, Hitable* world, int depth)
 {
 	HitResult result;
 	if(world->Hit(r, RAY_T_MIN, FLOAT_MAX, result))
@@ -52,7 +56,7 @@ vec3 Scene(const ray& r, Hitable* world, int depth)
 		vec3 attenuation;
 		if(depth < MAX_RECURSION && result.material->Scatter(r, result, attenuation, scattered))
 		{
-			return attenuation * Scene(scattered, world, depth + 1);
+			return attenuation * TraceScene(scattered, world, depth + 1);
 		}
 		else
 		{
@@ -65,12 +69,12 @@ vec3 Scene(const ray& r, Hitable* world, int depth)
 	float t = 0.5f * (dir.y + 1.0f);
 	return (1.0f-t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
-vec3 Scene(const ray& r, Hitable* world)
+vec3 TraceScene(const ray& r, Hitable* world)
 {
-	return Scene(r, world, 0);
+	return TraceScene(r, world, 0);
 }
 
-Hitable* CreateRandomScene2()
+Hitable* CreateScene_ObjModel()
 {
 	SCOPED_CPU_COUNTER(CreateRandomScene)
 
@@ -132,7 +136,7 @@ Hitable* CreateRandomScene2()
 	return new HitableList(list);
 }
 
-Hitable* CreateRandomScene()
+Hitable* CreateScene_RandomSpheres()
 {
 	std::vector<Hitable*> list;
 
@@ -168,6 +172,20 @@ Hitable* CreateRandomScene()
 	list.push_back(new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f)));
 
 	return new HitableList(list);
+}
+
+Hitable* CreateScene_FourSpheres()
+{
+	//float R = cos(pi<float> / 4.0f);
+	std::vector<Hitable*> list;
+	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, new Lambertian(vec3(0.8f, 0.8f, 0.0f))));
+	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, new Lambertian(vec3(0.8f, 0.3f, 0.3f))));
+	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, new Metal(vec3(0.8f, 0.6f, 0.2f), 1.0f)));
+	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Metal(vec3(0.8f, 0.8f, 0.8f), 0.3f)));
+	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   0.5f,  new Dielectric(1.5f)                    ));
+	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
+	Hitable* world = new HitableList(list);
+	return world;
 }
 
 struct WorkCell
@@ -210,7 +228,7 @@ void GenerateCell(const WorkItemParam* param)
 				u += randomsAA.Peek() / imageWidth;
 				v += randomsAA.Peek() / imageHeight;
 				ray r = cell->camera->GetRay(u, v);
-				vec3 scene = Scene(r, cell->world);
+				vec3 scene = TraceScene(r, cell->world);
 				accum += scene;
 			}
 			accum /= (float)NUM_SAMPLES;
@@ -218,7 +236,7 @@ void GenerateCell(const WorkItemParam* param)
 			float u = (float)x / imageWidth;
 			float v = (float)y / imageHeight;
 			ray r = cell->camera->GetRay(u, v);
-			accum = Scene(r, cell->world);
+			accum = TraceScene(r, cell->world);
 #endif
 
 #if GAMMA_CORRECTION
@@ -261,7 +279,7 @@ int main(int argc, char** argv)
 	Image2D test;
 	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
 	{
-		WriteBitmap(test, "test.bmp");
+		WriteBitmap(test, RESULT_FILENAME);
 		return 0;
 	}
 #endif
@@ -273,18 +291,9 @@ int main(int argc, char** argv)
 	log("generate a test image (width: %d, height: %d)", width, height);
 
 	// Generate an image
-#if 0
-	float R = cos(pi<float> / 4.0f);
-	std::vector<Hitable*> list;
-	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f),    0.5f,   new Lambertian(vec3(0.8f, 0.3f, 0.3f))  ));
-	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, new Lambertian(vec3(0.8f, 0.8f, 0.0f))  ));
-	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f),    0.5f,   new Metal(vec3(0.8f, 0.6f, 0.2f), 1.0f) ));
-	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   0.5f,   new Metal(vec3(0.8f, 0.8f, 0.8f), 0.3f) ));
-	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.5f,  new Dielectric(1.5f)                    ));
-	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
-	Hitable* world = new HitableList(list.data(), list.size());
-#else
 	Hitable* world = CREATE_RANDOM_SCENE();
+#if BVH_FOR_SCENE
+	world = new BVHNode(static_cast<HitableList*>(world), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 #endif
 
 	float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
@@ -364,7 +373,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	WriteBitmap(image, "test.bmp");
+	WriteBitmap(image, RESULT_FILENAME);
 
 	log("image has been written as bitmap");
 
