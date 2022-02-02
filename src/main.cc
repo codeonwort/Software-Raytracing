@@ -31,6 +31,8 @@
 #define CAMERA_END_CAPTURE      5.0f
 #define FOV_Y                   45.0f
 
+// Debug configuration (features under development)
+#define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    0
@@ -290,7 +292,9 @@ int main(int argc, char** argv)
 
 	// Generate an image
 	Hitable* world = CREATE_RANDOM_SCENE();
-	//world = new BVHNode(static_cast<HitableList*>(world), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+#if BVH_FOR_SCENE
+	world = new BVHNode(static_cast<HitableList*>(world), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+#endif
 
 	float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
 	float aperture = 0.01f;

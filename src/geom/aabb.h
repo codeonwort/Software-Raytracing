@@ -46,7 +46,9 @@ public:
 			if (invD < 0.0f) std::swap(t0, t1);
 			tMin = t0 > tMin ? t0 : tMin;
 			tMax = t1 < tMax ? t1 : tMax;
-			if (tMax <= tMin) return false;
+			// #todo: 2D AABB can't pass this test (tMax == tMin)
+			//if (tMax <= tMin) return false;
+			if (tMax < tMin) return false;
 		}
 		return true;
 #endif

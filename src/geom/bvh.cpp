@@ -56,6 +56,7 @@ BVHNode::BVHNode(Hitable** list, int32 n, float t0, float t1)
 
 	if (n == 1)
 	{
+		// NOTE: Keep redundant references, skip right at Hit()
 		left = right = list[0];
 	}
 	else if (n == 2)
@@ -84,7 +85,8 @@ bool BVHNode::Hit(const ray& r, float tMin, float tMax, HitResult& outResult) co
 	{
 		HitResult leftResult, rightResult;
 		bool leftHit = left->Hit(r, tMin, tMax, leftResult);
-		bool rightHit = right->Hit(r, tMin, tMax, rightResult);
+		// NOTE: Skip right if same node
+		bool rightHit = (left == right) ? false : right->Hit(r, tMin, tMax, rightResult);
 		if (leftHit && rightHit)
 		{
 			outResult = (leftResult.t < rightResult.t) ? leftResult : rightResult;
