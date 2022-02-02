@@ -9,15 +9,12 @@ class StaticMesh : public Hitable
 {
 
 public:
-	StaticMesh()
-		: boundsValid(false)
-	{
-	}
+	StaticMesh() {}
 
 	void AddTriangle(const Triangle& triangle);
 
 	// Call this if you already know the bounds, otherwise CalculateBounds().
-	void SetBounds(const Cube& inBounds);
+	void SetBounds(const AABB& inBounds);
 
 	// Call this if you don't know the bounds, otherwise SetBounds().
 	void CalculateBounds();
@@ -26,12 +23,14 @@ public:
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const override;
 
+	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override;
+
 private:
 	std::vector<Triangle> triangles;
 
 	// #todo-staticmesh: Implement BVH
 	// conservative bounds
-	Cube bounds;
-	bool boundsValid;
+	AABB bounds;
+	bool boundsValid = false;
 
 };

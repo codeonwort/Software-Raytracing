@@ -5,7 +5,7 @@ void StaticMesh::AddTriangle(const Triangle& triangle)
 	triangles.push_back(triangle);
 }
 
-void StaticMesh::SetBounds(const Cube& inBounds)
+void StaticMesh::SetBounds(const AABB& inBounds)
 {
 	bounds = inBounds;
 	boundsValid = true;
@@ -24,7 +24,7 @@ void StaticMesh::CalculateBounds()
 		maxBounds = max(max(max(maxBounds, v0), v1), v2);
 	}
 
-	bounds = Cube::FromMinMaxBounds(minBounds, maxBounds, 0.0f, vec3(0.0f, 0.0f, 0.0f), nullptr);
+	bounds = AABB(minBounds, maxBounds);
 	boundsValid = true;
 }
 
@@ -48,9 +48,7 @@ bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResul
 	}
 	else
 	{
-		HitResult dummy;
-		// 0.0f instead of t_min, due to a strange problem (objects near the bounds not being lit properly)
-		if (bounds.Hit(r, 0.0f, t_max, dummy) == false)
+		if (!bounds.Hit(r, t_min, t_max))
 		{
 			return false;
 		}
@@ -73,4 +71,10 @@ bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResul
 	}
 
 	return anyHit;
+}
+
+bool StaticMesh::BoundingBox(float t0, float t1, AABB& outBox) const
+{
+	outBox = bounds;
+	return boundsValid;
 }

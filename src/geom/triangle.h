@@ -16,9 +16,12 @@ public:
 		, material(inMaterial)
 	{
 		UpdateNormal();
+		bounds = AABB(min(min(v0, v1), v2), max(max(v0, v1), v2));
 	}
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
+
+	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override;
 
 	inline void SetParameterization(float inS0, float inT0, float inS1, float inT1, float inS2, float inT2)
 	{
@@ -47,6 +50,7 @@ private:
 	vec3 v1;
 	vec3 v2;
 	vec3 n;
+	AABB bounds;
 
 	// Surface parameterization
 	// Oops. v for vertex :(

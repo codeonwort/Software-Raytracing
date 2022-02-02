@@ -16,6 +16,8 @@ public:
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& result) const;
 
+	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override;
+
 	vec3 center;
 	float radius;
 	Material* material;
@@ -54,3 +56,9 @@ bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& result) cons
 	return false;
 }
 
+bool sphere::BoundingBox(float t0, float t1, AABB& outBox) const
+{
+	vec3 R = vec3(radius, radius, radius);
+	outBox = AABB(center - R, center + R);
+	return true;
+}
