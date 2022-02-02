@@ -9,6 +9,7 @@
 #include "util/stat.h"
 #include "util/resource_finder.h"
 #include "geom/ray.h"
+#include "geom/bvh.h"
 #include "geom/cube.h"
 #include "geom/sphere.h"
 #include "geom/triangle.h"
@@ -289,6 +290,7 @@ int main(int argc, char** argv)
 
 	// Generate an image
 	Hitable* world = CREATE_RANDOM_SCENE();
+	//world = new BVHNode(static_cast<HitableList*>(world), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 
 	float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
 	float aperture = 0.01f;

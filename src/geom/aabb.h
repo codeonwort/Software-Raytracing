@@ -11,9 +11,9 @@ public:
 		, maxBounds(inMax)
 	{}
 
-	// Copied from Cube::Hit()
 	bool Hit(const ray& r, float tMin, float tMax) const
 	{
+#if 0	// Copied from Cube::Hit()
 		// https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
 		float t[9];
 		t[1] = (minBounds.x - r.o.x) / r.d.x;
@@ -36,6 +36,20 @@ public:
 		}
 
 		return false;
+#else
+		// Ray Tracing in The Next Week
+		for (int32 a = 0; a < 3; ++a)
+		{
+			float invD = 1.0f / r.d[a];
+			float t0 = (minBounds[a] - r.o[a]) * invD;
+			float t1 = (maxBounds[a] - r.o[a]) * invD;
+			if (invD < 0.0f) std::swap(t0, t1);
+			tMin = t0 > tMin ? t0 : tMin;
+			tMax = t1 < tMax ? t1 : tMax;
+			if (tMax <= tMin) return false;
+		}
+		return true;
+#endif
 	}
 
 	vec3 minBounds;

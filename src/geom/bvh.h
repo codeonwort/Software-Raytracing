@@ -4,7 +4,7 @@ class BVHNode : public Hitable
 {
 	
 public:
-	BVHNode(const std::vector<Hitable*>& list, float t0, float t1);
+	BVHNode(HitableList* list, float t0, float t1);
 
 	virtual bool Hit(const ray& r, float tMin, float tMax, HitResult& outResult) const override;
 
@@ -13,5 +13,8 @@ public:
 	Hitable* left = nullptr;
 	Hitable* right = nullptr;
 	AABB box;
+
+private:
+	BVHNode(Hitable** list, int32 n, float t0, float t1);
 
 };
