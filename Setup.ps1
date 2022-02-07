@@ -11,13 +11,15 @@ $should_build = !($PSBoundParameters.ContainsKey('skipbuild'))
 # Constants
 #
 $external_dir       = "$pwd/external"
+$content_dir        = "$pwd/content"
 
 $freeimage_url      = "http://downloads.sourceforge.net/freeimage/FreeImage3180.zip"
 $freeimage_path     = "$external_dir/FreeImage.zip"
 $tinyobjloader_url  = "https://github.com/syoyo/tinyobjloader/archive/v2.0.0-rc1.zip"
 $tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
 $content_url        = "https://casual-effects.com/g3d/data10/research/model/bedroom/bedroom.zip"
-$content_path       = "$external_dir/content/bedroom.zip"
+$content_zip_path   = "$external_dir/content/bedroom.zip"
+$content_unzip_path = "$content_dir/bedroom/"
 
 #
 # Find MSBuild.exe and devenv.exe
@@ -65,7 +67,7 @@ if ($should_download) {
 	Ensure-Subdirectory "$external_dir/content"
 	$webclient = New-Object System.Net.WebClient
 	Write-Host "Download contents..." -ForegroundColor Green
-	Download-URL $webclient $content_url $content_path
+	Download-URL $webclient $content_url $content_zip_path
 	Write-Host "Download libraries..." -ForegroundColor Green
 	Download-URL $webclient $freeimage_url $freeimage_path
 	Download-URL $webclient $tinyobjloader_url $tinyobjloader_path
@@ -77,6 +79,16 @@ if ($should_download) {
 # Build third party libraries
 #
 if ($should_build) {
+	### Content
+	if (Test-Path "$content_dir/bedroom") {
+		Write-Host "Content 'bedroom' already unzipped and will be skipped."
+	} else {
+		Ensure-Subdirectory "$content_dir/bedroom"
+		Write-Host "Unzip content 'bedroom'"
+		Expand-Archive -Path $content_zip_path -DestinationPath $content_unzip_path
+		Write-Host "Unzip done"
+	}
+	
 	### FreeImage
 	# 1. Unzip
 	if (Test-Path "$external_dir/FreeImage") {
@@ -88,6 +100,7 @@ if ($should_build) {
 	}
 	# 2. Build
 	Write-Host "Build FreeImage (x64 | release)"
+	# TODO: Rebuild is always triggered after introducing devenv upgrade
 	& $devenv_path ./external/FreeImage/FreeImage.2017.sln /Upgrade
 	& $msbuild_path ./external/FreeImage/FreeImage.2017.sln -t:FreeImage -p:Configuration=Release -p:Platform=x64 -p:WindowsTargetPlatformVersion=10.0
 	# 3. Copy
