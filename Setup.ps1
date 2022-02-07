@@ -16,7 +16,8 @@ $freeimage_url      = "http://downloads.sourceforge.net/freeimage/FreeImage3180.
 $freeimage_path     = "$external_dir/FreeImage.zip"
 $tinyobjloader_url  = "https://github.com/syoyo/tinyobjloader/archive/v2.0.0-rc1.zip"
 $tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
-
+$content_url        = "https://casual-effects.com/g3d/data10/research/model/bedroom/bedroom.zip"
+$content_path       = "$external_dir/content/bedroom.zip"
 
 #
 # Find MSBuild.exe and devenv.exe
@@ -25,7 +26,7 @@ $vswhere_path = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswh
 $msbuild_path = &$vswhere_path -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
 #$msbuild_path = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe"
 Write-Host "msbuild.exe:", $msbuild_path -ForegroundColor Green
-$devenv_path = &$vswhere_path | Select-String -Pattern 'productPath' -SimpleMatch
+$devenv_path = &$vswhere_path -latest | Select-String -Pattern 'productPath' -SimpleMatch
 $devenv_path = $devenv_path.ToString().Substring(13)
 Write-Host "devenv.exe:", $devenv_path -ForegroundColor Green
 
@@ -51,14 +52,21 @@ function Clear-Directory {
 	}
 	New-Item -ItemType Directory -Force -Path $dir
 }
-
+function Ensure-Subdirectory {
+	Param ($dir)
+	New-Item -ItemType Directory -Path $dir -Force
+}
 
 #
-# Download third party libraries
+# - Download 3D models
+# - Download third party libraries
 #
 if ($should_download) {
-	Write-Host "Download libraries..." -ForegroundColor Green
+	Ensure-Subdirectory "$external_dir/content"
 	$webclient = New-Object System.Net.WebClient
+	Write-Host "Download contents..." -ForegroundColor Green
+	Download-URL $webclient $content_url $content_path
+	Write-Host "Download libraries..." -ForegroundColor Green
 	Download-URL $webclient $freeimage_url $freeimage_path
 	Download-URL $webclient $tinyobjloader_url $tinyobjloader_path
 	# TODO: How to close connection
