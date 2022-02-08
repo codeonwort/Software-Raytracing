@@ -31,18 +31,14 @@ void StartLogThread()
 	logThread.detach();
 }
 
-void StopLogThread()
+void WaitForLogThread()
 {
 	CHECK(logThreadStarted);
 	logThreadPendingKill = true;
 
-	// Print out all logs remaining in queue
-	// #todo-thread: It seems logQueue here is not thread-safe, colliding with LogMain()
-	int32 n = (int32)logQueue.size();
-	while (n --> 0)
+	while (logQueue.size() > 0)
 	{
-		printf("%s\n", logQueue.front().data());
-		logQueue.pop_front();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 
@@ -79,5 +75,13 @@ void LogMain()
 			logQueue.pop_front();
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+
+	// Cleanup
+	int32 n = (int32)logQueue.size();
+	while (n --> 0)
+	{
+		printf("%s\n", logQueue.front().data());
+		logQueue.pop_front();
 	}
 }

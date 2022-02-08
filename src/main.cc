@@ -34,6 +34,9 @@
 // Debug configuration (features under development)
 #define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
+// TODO: Too slow. Needs acceleration structure.
+// TODO: ResourceFinder can't find content/ in the project directory (.exe is generated in out/build/{Configuration}/src)
+#define INCLUDE_BEDROOM         0
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    0
 #define TEST_IMAGE_LOADER       0
@@ -89,6 +92,18 @@ Hitable* CreateScene_ObjModel()
 		model.staticMesh->ApplyTransform(transform);
 		model.staticMesh->CalculateBounds();
 		list.push_back(model.staticMesh);
+	}
+#endif
+
+#if INCLUDE_BEDROOM
+	OBJModel bedroomModel;
+	if (OBJLoader::SyncLoad("content/bedroom/iscv2.obj", bedroomModel))
+	{
+		Transform transform;
+		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(10.0f, 10.0f, 10.0f));
+		bedroomModel.staticMesh->ApplyTransform(transform);
+		bedroomModel.staticMesh->CalculateBounds();
+		list.push_back(bedroomModel.staticMesh);
 	}
 #endif
 
@@ -264,7 +279,7 @@ void DestroySubsystems()
 {
 	OBJLoader::Destroy();
 	ImageLoader::Destroy();
-	StopLogThread();
+	WaitForLogThread();
 }
 
 int main(int argc, char** argv)
