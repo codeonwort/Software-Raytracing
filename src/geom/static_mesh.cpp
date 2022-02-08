@@ -1,59 +1,96 @@
 #include "static_mesh.h"
+#include "bvh.h"
+
+// #todo-staticmesh: Still too slow for bedroom
+#define USE_BVH 1
 
 void StaticMesh::AddTriangle(const Triangle& triangle)
 {
-	triangles.push_back(triangle);
+	CHECK(!locked);
+	if (!locked)
+	{
+		triangles.push_back(triangle);
+	}
 }
 
 void StaticMesh::SetBounds(const AABB& inBounds)
 {
-	bounds = inBounds;
-	boundsValid = true;
+	CHECK(!locked);
+	if (!locked)
+	{
+		bounds = inBounds;
+		boundsValid = true;
+	}
 }
 
 void StaticMesh::CalculateBounds()
 {
-	vec3 minBounds(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
-	vec3 maxBounds(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
-
-	for (const Triangle& T : triangles)
+	CHECK(!locked);
+	if (!locked)
 	{
-		vec3 v0, v1, v2;
-		T.GetVertices(v0, v1, v2);
-		minBounds = min(min(min(minBounds, v0), v1), v2);
-		maxBounds = max(max(max(maxBounds, v0), v1), v2);
-	}
+		vec3 minBounds(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
+		vec3 maxBounds(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
 
-	bounds = AABB(minBounds, maxBounds);
-	boundsValid = true;
+		for (const Triangle& T : triangles)
+		{
+			vec3 v0, v1, v2;
+			T.GetVertices(v0, v1, v2);
+			minBounds = min(min(min(minBounds, v0), v1), v2);
+			maxBounds = max(max(max(maxBounds, v0), v1), v2);
+		}
+
+		bounds = AABB(minBounds, maxBounds);
+		boundsValid = true;
+	}
 }
 
 void StaticMesh::ApplyTransform(const Transform& transform)
 {
-	for (Triangle& T : triangles)
+	CHECK(!locked);
+	if (!locked)
 	{
-		std::vector<vec3> vs(3, vec3(0.0f,0.0f,0.0f));
-		T.GetVertices(vs[0], vs[1], vs[2]);
-		transform.TransformVectors(vs);
-		T.SetVertices(vs[0], vs[1], vs[2]);
+		for (Triangle& T : triangles)
+		{
+			std::vector<vec3> vs(3, vec3(0.0f, 0.0f, 0.0f));
+			T.GetVertices(vs[0], vs[1], vs[2]);
+			transform.TransformVectors(vs);
+			T.SetVertices(vs[0], vs[1], vs[2]);
+		}
+		boundsValid = false;
 	}
-	boundsValid = false;
+}
+
+void StaticMesh::Finalize()
+{
+	if (!locked)
+	{
+		CalculateBounds();
+
+		std::vector<Hitable*> triVec(triangles.size());
+		for (auto i = 0; i < triangles.size(); ++i)
+		{
+			triVec[i] = &triangles[i];
+		}
+		bvh = new BVHNode(new HitableList(triVec), 0.0f, 0.0f);
+
+		locked = true;
+	}
 }
 
 bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 {
 	if (!boundsValid)
 	{
-		// #todo-staticmesh: Warning for performance?
+		CHECK_NO_ENTRY();
 	}
-	else
+	else if (!bounds.Hit(r, t_min, t_max))
 	{
-		if (!bounds.Hit(r, t_min, t_max))
-		{
-			return false;
-		}
+		return false;
 	}
 
+#if USE_BVH
+	return bvh->Hit(r, t_min, t_max, outResult);
+#else
 	HitResult temp;
 	bool anyHit = false;
 	float closest = t_max;
@@ -71,6 +108,7 @@ bool StaticMesh::Hit(const ray& r, float t_min, float t_max, HitResult& outResul
 	}
 
 	return anyHit;
+#endif
 }
 
 bool StaticMesh::BoundingBox(float t0, float t1, AABB& outBox) const

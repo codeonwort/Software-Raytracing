@@ -24,6 +24,8 @@
 
 // Test scene settings
 #define CREATE_RANDOM_SCENE     CreateScene_ObjModel
+// TODO: BVH for static mesh is still too slow for bedroom
+//#define CREATE_RANDOM_SCENE     CreateScene_Bedroom
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 #define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
@@ -34,9 +36,6 @@
 // Debug configuration (features under development)
 #define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
-// TODO: Too slow. Needs acceleration structure.
-// TODO: ResourceFinder can't find content/ in the project directory (.exe is generated in out/build/{Configuration}/src)
-#define INCLUDE_BEDROOM         0
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    0
 #define TEST_IMAGE_LOADER       0
@@ -77,6 +76,26 @@ vec3 TraceScene(const ray& r, Hitable* world)
 	return TraceScene(r, world, 0);
 }
 
+// TODO: ResourceFinder can't find content/ in the project directory (.exe is generated in out/build/{Configuration}/src)
+Hitable* CreateScene_Bedroom()
+{
+	SCOPED_CPU_COUNTER(CreateScene_Bedroom);
+
+	std::vector<Hitable*> list;
+
+	OBJModel bedroomModel;
+	if (OBJLoader::SyncLoad("content/bedroom/iscv2.obj", bedroomModel))
+	{
+		Transform transform;
+		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.1f, 0.1f, 0.1f));
+		bedroomModel.staticMesh->ApplyTransform(transform);
+		bedroomModel.staticMesh->Finalize();
+		list.push_back(bedroomModel.staticMesh);
+	}
+
+	return new HitableList(list);
+}
+
 Hitable* CreateScene_ObjModel()
 {
 	SCOPED_CPU_COUNTER(CreateRandomScene)
@@ -90,20 +109,8 @@ Hitable* CreateScene_ObjModel()
 		Transform transform;
 		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
 		model.staticMesh->ApplyTransform(transform);
-		model.staticMesh->CalculateBounds();
+		model.staticMesh->Finalize();
 		list.push_back(model.staticMesh);
-	}
-#endif
-
-#if INCLUDE_BEDROOM
-	OBJModel bedroomModel;
-	if (OBJLoader::SyncLoad("content/bedroom/iscv2.obj", bedroomModel))
-	{
-		Transform transform;
-		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(10.0f, 10.0f, 10.0f));
-		bedroomModel.staticMesh->ApplyTransform(transform);
-		bedroomModel.staticMesh->CalculateBounds();
-		list.push_back(bedroomModel.staticMesh);
 	}
 #endif
 

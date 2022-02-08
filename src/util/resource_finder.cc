@@ -48,6 +48,11 @@ void ResourceFinder::AddDirectory(const std::string& directory)
 
 std::string ResourceFinder::Find(const std::string& subpath)
 {
+	if (subpath.size() == 0)
+	{
+		return "";
+	}
+
 	for (const auto& dir : directories)
 	{
 		auto fullpath = dir + subpath;

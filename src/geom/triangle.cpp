@@ -63,4 +63,5 @@ void Triangle::SetVertices(const vec3& inV0, const vec3& inV1, const vec3& inV2)
 	v1 = inV1;
 	v2 = inV2;
 	UpdateNormal();
+	bounds = AABB(min(min(v0, v1), v2), max(max(v0, v1), v2));
 }

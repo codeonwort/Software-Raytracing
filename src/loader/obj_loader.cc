@@ -160,8 +160,8 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		}
 		else
 		{
-			// #todo-obj: error handling
-			CHECK(false);
+			// #todo-obj: Fallback material
+			outMaterials[i] = new Lambertian(vec3(0.5f, 0.5f, 0.5f));
 		}
 	}
 }

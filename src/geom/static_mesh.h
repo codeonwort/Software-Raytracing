@@ -4,7 +4,8 @@
 #include "triangle.h"
 #include "src/transform.h"
 
-// #todo-staticmesh: acceleration structure (A simple octree will work fine)
+class BVHNode;
+
 class StaticMesh : public Hitable
 {
 
@@ -21,6 +22,9 @@ public:
 
 	void ApplyTransform(const Transform& transform);
 
+	// Lock modification and build acceleration structure
+	void Finalize();
+
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const override;
 
 	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override;
@@ -28,9 +32,12 @@ public:
 private:
 	std::vector<Triangle> triangles;
 
-	// #todo-staticmesh: Implement BVH
 	// conservative bounds
 	AABB bounds;
 	bool boundsValid = false;
+
+	BVHNode* bvh = nullptr;
+
+	bool locked = false;
 
 };
