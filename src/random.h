@@ -35,7 +35,6 @@ public:
 	{
 		float x = samples[index];
 
-		// #todo: Regenerate on starvation?
 		index = (index + 1) % samples.size();
 
 #if RESET_RNG_ON_STARVATION
