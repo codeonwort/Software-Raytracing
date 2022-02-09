@@ -29,9 +29,12 @@
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 #define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
+#define CAMERA_APERTURE         0.01f
 #define CAMERA_BEGIN_CAPTURE    0.0f
 #define CAMERA_END_CAPTURE      5.0f
 #define FOV_Y                   45.0f
+#define VIEWPORT_WIDTH          1024
+#define VIEWPORT_HEIGHT         512
 
 // Debug configuration (features under development)
 #define BVH_FOR_SCENE           1
@@ -52,11 +55,11 @@
 vec3 TraceScene(const ray& r, Hitable* world, int depth)
 {
 	HitResult result;
-	if(world->Hit(r, RAY_T_MIN, FLOAT_MAX, result))
+	if (world->Hit(r, RAY_T_MIN, FLOAT_MAX, result))
 	{
 		ray scattered;
 		vec3 attenuation;
-		if(depth < MAX_RECURSION && result.material->Scatter(r, result, attenuation, scattered))
+		if (depth < MAX_RECURSION && result.material->Scatter(r, result, attenuation, scattered))
 		{
 			return attenuation * TraceScene(scattered, world, depth + 1);
 		}
@@ -66,10 +69,13 @@ vec3 TraceScene(const ray& r, Hitable* world, int depth)
 		}
 	}
 
+	// #todo: Implement sun as directional light source
+	// #todo: Support envmap texture
+	// Fake sky radiance (also acts as the only light source)
 	vec3 dir = r.d;
 	dir.Normalize();
 	float t = 0.5f * (dir.y + 1.0f);
-	return (1.0f-t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
+	return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 }
 vec3 TraceScene(const ray& r, Hitable* world)
 {
@@ -87,7 +93,7 @@ Hitable* CreateScene_Bedroom()
 	if (OBJLoader::SyncLoad("content/bedroom/iscv2.obj", bedroomModel))
 	{
 		Transform transform;
-		transform.Init(vec3(0.0f, 0.0f, 0.0f), Rotator(), vec3(0.1f, 0.1f, 0.1f));
+		transform.Init(vec3(0.0f, 0.0f, 0.0f), Rotator(-90.0f, 0.0f, 0.0f), vec3(0.1f, 0.1f, 0.1f));
 		bedroomModel.staticMesh->ApplyTransform(transform);
 		bedroomModel.staticMesh->Finalize();
 		list.push_back(bedroomModel.staticMesh);
@@ -248,8 +254,11 @@ void GenerateCell(const WorkItemParam* param)
 			{
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
-				u += randomsAA.Peek() / imageWidth;
-				v += randomsAA.Peek() / imageHeight;
+				if (s != 0)
+				{
+					u += (randomsAA.Peek() - 0.5f) * 2.0f / imageWidth;
+					v += (randomsAA.Peek() - 0.5f) * 2.0f / imageHeight;
+				}
 				ray r = cell->camera->GetRay(u, v);
 				vec3 scene = TraceScene(r, cell->world);
 				accum += scene;
@@ -307,8 +316,8 @@ int main(int argc, char** argv)
 	}
 #endif
 
-	const int32 width = 1024;
-	const int32 height = 512;
+	const int32 width = VIEWPORT_WIDTH;
+	const int32 height = VIEWPORT_HEIGHT;
 	Image2D image(width, height, 0x123456);
 
 	log("generate a test image (width: %d, height: %d)", width, height);
@@ -319,12 +328,11 @@ int main(int argc, char** argv)
 	world = new BVHNode(static_cast<HitableList*>(world), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 #endif
 
-	float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
-	float aperture = 0.01f;
+	const float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
 	Camera camera(
 		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
 		FOV_Y, (float)width/(float)height,
-		aperture, dist_to_focus,
+		CAMERA_APERTURE, dist_to_focus,
 		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 
 	// Multi-threading
