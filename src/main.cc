@@ -37,7 +37,7 @@
 #define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
-#define TEST_TEXTURE_MAPPING    0
+#define TEST_TEXTURE_MAPPING    1
 #define TEST_IMAGE_LOADER       0
 #define RESULT_FILENAME         "test.bmp"
 
@@ -87,7 +87,7 @@ Hitable* CreateScene_Bedroom()
 	if (OBJLoader::SyncLoad("content/bedroom/iscv2.obj", bedroomModel))
 	{
 		Transform transform;
-		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.1f, 0.1f, 0.1f));
+		transform.Init(vec3(0.0f, 0.0f, 0.0f), Rotator(), vec3(0.1f, 0.1f, 0.1f));
 		bedroomModel.staticMesh->ApplyTransform(transform);
 		bedroomModel.staticMesh->Finalize();
 		list.push_back(bedroomModel.staticMesh);
@@ -107,7 +107,7 @@ Hitable* CreateScene_ObjModel()
 	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
 	{
 		Transform transform;
-		transform.Init(vec3(0.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
+		transform.Init(vec3(0.0f, 0.0f, 0.0f), Rotator(-10.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
 		model.staticMesh->ApplyTransform(transform);
 		model.staticMesh->Finalize();
 		list.push_back(model.staticMesh);
@@ -126,13 +126,14 @@ Hitable* CreateScene_ObjModel()
 	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
 	{
 		TextureMaterial* tm = new TextureMaterial(img);
+		const vec3 origin(1.0f, 0.0f, 0.0f);
  		{
- 			Triangle* T = new Triangle(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.0f), tm);
+ 			Triangle* T = new Triangle(origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f), tm);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
 			list.push_back(T);
  		}
  		{
- 			Triangle* T = new Triangle(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), tm);
+ 			Triangle* T = new Triangle(origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f), origin + vec3(0.0f, 1.0f, 0.0f), tm);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
 			list.push_back(T);
  		}
