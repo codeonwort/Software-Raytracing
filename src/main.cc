@@ -37,6 +37,7 @@
 #define VIEWPORT_HEIGHT         512
 
 // Debug configuration (features under development)
+#define FAKE_SKY_LIGHT          0
 #define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
@@ -46,7 +47,7 @@
 
 // Rendering configuration
 #define ANTI_ALIASING    1
-#define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
+#define NUM_SAMPLES      200 // Valid only if ANTI_ALISING == 1
 #define GAMMA_CORRECTION 1
 #define GAMMA_VALUE      2.2f
 #define MAX_RECURSION    5
@@ -59,23 +60,26 @@ vec3 TraceScene(const ray& r, Hitable* world, int depth)
 	{
 		ray scattered;
 		vec3 attenuation;
+		vec3 emitted = result.material->Emitted(result.paramU, result.paramV, result.p);
 		if (depth < MAX_RECURSION && result.material->Scatter(r, result, attenuation, scattered))
 		{
-			return attenuation * TraceScene(scattered, world, depth + 1);
+			return emitted + attenuation * TraceScene(scattered, world, depth + 1);
 		}
 		else
 		{
-			return vec3(0.0f, 0.0f, 0.0f);
+			return emitted;
 		}
 	}
 
-	// #todo: Implement sun as directional light source
-	// #todo: Support envmap texture
-	// Fake sky radiance (also acts as the only light source)
+	// #todo: Support sky cubemap
+#if FAKE_SKY_LIGHT
 	vec3 dir = r.d;
 	dir.Normalize();
 	float t = 0.5f * (dir.y + 1.0f);
 	return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
+#else
+	return vec3(0.0f, 0.0f, 0.0f);
+#endif
 }
 vec3 TraceScene(const ray& r, Hitable* world)
 {
@@ -107,6 +111,12 @@ Hitable* CreateScene_ObjModel()
 	SCOPED_CPU_COUNTER(CreateRandomScene)
 
 	std::vector<Hitable*> list;
+
+	// Light source
+	Material* pointLight0 = new DiffuseLight(vec3(1.0f, 0.0f, 0.0f));
+	Material* pointLight1 = new DiffuseLight(vec3(0.0f, 1.0f, 1.0f));
+	list.push_back(new sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
+	list.push_back(new sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
 
 #if INCLUDE_TOADTTE
 	OBJModel model;

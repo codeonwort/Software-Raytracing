@@ -18,6 +18,38 @@ public:
 		const ray& inRay, const HitResult& inResult,
 		vec3& outAttenuation, ray& outScattered) const = 0;
 
+	// u,v : surface parameterization
+	// inPosition : hit point
+	virtual vec3 Emitted(float u, float v, const vec3& inPosition) const
+	{
+		return vec3(0.0f, 0.0f, 0.0f);
+	}
+
+};
+
+class DiffuseLight : public Material
+{
+
+public:
+	DiffuseLight(const vec3& inIntensity)
+		: intensity(inIntensity)
+	{
+	}
+
+	virtual bool Scatter(
+		const ray& inRay, const HitResult& inResult,
+		vec3& outAttenuation, ray& outScattered) const
+	{
+		return false;
+	}
+
+	virtual vec3 Emitted(float u, float v, const vec3& inPosition) const
+	{
+		return intensity;
+	}
+
+	vec3 intensity;
+
 };
 
 class Lambertian : public Material
