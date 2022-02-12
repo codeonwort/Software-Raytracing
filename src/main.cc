@@ -37,7 +37,7 @@
 #define VIEWPORT_HEIGHT         512
 
 // Debug configuration (features under development)
-#define FAKE_SKY_LIGHT          0
+#define FAKE_SKY_LIGHT          1
 #define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
@@ -47,9 +47,7 @@
 
 // Rendering configuration
 #define ANTI_ALIASING    1
-#define NUM_SAMPLES      200 // Valid only if ANTI_ALISING == 1
-#define GAMMA_CORRECTION 1
-#define GAMMA_VALUE      2.2f
+#define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
 #define MAX_RECURSION    5
 #define RAY_T_MIN        0.001f
 
@@ -73,6 +71,7 @@ vec3 TraceScene(const ray& r, Hitable* world, int depth)
 
 	// #todo: Support sky cubemap
 #if FAKE_SKY_LIGHT
+	//return 5.0f * vec3(0.8f, 0.6f, 1.0f);
 	vec3 dir = r.d;
 	dir.Normalize();
 	float t = 0.5f * (dir.y + 1.0f);
@@ -108,15 +107,15 @@ Hitable* CreateScene_Bedroom()
 
 Hitable* CreateScene_ObjModel()
 {
-	SCOPED_CPU_COUNTER(CreateRandomScene)
+	SCOPED_CPU_COUNTER(CreateRandomScene);
 
 	std::vector<Hitable*> list;
 
 	// Light source
 	Material* pointLight0 = new DiffuseLight(vec3(1.0f, 0.0f, 0.0f));
 	Material* pointLight1 = new DiffuseLight(vec3(0.0f, 1.0f, 1.0f));
-	list.push_back(new sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
-	list.push_back(new sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
+	//list.push_back(new sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
+	//list.push_back(new sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
 
 #if INCLUDE_TOADTTE
 	OBJModel model;
@@ -280,13 +279,6 @@ void GenerateCell(const WorkItemParam* param)
 			ray r = cell->camera->GetRay(u, v);
 			accum = TraceScene(r, cell->world);
 #endif
-
-#if GAMMA_CORRECTION
-			accum.x = pow(accum.x, 1.0f / GAMMA_VALUE);
-			accum.y = pow(accum.y, 1.0f / GAMMA_VALUE);
-			accum.z = pow(accum.z, 1.0f / GAMMA_VALUE);
-#endif
-
 			Pixel px(accum.x, accum.y, accum.z);
 			cell->image->SetPixel(x, y, px);
 		}
@@ -413,6 +405,8 @@ int main(int argc, char** argv)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
+
+	image.PostProcess();
 
 	WriteBitmap(image, RESULT_FILENAME);
 
