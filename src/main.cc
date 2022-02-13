@@ -46,10 +46,9 @@
 #define RESULT_FILENAME         "test.bmp"
 
 // Rendering configuration
-#define ANTI_ALIASING    1
-#define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
-#define MAX_RECURSION    5
-#define RAY_T_MIN        0.001f
+#define SAMPLES_PER_PIXEL       50
+#define MAX_RECURSION           5
+#define RAY_T_MIN               0.001f
 
 vec3 TraceScene(const ray& r, Hitable* world, int depth)
 {
@@ -71,11 +70,10 @@ vec3 TraceScene(const ray& r, Hitable* world, int depth)
 
 	// #todo: Support sky cubemap
 #if FAKE_SKY_LIGHT
-	//return 5.0f * vec3(0.8f, 0.6f, 1.0f);
 	vec3 dir = r.d;
 	dir.Normalize();
 	float t = 0.5f * (dir.y + 1.0f);
-	return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
+	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
 #else
 	return vec3(0.0f, 0.0f, 0.0f);
 #endif
@@ -240,9 +238,7 @@ struct WorkCell
 
 void GenerateCell(const WorkItemParam* param)
 {
-#if ANTI_ALIASING
 	static thread_local RNG randomsAA(4096 * 8);
-#endif
 
 	int32 threadID = param->threadID;
 	WorkCell* cell = reinterpret_cast<WorkCell*>(param->arg);
@@ -253,13 +249,13 @@ void GenerateCell(const WorkItemParam* param)
 	const float imageWidth = (float)cell->image->GetWidth();
 	const float imageHeight = (float)cell->image->GetHeight();
 
+	const int32 SPP = std::max(1, SAMPLES_PER_PIXEL);
 	for(int32 y = cell->y; y < endY; ++y)
 	{
 		for(int32 x = cell->x; x < endX; ++x)
 		{
-			vec3 accum;
-#if ANTI_ALIASING
-			for(int32 s = 0; s < NUM_SAMPLES; ++s)
+			vec3 accum(0.0f, 0.0f, 0.0f);
+			for(int32 s = 0; s < SPP; ++s)
 			{
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
@@ -272,13 +268,7 @@ void GenerateCell(const WorkItemParam* param)
 				vec3 scene = TraceScene(r, cell->world);
 				accum += scene;
 			}
-			accum /= (float)NUM_SAMPLES;
-#else
-			float u = (float)x / imageWidth;
-			float v = (float)y / imageHeight;
-			ray r = cell->camera->GetRay(u, v);
-			accum = TraceScene(r, cell->world);
-#endif
+			accum /= (float)SPP;
 			Pixel px(accum.x, accum.y, accum.z);
 			cell->image->SetPixel(x, y, px);
 		}

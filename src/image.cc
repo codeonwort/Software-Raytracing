@@ -2,9 +2,9 @@
 #include "type.h"
 #include "log.h"
 
-#define TONE_MAP         0    // Some artifact that I don't quite get
+#define TONE_MAP         1    // Still some artifact around borders that I don't quite get
 #define FORCE_MAX_WHITE  1    // Clamp the tone mapping result to white
-#define GAMMA_CORRECTION 1
+#define GAMMA_CORRECTION 1    // linear to sRGB
 #define GAMMA_VALUE      2.2f
 
 Image2D::Image2D()
@@ -49,6 +49,11 @@ void Image2D::PostProcess()
 	auto LuminanceToneMap = [&](const vec3& v, float maxWhiteLuminance) -> vec3
 	{
 		float luminanceOld = Luminance(v);
+		// Div by zero if progress any further
+		if (luminanceOld <= 0.0001f)
+		{
+			return vec3(0.0f, 0.0f, 0.0f);
+		}
 		float numerator = luminanceOld * (1.0f + (luminanceOld / (maxWhiteLuminance * maxWhiteLuminance)));
 		float luminanceNew = numerator / (1.0f + luminanceOld);
 		return v * (luminanceNew / luminanceOld);
