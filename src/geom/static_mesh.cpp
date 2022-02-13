@@ -49,12 +49,22 @@ void StaticMesh::ApplyTransform(const Transform& transform)
 	CHECK(!locked);
 	if (!locked)
 	{
+		Transform rot = transform;
+		rot.SetLocation(vec3(0.0f, 0.0f, 0.0f));
+		rot.SetScale(vec3(1.0f, 1.0f, 1.0f));
+
 		for (Triangle& T : triangles)
 		{
-			std::vector<vec3> vs(3, vec3(0.0f, 0.0f, 0.0f));
+			std::vector<vec3> vs(3);
+			std::vector<vec3> ns(3);
 			T.GetVertices(vs[0], vs[1], vs[2]);
+			T.GetNormals(ns[0], ns[1], ns[2]);
+
 			transform.TransformVectors(vs);
+			rot.TransformVectors(ns);
+
 			T.SetVertices(vs[0], vs[1], vs[2]);
+			T.SetNormals(ns[0], ns[1], ns[2]);
 		}
 		boundsValid = false;
 	}

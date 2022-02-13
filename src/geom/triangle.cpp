@@ -33,7 +33,7 @@ bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult)
 	{
 		outResult.t = t;
 		outResult.p = p;
-		outResult.n = n;
+		outResult.n = normalize((1 - paramU - paramV) * n0 + paramU * n1 + paramV * n2);
 		outResult.paramU = (1 - paramU - paramV) * s0 + paramU * s1 + paramV * s2;
 		outResult.paramV = (1 - paramU - paramV) * t0 + paramU * t1 + paramV * t2;
 		outResult.material = material;
@@ -64,4 +64,18 @@ void Triangle::SetVertices(const vec3& inV0, const vec3& inV1, const vec3& inV2)
 	v2 = inV2;
 	UpdateNormal();
 	bounds = AABB(min(min(v0, v1), v2), max(max(v0, v1), v2));
+}
+
+void Triangle::GetNormals(vec3& outN0, vec3& outN1, vec3& outN2) const
+{
+	outN0 = n0;
+	outN1 = n1;
+	outN2 = n2;
+}
+
+void Triangle::SetNormals(const vec3& inN0, const vec3& inN1, const vec3& inN2)
+{
+	n0 = inN0;
+	n1 = inN1;
+	n2 = inN2;
 }
