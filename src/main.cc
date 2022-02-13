@@ -37,6 +37,8 @@
 #define VIEWPORT_HEIGHT         512
 
 // Debug configuration (features under development)
+#define FAKE_SKY_LIGHT          0
+#define LOCAL_LIGHTS            1
 #define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
@@ -45,12 +47,9 @@
 #define RESULT_FILENAME         "test.bmp"
 
 // Rendering configuration
-#define ANTI_ALIASING    1
-#define NUM_SAMPLES      50 // Valid only if ANTI_ALISING == 1
-#define GAMMA_CORRECTION 1
-#define GAMMA_VALUE      2.2f
-#define MAX_RECURSION    5
-#define RAY_T_MIN        0.001f
+#define SAMPLES_PER_PIXEL       1000
+#define MAX_RECURSION           5
+#define RAY_T_MIN               0.001f
 
 vec3 TraceScene(const ray& r, Hitable* world, int depth)
 {
@@ -59,23 +58,26 @@ vec3 TraceScene(const ray& r, Hitable* world, int depth)
 	{
 		ray scattered;
 		vec3 attenuation;
+		vec3 emitted = result.material->Emitted(result.paramU, result.paramV, result.p);
 		if (depth < MAX_RECURSION && result.material->Scatter(r, result, attenuation, scattered))
 		{
-			return attenuation * TraceScene(scattered, world, depth + 1);
+			return emitted + attenuation * TraceScene(scattered, world, depth + 1);
 		}
 		else
 		{
-			return vec3(0.0f, 0.0f, 0.0f);
+			return emitted;
 		}
 	}
 
-	// #todo: Implement sun as directional light source
-	// #todo: Support envmap texture
-	// Fake sky radiance (also acts as the only light source)
+	// #todo: Support sky cubemap
+#if FAKE_SKY_LIGHT
 	vec3 dir = r.d;
 	dir.Normalize();
 	float t = 0.5f * (dir.y + 1.0f);
-	return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
+	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+#else
+	return vec3(0.0f, 0.0f, 0.0f);
+#endif
 }
 vec3 TraceScene(const ray& r, Hitable* world)
 {
@@ -104,16 +106,27 @@ Hitable* CreateScene_Bedroom()
 
 Hitable* CreateScene_ObjModel()
 {
-	SCOPED_CPU_COUNTER(CreateRandomScene)
+	SCOPED_CPU_COUNTER(CreateRandomScene);
 
 	std::vector<Hitable*> list;
+
+	// Light source
+#if LOCAL_LIGHTS
+	Material* pointLight0 = new DiffuseLight(vec3(5.0f, 0.0f, 0.0f));
+	Material* pointLight1 = new DiffuseLight(vec3(0.0f, 4.0f, 5.0f));
+	list.push_back(new sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
+	list.push_back(new sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
+#endif
 
 #if INCLUDE_TOADTTE
 	OBJModel model;
 	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
 	{
 		Transform transform;
-		transform.Init(vec3(0.0f, 0.0f, 0.0f), Rotator(-10.0f, 0.0f, 0.0f), vec3(0.07f, 0.07f, 0.07f));
+		transform.Init(
+			vec3(0.0f, 0.0f, 0.0f),
+			Rotator(-10.0f, 0.0f, 0.0f),
+			vec3(0.07f, 0.07f, 0.07f));
 		model.staticMesh->ApplyTransform(transform);
 		model.staticMesh->Finalize();
 		list.push_back(model.staticMesh);
@@ -133,13 +146,18 @@ Hitable* CreateScene_ObjModel()
 	{
 		TextureMaterial* tm = new TextureMaterial(img);
 		const vec3 origin(1.0f, 0.0f, 0.0f);
+		const vec3 n(0.0f, 0.0f, 1.0f);
  		{
- 			Triangle* T = new Triangle(origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f), tm);
+			Triangle* T = new Triangle(
+				origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f),
+				n, n, n, tm);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
 			list.push_back(T);
  		}
  		{
- 			Triangle* T = new Triangle(origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f), origin + vec3(0.0f, 1.0f, 0.0f), tm);
+ 			Triangle* T = new Triangle(
+				origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f), origin + vec3(0.0f, 1.0f, 0.0f),
+				n, n, n, tm);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
 			list.push_back(T);
  		}
@@ -157,8 +175,9 @@ Hitable* CreateScene_ObjModel()
 		vec3 v0(fanRadius * std::cos(fanBegin), fanRadius * std::sin(fanBegin), z);
 		vec3 v1(0.0f, 0.0f, z);
 		vec3 v2(fanRadius * std::cos(fanEnd), fanRadius * std::sin(fanEnd), z);
+		vec3 n(0.0f, 0.0f, 1.0f);
 		vec3 color = RandomInUnitSphere();
-		list.push_back(new Triangle(v0, v1, v2, new Lambertian(color)));
+		list.push_back(new Triangle(v0, v1, v2, n, n, n, new Lambertian(color)));
 	}
 	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
 
@@ -231,9 +250,7 @@ struct WorkCell
 
 void GenerateCell(const WorkItemParam* param)
 {
-#if ANTI_ALIASING
 	static thread_local RNG randomsAA(4096 * 8);
-#endif
 
 	int32 threadID = param->threadID;
 	WorkCell* cell = reinterpret_cast<WorkCell*>(param->arg);
@@ -244,13 +261,13 @@ void GenerateCell(const WorkItemParam* param)
 	const float imageWidth = (float)cell->image->GetWidth();
 	const float imageHeight = (float)cell->image->GetHeight();
 
+	const int32 SPP = std::max(1, SAMPLES_PER_PIXEL);
 	for(int32 y = cell->y; y < endY; ++y)
 	{
 		for(int32 x = cell->x; x < endX; ++x)
 		{
-			vec3 accum;
-#if ANTI_ALIASING
-			for(int32 s = 0; s < NUM_SAMPLES; ++s)
+			vec3 accum(0.0f, 0.0f, 0.0f);
+			for(int32 s = 0; s < SPP; ++s)
 			{
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
@@ -263,20 +280,7 @@ void GenerateCell(const WorkItemParam* param)
 				vec3 scene = TraceScene(r, cell->world);
 				accum += scene;
 			}
-			accum /= (float)NUM_SAMPLES;
-#else
-			float u = (float)x / imageWidth;
-			float v = (float)y / imageHeight;
-			ray r = cell->camera->GetRay(u, v);
-			accum = TraceScene(r, cell->world);
-#endif
-
-#if GAMMA_CORRECTION
-			accum.x = pow(accum.x, 1.0f / GAMMA_VALUE);
-			accum.y = pow(accum.y, 1.0f / GAMMA_VALUE);
-			accum.z = pow(accum.z, 1.0f / GAMMA_VALUE);
-#endif
-
+			accum /= (float)SPP;
 			Pixel px(accum.x, accum.y, accum.z);
 			cell->image->SetPixel(x, y, px);
 		}
@@ -322,7 +326,9 @@ int main(int argc, char** argv)
 
 	log("generate a test image (width: %d, height: %d)", width, height);
 
-	// Generate an image
+	//
+	// Create a scene
+	//
 	Hitable* world = CREATE_RANDOM_SCENE();
 #if BVH_FOR_SCENE
 	world = new BVHNode(static_cast<HitableList*>(world), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
@@ -335,7 +341,9 @@ int main(int argc, char** argv)
 		CAMERA_APERTURE, dist_to_focus,
 		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 
-	// Multi-threading
+	//
+	// Generate an image with multi-threading
+	//
 	uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
 	log("number of logical cores: %u", numCores);
 
@@ -403,6 +411,8 @@ int main(int argc, char** argv)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
+
+	image.PostProcess();
 
 	WriteBitmap(image, RESULT_FILENAME);
 

@@ -8,10 +8,13 @@ class Triangle : public Hitable
 {
 
 public:
-	Triangle(const vec3& inV0, const vec3& inV1, const vec3& inV2, Material* inMaterial)
+	Triangle(const vec3& inV0, const vec3& inV1, const vec3& inV2, const vec3& inN0, const vec3& inN1, const vec3& inN2, Material* inMaterial)
 		: v0(inV0)
 		, v1(inV1)
 		, v2(inV2)
+		, n0(inN0)
+		, n1(inN1)
+		, n2(inN2)
 		, s0(0.0f), t0(0.0f), s1(0.0f), t1(0.0f), s2(0.0f), t2(0.0f)
 		, material(inMaterial)
 	{
@@ -39,6 +42,9 @@ public:
 	void GetVertices(vec3& outV0, vec3& outV1, vec3& outV2) const;
 	void SetVertices(const vec3& inV0, const vec3& inV1, const vec3& inV2);
 
+	void GetNormals(vec3& outN0, vec3& outN1, vec3& outN2) const;
+	void SetNormals(const vec3& inN0, const vec3& inN1, const vec3& inN2);
+
 private:
 	inline void UpdateNormal()
 	{
@@ -49,12 +55,17 @@ private:
 	vec3 v0;
 	vec3 v1;
 	vec3 v2;
+
+	// Perp to this triangle; auto-derived
 	vec3 n;
+	// Assigned to each vertex and interpolated by barycentric
+	vec3 n0;
+	vec3 n1;
+	vec3 n2;
+
 	AABB bounds;
 
 	// Surface parameterization
-	// Oops. v for vertex :(
-	// Let's use 's' and 't'
 	float s0, t0, s1, t1, s2, t2; 
 	
 	Material* material;

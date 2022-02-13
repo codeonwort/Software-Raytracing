@@ -180,6 +180,13 @@ inline vec3 max(const vec3& v1, const vec3& v2)
 	float z = std::max(v1.z, v2.z);
 	return vec3(x, y, z);
 }
+inline vec3 pow(const vec3& v, float p)
+{
+	float x = powf(v.x, p);
+	float y = powf(v.y, p);
+	float z = powf(v.z, p);
+	return vec3(x, y, z);
+}
 
 inline vec3& vec3::operator+=(const vec3& v)
 {

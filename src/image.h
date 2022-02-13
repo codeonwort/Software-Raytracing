@@ -77,6 +77,8 @@ public:
 	void SetPixel(int32 x, int32 y, const Pixel& argb);
 	void SetPixel(int32 x, int32 y, uint32 argb);
 
+	void PostProcess(); // tone mapping, gamma correction, etc.
+
 	inline uint32 GetWidth() const { return width; }
 	inline uint32 GetHeight() const { return height; }
 	inline Pixel GetPixel(int32 x, int32 y) const { return image[ix(x, y)]; }

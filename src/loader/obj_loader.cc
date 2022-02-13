@@ -64,6 +64,13 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	vec3 minBound(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
 	vec3 maxBound(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
 
+	const bool hasNormals = (attrib.normals.size() > 0) && (attrib.normals.size() == attrib.vertices.size());
+
+	std::vector<Triangle> triangles;
+
+	std::vector<vec3> customNormals(attrib.vertices.size(), vec3(0.0f, 0.0f, 0.0f));
+	std::vector<int32> customNormalIndices(attrib.vertices.size() * 3, -1);
+
 	for (const tinyobj::shape_t& shape : shapes)
 	{
 		// mesh
@@ -85,6 +92,24 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			vec3 v1(attrib.vertices[i1 * 3], attrib.vertices[i1 * 3 + 1], attrib.vertices[i1 * 3 + 2]);
 			vec3 v2(attrib.vertices[i2 * 3], attrib.vertices[i2 * 3 + 1], attrib.vertices[i2 * 3 + 2]);
 
+			vec3 n0, n1, n2;
+			if (hasNormals)
+			{
+				n0 = vec3(attrib.normals[i0 * 3], attrib.normals[i0 * 3 + 1], attrib.normals[i0 + 3 + 2]);
+				n1 = vec3(attrib.normals[i1 * 3], attrib.normals[i1 * 3 + 1], attrib.normals[i1 + 3 + 2]);
+				n2 = vec3(attrib.normals[i2 * 3], attrib.normals[i2 * 3 + 1], attrib.normals[i2 + 3 + 2]);
+			}
+			else
+			{
+				vec3 n = normalize(cross(v1 - v0, v2 - v0));
+				customNormals[i0] += n;
+				customNormals[i1] += n;
+				customNormals[i2] += n;
+				customNormalIndices[p] = i0;
+				customNormalIndices[p + 1] = i1;
+				customNormalIndices[p + 2] = i2;
+			}
+
 			// #todo-obj: Just min/max attrib.vertices. We're checking same vertices again and again here.
 			minBound = min(min(min(minBound, v0), v1), v2);
 			maxBound = max(max(max(maxBound, v0), v1), v2);
@@ -96,7 +121,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 				faceMaterial = materials[material_ix];
 			}
 
-			Triangle T(v0, v1, v2, faceMaterial);
+			Triangle T(v0, v1, v2, n0, n1, n2, faceMaterial);
 
 			i0 = (int32)shape.mesh.indices[p].texcoord_index;
 			i1 = (int32)shape.mesh.indices[p + 1].texcoord_index;
@@ -106,13 +131,32 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 				attrib.texcoords[i1 * 2], 1.0f - attrib.texcoords[i1 * 2 + 1],
 				attrib.texcoords[i2 * 2], 1.0f - attrib.texcoords[i2 * 2 + 1]);
 
-			mesh->AddTriangle(T);
-
+			triangles.emplace_back(T);
 			p += 3;
 		}
 
 		// #todo-obj: lines
 		// #todo-obj: points
+	}
+
+	if (!hasNormals)
+	{
+		for (auto i = 0; i < customNormals.size(); ++i)
+		{
+			customNormals[i] = normalize(customNormals[i]);
+		}
+		for (auto i = 0; i < triangles.size(); ++i)
+		{
+			const vec3& n0 = customNormals[customNormalIndices[i * 3]];
+			const vec3& n1 = customNormals[customNormalIndices[i * 3 + 1]];
+			const vec3& n2 = customNormals[customNormalIndices[i * 3 + 2]];
+			triangles[i].SetNormals(n0, n1, n2);
+		}
+	}
+
+	for (const Triangle& T : triangles)
+	{
+		mesh->AddTriangle(T);
 	}
 
 	outModel.staticMesh = mesh;
