@@ -262,6 +262,7 @@ void GenerateCell(const WorkItemParam* param)
 	const float imageWidth = (float)cell->image->GetWidth();
 	const float imageHeight = (float)cell->image->GetHeight();
 
+	// #todo-multithread: Bad utilization of threads; Some cells might take longer than others.
 	const int32 SPP = std::max(1, SAMPLES_PER_PIXEL);
 	for(int32 y = cell->y; y < endY; ++y)
 	{
