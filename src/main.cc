@@ -39,7 +39,6 @@
 // Debug configuration (features under development)
 #define FAKE_SKY_LIGHT          0
 #define LOCAL_LIGHTS            1
-#define BVH_FOR_SCENE           1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    1
@@ -85,7 +84,7 @@ vec3 TraceScene(const ray& r, Hitable* world)
 }
 
 // TODO: ResourceFinder can't find content/ in the project directory (.exe is generated in out/build/{Configuration}/src)
-Hitable* CreateScene_Bedroom()
+HitableList* CreateScene_Bedroom()
 {
 	SCOPED_CPU_COUNTER(CreateScene_Bedroom);
 
@@ -104,7 +103,7 @@ Hitable* CreateScene_Bedroom()
 	return new HitableList(list);
 }
 
-Hitable* CreateScene_ObjModel()
+HitableList* CreateScene_ObjModel()
 {
 	SCOPED_CPU_COUNTER(CreateRandomScene);
 
@@ -176,7 +175,7 @@ Hitable* CreateScene_ObjModel()
 		vec3 v1(0.0f, 0.0f, z);
 		vec3 v2(fanRadius * std::cos(fanEnd), fanRadius * std::sin(fanEnd), z);
 		vec3 n(0.0f, 0.0f, 1.0f);
-		vec3 color = RandomInUnitSphere();
+		vec3 color = vec3(0.3f, 0.3f, 0.3f) + 0.7f * RandomInUnitSphere();
 		list.push_back(new Triangle(v0, v1, v2, n, n, n, new Lambertian(color)));
 	}
 	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
@@ -184,7 +183,7 @@ Hitable* CreateScene_ObjModel()
 	return new HitableList(list);
 }
 
-Hitable* CreateScene_RandomSpheres()
+HitableList* CreateScene_RandomSpheres()
 {
 	std::vector<Hitable*> list;
 
@@ -222,7 +221,7 @@ Hitable* CreateScene_RandomSpheres()
 	return new HitableList(list);
 }
 
-Hitable* CreateScene_FourSpheres()
+HitableList* CreateScene_FourSpheres()
 {
 	//float R = cos(pi<float> / 4.0f);
 	std::vector<Hitable*> list;
@@ -232,7 +231,7 @@ Hitable* CreateScene_FourSpheres()
 	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Metal(vec3(0.8f, 0.8f, 0.8f), 0.3f)));
 	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   0.5f,  new Dielectric(1.5f)                    ));
 	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
-	Hitable* world = new HitableList(list);
+	HitableList* world = new HitableList(list);
 	return world;
 }
 
@@ -329,10 +328,11 @@ int main(int argc, char** argv)
 	//
 	// Create a scene
 	//
-	Hitable* world = CREATE_RANDOM_SCENE();
-#if BVH_FOR_SCENE
-	world = new BVHNode(static_cast<HitableList*>(world), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
-#endif
+	BVHNode* worldBVH = nullptr;
+	{
+		HitableList* world = CREATE_RANDOM_SCENE();
+		worldBVH = new BVHNode(world, CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+	}
 
 	const float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
 	Camera camera(
@@ -364,7 +364,7 @@ int main(int argc, char** argv)
 			cell.height = std::min(cellHeight, height - y);
 			cell.image = &image;
 			cell.camera = &camera;
-			cell.world = world;
+			cell.world = worldBVH;
 			workCells.emplace_back(cell);
 		}
 	}
