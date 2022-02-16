@@ -93,4 +93,3 @@ public:
 	std::vector<Pixel> image;
 
 };
-
