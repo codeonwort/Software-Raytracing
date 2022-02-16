@@ -4,7 +4,6 @@
 #include "geom/ray.h"
 #include "geom/hit.h"
 
-// TextureMaterial
 #include "image.h"
 #include "texture.h"
 
@@ -75,30 +74,98 @@ public:
 
 };
 
-class TextureMaterial : public Material
+// #todo-pbr: Change to PBRMaterial and support other properties
+class PBRMaterial : public Material
 {
 
 public:
-	TextureMaterial(const Image2D& inAlbedo)
+	PBRMaterial()
+		: albedoTexture(nullptr)
+		, normalmapTexture(nullptr)
+		, roughnessTexture(nullptr)
+		, metallicTexture(nullptr)
+		, emissiveTexture(nullptr)
 	{
-		albedo = Texture2D::CreateFromImage2D(inAlbedo);
+	}
+
+	void SetAlbedoTexture(const Image2D& inImage)
+	{
+		if (albedoTexture) delete albedoTexture;
+		albedoTexture = Texture2D::CreateFromImage2D(inImage);
+	}
+	void SetNormalTexture(const Image2D& inImage)
+	{
+		if (normalmapTexture) delete normalmapTexture;
+		normalmapTexture = Texture2D::CreateFromImage2D(inImage);
+	}
+	void SetRoughnessTexture(const Image2D& inImage)
+	{
+		if (roughnessTexture) delete roughnessTexture;
+		roughnessTexture = Texture2D::CreateFromImage2D(inImage);
+	}
+	void SetMetallicTexture(const Image2D& inImage)
+	{
+		if (metallicTexture) delete metallicTexture;
+		metallicTexture = Texture2D::CreateFromImage2D(inImage);
+	}
+	void SetEmissiveTexture(const Image2D& inImage)
+	{
+		if (emissiveTexture) delete emissiveTexture;
+		emissiveTexture = Texture2D::CreateFromImage2D(inImage);
 	}
 
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
 		vec3& outAttenuation, ray& outScattered) const override
 	{
-		Pixel sample = albedo->Sample(inResult.paramU, inResult.paramV);
+		vec3 albedo(0.0f, 0.0f, 0.0f);
+		vec3 normal(0.0f, 0.0f, 1.0f);
+		vec3 roughness(1.0f, 1.0f, 1.0f);
+		vec3 metallic(0.0f, 0.0f, 0.0f);
+
 		// #todo-texture: Pre-multiply alpha?
+		if (albedoTexture)
+		{
+			Pixel albedoSample = albedoTexture->Sample(inResult.paramU, inResult.paramV);
+			albedo = vec3(albedoSample.r, albedoSample.g, albedoSample.b);
+		}
+
+		// #todo-pbr: Utilize them
+		if (normalmapTexture)
+		{
+			Pixel normalSample = normalmapTexture->Sample(inResult.paramU, inResult.paramV);
+		}
+		if (roughnessTexture)
+		{
+			Pixel roughnessSample = roughnessTexture->Sample(inResult.paramU, inResult.paramV);
+		}
+		if (metallicTexture)
+		{
+			Pixel metallicSample = metallicTexture->Sample(inResult.paramU, inResult.paramV);
+		}
 
 		vec3 target = inResult.p + inResult.n + RandomInUnitSphere();
 		outScattered = ray(inResult.p, target - inResult.p, inRay.t);
-		outAttenuation = vec3(sample.r, sample.g, sample.b);
+		outAttenuation = albedo;
 		return true;
 	}
 
+	virtual vec3 Emitted(float u, float v, const vec3& inPosition) const
+	{
+		if (emissiveTexture)
+		{
+			Pixel emissiveSample = emissiveTexture->Sample(u, v);
+			return vec3(emissiveSample.r, emissiveSample.g, emissiveSample.b);
+		}
+		return vec3(0.0f, 0.0f, 0.0f);
+	}
+
 private:
-	Texture2D* albedo;
+	Texture2D* albedoTexture;
+	Texture2D* normalmapTexture;
+	Texture2D* roughnessTexture;
+	Texture2D* metallicTexture;
+	Texture2D* emissiveTexture;
 
 };
 

@@ -235,14 +235,31 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		LoadImage(inRawMaterials[i].emissive_texname, emissiveImage, emissiveImageValid);
 		LoadImage(inRawMaterials[i].normal_texname, normalImage, normalImageValid);
 
-		if (albedoImageValid)
+		if (!albedoImageValid)
 		{
-			outMaterials[i] = new TextureMaterial(albedoImage);
+			albedoImage.Reallocate(1, 1, Pixel(0.5f, 0.5f, 0.5f));
+			albedoImageValid = true;
 		}
-		else
+
+		PBRMaterial* M = new PBRMaterial;
+		M->SetAlbedoTexture(albedoImage);
+		if (normalImageValid)
 		{
-			// #todo-obj: Fallback material
-			outMaterials[i] = new Lambertian(vec3(0.5f, 0.5f, 0.5f));
+			M->SetNormalTexture(normalImage);
 		}
+		if (roughnessImageValid)
+		{
+			M->SetRoughnessTexture(roughnessImage);
+		}
+		if (metallicImageValid)
+		{
+			M->SetMetallicTexture(metallicImage);
+		}
+		if (emissiveImageValid)
+		{
+			M->SetEmissiveTexture(emissiveImage);
+		}
+
+		outMaterials[i] = M;
 	}
 }

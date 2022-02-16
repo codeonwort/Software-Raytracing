@@ -143,20 +143,22 @@ HitableList* CreateScene_ObjModel()
 	Image2D img;
 	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
 	{
-		TextureMaterial* tm = new TextureMaterial(img);
+		PBRMaterial* pbr_mat = new PBRMaterial;
+		pbr_mat->SetAlbedoTexture(img);
+
 		const vec3 origin(1.0f, 0.0f, 0.0f);
 		const vec3 n(0.0f, 0.0f, 1.0f);
  		{
 			Triangle* T = new Triangle(
 				origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f),
-				n, n, n, tm);
+				n, n, n, pbr_mat);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
 			list.push_back(T);
  		}
  		{
  			Triangle* T = new Triangle(
 				origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f), origin + vec3(0.0f, 1.0f, 0.0f),
-				n, n, n, tm);
+				n, n, n, pbr_mat);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
 			list.push_back(T);
  		}
