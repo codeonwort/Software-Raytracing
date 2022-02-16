@@ -7,6 +7,60 @@
 #include "image.h"
 #include "texture.h"
 
+#include <algorithm>
+
+#define SUPPORT_PBR_MATERIAL 0
+
+namespace BRDF
+{
+	const float PI = 3.14159265359f;
+
+	inline vec3 FresnelSchlick(float cosTheta, vec3 F0)
+	{
+		return F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
+	}
+
+	inline vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+	{
+		return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(1.0f - cosTheta, 5.0f);
+	}
+
+	inline float DistributionGGX(vec3 N, vec3 H, float roughness)
+	{
+		float a = roughness * roughness;
+		float a2 = a * a;
+		float NdotH = std::max(dot(N, H), 0.0f);
+		float NdotH2 = NdotH * NdotH;
+
+		float num = a2;
+		float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
+		denom = PI * denom * denom;
+
+		return num / denom;
+	}
+
+	inline float GeometrySchlickGGX(float NdotV, float roughness)
+	{
+		float r = (roughness + 1.0f);
+		float k = (r * r) / 8.0f;
+
+		float num = NdotV;
+		float denom = NdotV * (1.0f - k) + k;
+
+		return num / denom;
+	}
+
+	inline float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+	{
+		float NdotV = std::max(dot(N, V), 0.0f);
+		float NdotL = std::max(dot(N, L), 0.0f);
+		float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+		float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+		return ggx1 * ggx2;
+	}
+};
+
 class Material
 {
 
@@ -114,40 +168,67 @@ public:
 		emissiveTexture = Texture2D::CreateFromImage2D(inImage);
 	}
 
+	// #todo-pbr: https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
 		vec3& outAttenuation, ray& outScattered) const override
 	{
 		vec3 albedo(0.0f, 0.0f, 0.0f);
-		vec3 normal(0.0f, 0.0f, 1.0f);
-		vec3 roughness(1.0f, 1.0f, 1.0f);
-		vec3 metallic(0.0f, 0.0f, 0.0f);
+		vec3 Wo = normalize(inResult.n + RandomInUnitSphere());
 
 		// #todo-texture: Pre-multiply alpha?
 		if (albedoTexture)
 		{
-			Pixel albedoSample = albedoTexture->Sample(inResult.paramU, inResult.paramV);
-			albedo = vec3(albedoSample.r, albedoSample.g, albedoSample.b);
+			albedo = albedoTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
 		}
 
-		// #todo-pbr: Utilize them
+#if SUPPORT_PBR_MATERIAL
+		float roughness = 1.0f;
+		float metallic = 0.0f;
+
+		vec3 N = inResult.n;
+		vec3 V = -inRay.d;
+		vec3 H = normalize(V + Wo);
 		if (normalmapTexture)
 		{
-			Pixel normalSample = normalmapTexture->Sample(inResult.paramU, inResult.paramV);
+			vec3 localN = normalmapTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
+			// #todo-pbr: Rotate localN around N
 		}
 		if (roughnessTexture)
 		{
-			Pixel roughnessSample = roughnessTexture->Sample(inResult.paramU, inResult.paramV);
+			roughness = roughnessTexture->Sample(inResult.paramU, inResult.paramV).r;
 		}
 		if (metallicTexture)
 		{
-			Pixel metallicSample = metallicTexture->Sample(inResult.paramU, inResult.paramV);
+			metallic = metallicTexture->Sample(inResult.paramU, inResult.paramV).r;
 		}
 
-		vec3 target = inResult.p + inResult.n + RandomInUnitSphere();
-		outScattered = ray(inResult.p, target - inResult.p, inRay.t);
+		vec3 F0 = vec3(0.04f);
+		F0 = mix(F0, min(albedo, vec3(1.0f)), metallic);
+
+		float NDF = BRDF::DistributionGGX(N, H, roughness);
+		float G = BRDF::GeometrySmith(N, V, Wo, roughness);
+		vec3 F = BRDF::FresnelSchlick(std::max(dot(H, V), 0.0f), F0);
+
+		vec3 kS = F;
+		vec3 kD = vec3(1.0f) - kS;
+		kD *= 1.0f - metallic;
+
+		float NdotL = std::max(dot(N, Wo), 0.0f);
+		float NdotV = std::max(dot(N, V), 0.0f);
+
+		vec3 num = NDF * G * F;
+		float denom = 4.0f * NdotV * NdotL;
+		vec3 specular = num / max(denom, 0.001f);
+
+		outScattered = ray(inResult.p, Wo, inRay.t);
+		outAttenuation = (kD * albedo / BRDF::PI + specular) * NdotL;
+		return true;
+#else
+		outScattered = ray(inResult.p, Wo, inRay.t);
 		outAttenuation = albedo;
 		return true;
+#endif
 	}
 
 	virtual vec3 Emitted(float u, float v, const vec3& inPosition) const

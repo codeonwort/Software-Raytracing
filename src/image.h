@@ -61,6 +61,11 @@ struct Pixel
 		return (A << 24) | (R << 16) | (G << 8) | B;
 	}
 
+	inline vec3 RGBToVec3() const
+	{
+		return vec3(r, g, b);
+	}
+
 };
 
 // Can be used as a 2D texture mipmap or a 2D render target

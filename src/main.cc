@@ -46,7 +46,7 @@
 #define RESULT_FILENAME         "test.bmp"
 
 // Rendering configuration
-#define SAMPLES_PER_PIXEL       1000
+#define SAMPLES_PER_PIXEL       500
 #define MAX_RECURSION           5
 #define RAY_T_MIN               0.001f
 
