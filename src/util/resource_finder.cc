@@ -36,7 +36,9 @@ ResourceFinder& ResourceFinder::Get()
 
 ResourceFinder::ResourceFinder()
 {
+	directories.push_back(""); // For absolute path
 	directories.push_back("./");
+	directories.push_back(SOLUTION_DIR);
 }
 
 void ResourceFinder::AddDirectory(const std::string& directory)
