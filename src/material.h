@@ -9,7 +9,9 @@
 
 #include <algorithm>
 
-#define SUPPORT_PBR_MATERIAL 0
+#define SUPPORT_PBR_MATERIAL 1
+// #todo-pbr: https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
+#define FIX_BRDF             1
 
 namespace BRDF
 {
@@ -27,6 +29,16 @@ namespace BRDF
 
 	inline float DistributionGGX(vec3 N, vec3 H, float roughness)
 	{
+#if FIX_BRDF
+		float a = roughness * roughness;
+		float a2 = a * a;
+		float NdotH = dot(N, H);
+		float NdotH2 = NdotH * NdotH;
+
+		float num = expf((NdotH2 - 1.0f) / (a2 * NdotH2));
+		float denom = BRDF::PI * a2 * NdotH2 * NdotH2;
+		return num / denom;
+#else
 		float a = roughness * roughness;
 		float a2 = a * a;
 		float NdotH = std::max(dot(N, H), 0.0f);
@@ -37,6 +49,7 @@ namespace BRDF
 		denom = PI * denom * denom;
 
 		return num / denom;
+#endif
 	}
 
 	inline float GeometrySchlickGGX(float NdotV, float roughness)
@@ -118,8 +131,7 @@ public:
 		const ray& inRay, const HitResult& inResult,
 		vec3& outAttenuation, ray& outScattered) const override
 	{
-		vec3 target = inResult.p + inResult.n + RandomInUnitSphere();
-		outScattered = ray(inResult.p, target - inResult.p, inRay.t);
+		outScattered = ray(inResult.p, RandomInHemisphere(inResult.n), inRay.t);
 		outAttenuation = albedo;
 		return true;
 	}
@@ -168,14 +180,13 @@ public:
 		emissiveTexture = Texture2D::CreateFromImage2D(inImage);
 	}
 
-	// #todo-pbr: https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
 		vec3& outAttenuation, ray& outScattered) const override
 	{
 		vec3 albedo(0.0f, 0.0f, 0.0f);
-		vec3 Wo = normalize(inResult.n + RandomInUnitSphere());
-
+		vec3 Wo = normalize(RandomInHemisphere(inResult.n));
+		
 		// #todo-texture: Pre-multiply alpha?
 		if (albedoTexture)
 		{
@@ -183,6 +194,7 @@ public:
 		}
 
 #if SUPPORT_PBR_MATERIAL
+		// Default: Lambertian non-metal surface
 		float roughness = 1.0f;
 		float metallic = 0.0f;
 
@@ -192,7 +204,7 @@ public:
 		if (normalmapTexture)
 		{
 			vec3 localN = normalmapTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
-			// #todo-pbr: Rotate localN around N
+			// #todo-pbr: Rotate localN around N (normal mapping)
 		}
 		if (roughnessTexture)
 		{
@@ -210,25 +222,38 @@ public:
 		float G = BRDF::GeometrySmith(N, V, Wo, roughness);
 		vec3 F = BRDF::FresnelSchlick(std::max(dot(H, V), 0.0f), F0);
 
+#if 0
 		vec3 kS = F;
+#else
+		// #todo-pbr: How to sample specular component
+		// when I randomly select the outgoing direction?
+		// Let's cancel out for now.
+		vec3 kS = vec3(0.0f);
+#endif
 		vec3 kD = vec3(1.0f) - kS;
 		kD *= 1.0f - metallic;
+		vec3 diffuse = kD * albedo;
 
+		// #todo-pbr: Is this right?
 		float NdotL = std::max(dot(N, Wo), 0.0f);
 		float NdotV = std::max(dot(N, V), 0.0f);
 
+#if FIX_BRDF
+		vec3 specular = (BRDF::PI * 0.5f) * (NDF * F * G) / NdotL;
+#else
 		vec3 num = NDF * G * F;
 		float denom = 4.0f * NdotV * NdotL;
 		vec3 specular = num / max(denom, 0.001f);
+#endif
 
 		outScattered = ray(inResult.p, Wo, inRay.t);
-		outAttenuation = (kD * albedo / BRDF::PI + specular) * NdotL;
+		outAttenuation = (kD * diffuse + kS * specular) * NdotL;
 		return true;
-#else
+#else // SUPPORT_PBR_MATERIAL
 		outScattered = ray(inResult.p, Wo, inRay.t);
 		outAttenuation = albedo;
 		return true;
-#endif
+#endif // SUPPORT_PBR_MATERIAL
 	}
 
 	virtual vec3 Emitted(float u, float v, const vec3& inPosition) const
