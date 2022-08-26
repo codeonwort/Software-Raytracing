@@ -198,6 +198,10 @@ inline vec3 pow(const vec3& v, float p)
 	float z = powf(v.z, p);
 	return vec3(x, y, z);
 }
+inline vec3 saturate(const vec3& v)
+{
+	return max(vec3(0.0f), min(1.0f, v));
+}
 
 inline vec3& vec3::operator+=(const vec3& v)
 {

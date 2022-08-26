@@ -3,7 +3,6 @@
 // #todo-pbr: References
 // https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
 // https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
-#define SUPPORT_PBR_MATERIAL 1
 
 // #todo: Specially for Dielectric
 inline float Schlick(float cosine, float ref_idx) {
@@ -64,24 +63,16 @@ bool PBRMaterial::Scatter(
 	const ray& inRay, const HitResult& inResult,
 	vec3& outAttenuation, ray& outScattered) const
 {
-	vec3 baseColor(0.0f, 0.0f, 0.0f);
+	vec3 baseColor = albedoFallback;
+	float roughness = roughnessFallback;
+	float metallic = metallicFallback;
 
 	// #todo-texture: Pre-multiply alpha?
 	if (albedoTexture) {
 		baseColor = albedoTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
 	}
 
-	// Default: Lambertian non-metal surface
-#if 0
-	baseColor = vec3(1.0f);
-	float roughness = 0.4f;
-	float metallic = 1.0f;
-#else
-	float roughness = 1.0f;
-	float metallic = 0.0f;
-#endif
 	vec3 N = inResult.n;
-
 	// #todo-pbr: Barely seeing specular highlight without direct sampling.
 	// Needs importance sampling; scatter more rays toward specular lobe.
 	vec3 Wi = normalize(RandomInHemisphere(N)); // L
@@ -96,7 +87,6 @@ bool PBRMaterial::Scatter(
 		return false;
 	}
 
-#if SUPPORT_PBR_MATERIAL
 	if (normalmapTexture) {
 		vec3 localN = normalmapTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
 		// #todo-pbr: Rotate localN around N (normal mapping)
@@ -125,11 +115,6 @@ bool PBRMaterial::Scatter(
 	outAttenuation = (kD * diffuse + kS * specular) * std::max(0.0f, dot(N, Wi));
 	//outAttenuation = (kD * diffuse + kS * specular);
 	return true;
-#else // SUPPORT_PBR_MATERIAL
-	outScattered = ray(inResult.p, Wi, inRay.t);
-	outAttenuation = baseColor;
-	return true;
-#endif // SUPPORT_PBR_MATERIAL
 }
 
 vec3 PBRMaterial::Emitted(float u, float v, const vec3& inPosition) const {
@@ -137,5 +122,5 @@ vec3 PBRMaterial::Emitted(float u, float v, const vec3& inPosition) const {
 		Pixel emissiveSample = emissiveTexture->Sample(u, v);
 		return vec3(emissiveSample.r, emissiveSample.g, emissiveSample.b);
 	}
-	return vec3(0.0f, 0.0f, 0.0f);
+	return emissiveFallback;
 }

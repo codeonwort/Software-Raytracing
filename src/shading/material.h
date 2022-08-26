@@ -118,7 +118,12 @@ public:
 		, normalmapTexture(nullptr)
 		, roughnessTexture(nullptr)
 		, metallicTexture(nullptr)
-		, emissiveTexture(nullptr) {
+		, emissiveTexture(nullptr)
+		, albedoFallback(vec3(0.5f, 0.5f, 0.5f))
+		, roughnessFallback(1.0f)
+		, metallicFallback(0.0f)
+		, emissiveFallback(vec3(0.0f, 0.0f, 0.0f))
+	{
 	}
 
 	void SetAlbedoTexture(const Image2D& inImage) {
@@ -142,6 +147,11 @@ public:
 		emissiveTexture = Texture2D::CreateFromImage2D(inImage);
 	}
 
+	void SetAlbedoFallback(const vec3& inAlbedo) { albedoFallback = saturate(inAlbedo); }
+	void SetRoughnessFallback(float inRoughness) { roughnessFallback = std::min(1.0f, std::max(0.0f, inRoughness)); }
+	void SetMetallicFallback(float inMetallic) { metallicFallback = std::min(1.0f, std::max(0.0f, inMetallic)); }
+	void SetEmissiveFallback(const vec3& inEmissive) { emissiveFallback = saturate(inEmissive); }
+
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
 		vec3& outAttenuation, ray& outScattered) const override;
@@ -155,4 +165,9 @@ private:
 	Texture2D* metallicTexture;
 	Texture2D* emissiveTexture;
 
+	// Used when relevant texture is absent.
+	vec3 albedoFallback;
+	float roughnessFallback;
+	float metallicFallback;
+	vec3 emissiveFallback;
 };
