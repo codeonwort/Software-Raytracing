@@ -46,7 +46,7 @@ public:
 		vec3 rd     = lens_radius * RandomInUnitDisk();
 		vec3 offset = (u * rd.x) + (v * rd.y);
 		float captureTime = beginCapture + (endCapture - beginCapture) * Random();
-		return ray(origin + offset, top_left + s * horizontal + (1.0f - t) * vertical - origin - offset, captureTime);
+		return ray(origin + offset, normalize(top_left + s * horizontal + (1.0f - t) * vertical - origin - offset), captureTime);
 	}
 
 	vec3 origin;
