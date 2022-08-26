@@ -189,23 +189,77 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 	for (int32 i = 0; i < n; ++i)
 	{
 		// #todo-obj: Parse every data in the material
-		std::string albedoName = inRawMaterials[i].diffuse_texname;
-		if (albedoName.size() == 0)
-		{
-			continue;
-		}
-
-		std::string albedoFile = ResourceFinder::Get().Find(basedir + albedoName);
+		// PBR extension in tiny_obj_loader.h
+#if 0
+		real_t roughness;            // [0, 1] default 0
+		real_t metallic;             // [0, 1] default 0
+		real_t sheen;                // [0, 1] default 0
+		real_t clearcoat_thickness;  // [0, 1] default 0
+		real_t clearcoat_roughness;  // [0, 1] default 0
+		real_t anisotropy;           // aniso. [0, 1] default 0
+		real_t anisotropy_rotation;  // anisor. [0, 1] default 0
+		real_t pad0;
+		std::string roughness_texname;  // map_Pr
+		std::string metallic_texname;   // map_Pm
+		std::string sheen_texname;      // map_Ps
+		std::string emissive_texname;   // map_Ke
+		std::string normal_texname;     // norm. For normal mapping.
+#endif
 
 		Image2D albedoImage;
-		if (ImageLoader::SyncLoad(albedoFile.data(), albedoImage))
+		Image2D roughnessImage;
+		Image2D metallicImage;
+		Image2D emissiveImage;
+		Image2D normalImage;
+
+		bool albedoImageValid;
+		bool roughnessImageValid;
+		bool metallicImageValid;
+		bool emissiveImageValid;
+		bool normalImageValid;
+
+		auto LoadImage = [&basedir](const std::string& inFilename, Image2D& outImage, bool& outValid)
 		{
-			outMaterials[i] = new TextureMaterial(albedoImage);
-		}
-		else
+			if (inFilename.size() == 0)
+			{
+				outValid = false;
+				return;
+			}
+			std::string filepath = ResourceFinder::Get().Find(basedir + inFilename);
+			outValid = ImageLoader::SyncLoad(filepath.data(), outImage);
+		};
+
+		LoadImage(inRawMaterials[i].diffuse_texname, albedoImage, albedoImageValid);
+		LoadImage(inRawMaterials[i].roughness_texname, roughnessImage, roughnessImageValid);
+		LoadImage(inRawMaterials[i].metallic_texname, metallicImage, metallicImageValid);
+		LoadImage(inRawMaterials[i].emissive_texname, emissiveImage, emissiveImageValid);
+		LoadImage(inRawMaterials[i].normal_texname, normalImage, normalImageValid);
+
+		if (!albedoImageValid)
 		{
-			// #todo-obj: Fallback material
-			outMaterials[i] = new Lambertian(vec3(0.5f, 0.5f, 0.5f));
+			albedoImage.Reallocate(1, 1, Pixel(0.5f, 0.5f, 0.5f));
+			albedoImageValid = true;
 		}
+
+		PBRMaterial* M = new PBRMaterial;
+		M->SetAlbedoTexture(albedoImage);
+		if (normalImageValid)
+		{
+			M->SetNormalTexture(normalImage);
+		}
+		if (roughnessImageValid)
+		{
+			M->SetRoughnessTexture(roughnessImage);
+		}
+		if (metallicImageValid)
+		{
+			M->SetMetallicTexture(metallicImage);
+		}
+		if (emissiveImageValid)
+		{
+			M->SetEmissiveTexture(emissiveImage);
+		}
+
+		outMaterials[i] = M;
 	}
 }

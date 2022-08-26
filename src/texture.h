@@ -38,6 +38,8 @@ class Texture2D : public Noncopyable
 public:
 	// Create a texture from single mipmap
 	static Texture2D* CreateFromImage2D(const Image2D& inImage);
+
+	static Texture2D* CreateSolidColor(const Pixel& inColor);
 	
 public:
 	Texture2D(uint32 numMipmaps);

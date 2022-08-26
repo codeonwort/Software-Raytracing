@@ -8,6 +8,15 @@ Texture2D* Texture2D::CreateFromImage2D(const Image2D& inImage)
 	return texture;
 }
 
+Texture2D* Texture2D::CreateSolidColor(const Pixel& inColor)
+{
+	Image2D image;
+	image.Reallocate(1, 1, inColor);
+	Texture2D* texture = new Texture2D(1);
+	texture->SetData(0, image);
+	return texture;
+}
+
 Texture2D::Texture2D(uint32 numMipmaps)
 {
 	mipmaps.resize(numMipmaps);

@@ -25,3 +25,7 @@ add_custom_command(TARGET RayTracer POST_BUILD
 	"${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries/FreeImage.dll"
 	$<TARGET_FILE_DIR:RayTracer>)
 	
+# TODO: This injects a hard-coded path to the executable.
+#       Moving the project to another directory will make
+#       the application fail to find shader binaries.
+add_compile_definitions(SOLUTION_DIR="${CMAKE_SOURCE_DIR}/")

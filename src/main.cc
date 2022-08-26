@@ -37,16 +37,16 @@
 #define VIEWPORT_HEIGHT         512
 
 // Debug configuration (features under development)
-#define FAKE_SKY_LIGHT          0
+#define FAKE_SKY_LIGHT          1
 #define LOCAL_LIGHTS            1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    1
 #define TEST_IMAGE_LOADER       0
-#define RESULT_FILENAME         "test.bmp"
+#define RESULT_FILENAME         SOLUTION_DIR "test.bmp"
 
 // Rendering configuration
-#define SAMPLES_PER_PIXEL       1000
+#define SAMPLES_PER_PIXEL       100
 #define MAX_RECURSION           5
 #define RAY_T_MIN               0.001f
 
@@ -143,20 +143,22 @@ HitableList* CreateScene_ObjModel()
 	Image2D img;
 	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
 	{
-		TextureMaterial* tm = new TextureMaterial(img);
+		PBRMaterial* pbr_mat = new PBRMaterial;
+		pbr_mat->SetAlbedoTexture(img);
+
 		const vec3 origin(1.0f, 0.0f, 0.0f);
 		const vec3 n(0.0f, 0.0f, 1.0f);
  		{
 			Triangle* T = new Triangle(
 				origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f),
-				n, n, n, tm);
+				n, n, n, pbr_mat);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
 			list.push_back(T);
  		}
  		{
  			Triangle* T = new Triangle(
 				origin + vec3(0.0f, 0.0f, 0.0f), origin + vec3(1.0f, 1.0f, 0.0f), origin + vec3(0.0f, 1.0f, 0.0f),
-				n, n, n, tm);
+				n, n, n, pbr_mat);
  			T->SetParameterization(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f);
 			list.push_back(T);
  		}
@@ -175,7 +177,7 @@ HitableList* CreateScene_ObjModel()
 		vec3 v1(0.0f, 0.0f, z);
 		vec3 v2(fanRadius * std::cos(fanEnd), fanRadius * std::sin(fanEnd), z);
 		vec3 n(0.0f, 0.0f, 1.0f);
-		vec3 color = vec3(0.3f, 0.3f, 0.3f) + 0.7f * RandomInUnitSphere();
+		vec3 color = vec3(0.3f, 0.3f, 0.3f) + 0.7f * RandomInHemisphere(vec3(0.0f, 0.0f, 1.0f));
 		list.push_back(new Triangle(v0, v1, v2, n, n, n, new Lambertian(color)));
 	}
 	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
@@ -260,6 +262,7 @@ void GenerateCell(const WorkItemParam* param)
 	const float imageWidth = (float)cell->image->GetWidth();
 	const float imageHeight = (float)cell->image->GetHeight();
 
+	// #todo-multithread: Bad utilization of threads; Some cells might take longer than others.
 	const int32 SPP = std::max(1, SAMPLES_PER_PIXEL);
 	for(int32 y = cell->y; y < endY; ++y)
 	{

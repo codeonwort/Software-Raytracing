@@ -64,6 +64,8 @@ private:
 
 vec3 RandomInUnitSphere();
 
+vec3 RandomInHemisphere(const vec3& axis);
+
 float Random();
 
 vec3 RandomInUnitDisk();

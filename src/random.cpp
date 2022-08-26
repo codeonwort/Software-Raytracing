@@ -22,6 +22,16 @@ vec3 RandomInUnitSphere()
 	return vec3(r * cos(phi), r * sin(phi), z);
 }
 
+vec3 RandomInHemisphere(const vec3& axis)
+{
+	vec3 v = RandomInUnitSphere();
+	if (dot(v, axis) < 0.0)
+	{
+		v = -v;
+	}
+	return v;
+}
+
 float Random()
 {
 	static thread_local RNG randoms(4096 * 8);

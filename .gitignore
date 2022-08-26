@@ -5,6 +5,7 @@ thirdparty/
 bin/
 external/
 .vs/
+test*.bmp
 
 # Prerequisites
 *.d

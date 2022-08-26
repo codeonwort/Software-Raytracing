@@ -37,6 +37,12 @@ class vec3
 
 public:
 	vec3() : vec3(0.0f, 0.0f, 0.0f) {}
+	vec3(float e0)
+	{
+		x = e0;
+		y = e0;
+		z = e0;
+	}
 	vec3(float e0, float e1, float e2)
 	{
 		x = e0;
@@ -107,7 +113,7 @@ inline vec3 operator-(const vec3& v1, float t)
 }
 inline vec3 operator-(float t, const vec3& v1)
 {
-	return vec3(v1.x - t, v1.y - t, v1.z - t);
+	return vec3(t - v1.x, t - v1.y, t - v1.z);
 }
 
 inline vec3 operator*(const vec3& v1, float t)
@@ -132,6 +138,11 @@ inline vec3 normalize(const vec3& v)
 	vec3 u = v;
 	u.Normalize();
 	return u;
+}
+
+inline vec3 mix(const vec3& v1, const vec3& v2, float a)
+{
+	return (1.0f - a) * v1 + a * v2;
 }
 
 inline float dot(const vec3& v1, const vec3& v2)
