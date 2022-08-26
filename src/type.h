@@ -113,7 +113,7 @@ inline vec3 operator-(const vec3& v1, float t)
 }
 inline vec3 operator-(float t, const vec3& v1)
 {
-	return vec3(v1.x - t, v1.y - t, v1.z - t);
+	return vec3(t - v1.x, t - v1.y, t - v1.z);
 }
 
 inline vec3 operator*(const vec3& v1, float t)
@@ -142,7 +142,7 @@ inline vec3 normalize(const vec3& v)
 
 inline vec3 mix(const vec3& v1, const vec3& v2, float a)
 {
-	return a * v1 + (1.0f - a) * v2;
+	return (1.0f - a) * v1 + a * v2;
 }
 
 inline float dot(const vec3& v1, const vec3& v2)
