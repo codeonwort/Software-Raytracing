@@ -27,11 +27,11 @@ Rotator Rotator::directionToYawPitch(const vec3& dir)
 	// https://gamedev.stackexchange.com/questions/172147/convert-3d-direction-vectors-to-yaw-pitch-roll-angles
 	const vec3 up(0.0f, 1.0f, 0.0f);
 	const vec3 forward(1.0f, 0.0f, 0.0f);
-	float yaw = atan2(-dir.z, dir.x);
+	float yaw = atan2f(-dir.z, dir.x);
 	float pitch = asinf(dir.y / mag);
-	float planeRightX = sin(yaw);
-	float planeRightY = -cos(yaw);
-	float roll = asin(up.x * planeRightX + up.z * planeRightY);
+	float planeRightX = sinf(yaw);
+	float planeRightY = -cosf(yaw);
+	float roll = asinf(up.x * planeRightX + up.z * planeRightY);
 	if (up.y < 0.0f) roll = (roll < 0.0f ? -1.0f : 1.0f) * pi<float> -roll;
 	return Rotator(toDegrees(yaw), toDegrees(pitch), toDegrees(roll));
 }
@@ -40,7 +40,7 @@ vec3 Rotator::toDirection() const
 {
 	float theta = toRadians(yaw);
 	float phi = toRadians(pitch);
-	float cosPhi = ::cosf(phi);
+	float cosPhi = cosf(phi);
 	return vec3(sinf(theta) * cosPhi, sinf(phi), cosf(theta) * cosPhi);
 }
 
@@ -49,12 +49,12 @@ vec3 Rotator::rotate(const vec3& position) const
 	const float rad_yaw = toRadians(yaw);
 	const float rad_pitch = toRadians(pitch);
 	const float rad_roll = toRadians(roll);
-	const float ch = ::cosf(rad_yaw);
-	const float sh = ::sinf(rad_yaw);
-	const float cp = ::cosf(rad_pitch);
-	const float sp = ::sinf(rad_pitch);
-	const float cb = ::cosf(rad_roll);
-	const float sb = ::sinf(rad_roll);
+	const float ch = cosf(rad_yaw);
+	const float sh = sinf(rad_yaw);
+	const float cp = cosf(rad_pitch);
+	const float sp = sinf(rad_pitch);
+	const float cb = cosf(rad_roll);
+	const float sb = sinf(rad_roll);
 
 	vec3 M[3] = {
 		vec3{ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb},
