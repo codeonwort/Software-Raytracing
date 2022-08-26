@@ -41,7 +41,7 @@ public:
 		endCapture = timeEndCapture;
 	}
 
-	ray GetRay(float s, float t)
+	ray GetRay(float s, float t) const
 	{
 		vec3 rd     = lens_radius * RandomInUnitDisk();
 		vec3 offset = (u * rd.x) + (v * rd.y);
