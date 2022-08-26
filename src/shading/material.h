@@ -54,28 +54,6 @@ public:
 
 };
 
-class Lambertian : public Material
-{
-
-public:
-	Lambertian(const vec3& inAlbedo)
-		: albedo(inAlbedo)
-	{
-	}
-
-	virtual bool Scatter(
-		const ray& inRay, const HitResult& inResult,
-		vec3& outAttenuation, ray& outScattered) const override
-	{
-		outScattered = ray(inResult.p, RandomInHemisphere(inResult.n), inRay.t);
-		outAttenuation = albedo;
-		return true;
-	}
-
-	vec3 albedo;
-
-};
-
 class Metal : public Material
 {
 
@@ -110,6 +88,8 @@ public:
 
 };
 
+// Lambertian diffuse + Cook-Torrance specular BRDF
+// with roughness/metallic workflow.
 class PBRMaterial : public Material {
 
 public:
@@ -170,4 +150,15 @@ private:
 	float roughnessFallback;
 	float metallicFallback;
 	vec3 emissiveFallback;
+};
+
+// Special case of PBRMaterial
+// with roughness = 1, metallic = 0, emissive = (0,0,0).
+class Lambertian : public PBRMaterial
+{
+public:
+	Lambertian(const vec3& inAlbedo)
+	{
+		SetAlbedoFallback(inAlbedo);
+	}
 };

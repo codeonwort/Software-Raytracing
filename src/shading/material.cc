@@ -67,26 +67,10 @@ bool PBRMaterial::Scatter(
 	float roughness = roughnessFallback;
 	float metallic = metallicFallback;
 
-	// #todo-texture: Pre-multiply alpha?
 	if (albedoTexture) {
+		// #todo-texture: Pre-multiply alpha?
 		baseColor = albedoTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
 	}
-
-	vec3 N = inResult.n;
-	// #todo-pbr: Barely seeing specular highlight without direct sampling.
-	// Needs importance sampling; scatter more rays toward specular lobe.
-	vec3 Wi = normalize(RandomInHemisphere(N)); // L
-	if (Random() < 0.05f) {
-		Wi = reflect(inRay.d, N);
-	}
-	vec3 Wo = -inRay.d; // V
-	vec3 H = normalize(Wo + Wi);
-
-	// Early exit
-	if (dot(Wo, N) < 0.0f) {
-		return false;
-	}
-
 	if (normalmapTexture) {
 		vec3 localN = normalmapTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
 		// #todo-pbr: Rotate localN around N (normal mapping)
@@ -96,6 +80,21 @@ bool PBRMaterial::Scatter(
 	}
 	if (metallicTexture) {
 		metallic = metallicTexture->Sample(inResult.paramU, inResult.paramV).r;
+	}
+
+	vec3 N = inResult.n;
+	// #todo-pbr: Barely seeing specular highlight without direct sampling.
+	// Needs importance sampling; scatter more rays toward specular lobe.
+	vec3 Wi = normalize(RandomInHemisphere(N)); // L
+	if (roughness < 1.0f && Random() < 0.05f) {
+		Wi = reflect(inRay.d, N);
+	}
+	vec3 Wo = -inRay.d; // V
+	vec3 H = normalize(Wo + Wi);
+
+	// Early exit
+	if (dot(Wo, N) < 0.0f) {
+		return false;
 	}
 
 	vec3 F0 = vec3(0.04f);
