@@ -1,10 +1,7 @@
 #include "image_loader.h"
-#include "src/log.h"
-#include "src/util/resource_finder.h"
-#include "src/util/assertion.h"
-
-#pragma comment(lib, "FreeImage.lib")
-
+#include "log.h"
+#include "util/resource_finder.h"
+#include "util/assertion.h"
 
 void ImageLoader::Initialize()
 {

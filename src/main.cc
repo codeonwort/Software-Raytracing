@@ -3,7 +3,6 @@
 #include "log.h"
 #include "camera.h"
 #include "random.h"
-#include "material.h"
 #include "transform.h"
 #include "thread_pool.h"
 #include "util/stat.h"
@@ -16,6 +15,7 @@
 #include "geom/static_mesh.h"
 #include "loader/obj_loader.h"
 #include "loader/image_loader.h"
+#include "shading/material.h"
 
 #include <vector>
 #include <thread>

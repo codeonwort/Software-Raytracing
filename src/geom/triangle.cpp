@@ -1,5 +1,5 @@
 #include "triangle.h"
-#include "src/material.h"
+#include "shading/material.h"
 
 // http://geomalgorithms.com/a06-_intersect-2.html
 bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const

@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 
 # Add source to this project's executable.
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/source)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/tinyobjloader/source)
 
@@ -27,5 +28,5 @@ add_custom_command(TARGET RayTracer POST_BUILD
 	
 # TODO: This injects a hard-coded path to the executable.
 #       Moving the project to another directory will make
-#       the application fail to find shader binaries.
+#       the resource finder to fail.
 add_compile_definitions(SOLUTION_DIR="${CMAKE_SOURCE_DIR}/")
