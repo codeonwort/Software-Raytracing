@@ -9,39 +9,31 @@
 
 #include <algorithm>
 
+// #todo-pbr: References
+// https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
+// https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
 #define SUPPORT_PBR_MATERIAL 1
-// #todo-pbr: https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
-#define FIX_BRDF             1
 
 namespace BRDF
 {
 	const float PI = 3.14159265359f;
 
-	inline vec3 FresnelSchlick(float cosTheta, vec3 F0)
+	// cosTheta = dot(incident_or_exitant_light, half_vector)
+	inline vec3 FresnelSchlick(float cosTheta, const vec3& F0)
 	{
 		return F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
 	}
 
-	inline vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+	inline vec3 FresnelSchlickRoughness(float cosTheta, const vec3& F0, float roughness)
 	{
 		return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(1.0f - cosTheta, 5.0f);
 	}
 
-	inline float DistributionGGX(vec3 N, vec3 H, float roughness)
+	inline float DistributionGGX(const vec3& N, const vec3& H, float roughness)
 	{
-#if FIX_BRDF
 		float a = roughness * roughness;
 		float a2 = a * a;
 		float NdotH = dot(N, H);
-		float NdotH2 = NdotH * NdotH;
-
-		float num = expf((NdotH2 - 1.0f) / (a2 * NdotH2));
-		float denom = BRDF::PI * a2 * NdotH2 * NdotH2;
-		return num / denom;
-#else
-		float a = roughness * roughness;
-		float a2 = a * a;
-		float NdotH = std::max(dot(N, H), 0.0f);
 		float NdotH2 = NdotH * NdotH;
 
 		float num = a2;
@@ -49,7 +41,6 @@ namespace BRDF
 		denom = PI * denom * denom;
 
 		return num / denom;
-#endif
 	}
 
 	inline float GeometrySchlickGGX(float NdotV, float roughness)
@@ -63,10 +54,10 @@ namespace BRDF
 		return num / denom;
 	}
 
-	inline float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+	inline float GeometrySmith(const vec3& N, const vec3& V, const vec3& L, float roughness)
 	{
-		float NdotV = std::max(dot(N, V), 0.0f);
-		float NdotL = std::max(dot(N, L), 0.0f);
+		float NdotV = std::max(0.0f, dot(N, V));
+		float NdotL = std::max(0.0f, dot(N, L));
 		float ggx2 = GeometrySchlickGGX(NdotV, roughness);
 		float ggx1 = GeometrySchlickGGX(NdotL, roughness);
 
@@ -184,23 +175,40 @@ public:
 		const ray& inRay, const HitResult& inResult,
 		vec3& outAttenuation, ray& outScattered) const override
 	{
-		vec3 albedo(0.0f, 0.0f, 0.0f);
-		vec3 Wo = normalize(RandomInHemisphere(inResult.n));
+		vec3 baseColor(0.0f, 0.0f, 0.0f);
 		
 		// #todo-texture: Pre-multiply alpha?
 		if (albedoTexture)
 		{
-			albedo = albedoTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
+			baseColor = albedoTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
+		}
+
+		// Default: Lambertian non-metal surface
+#if 0
+		baseColor = vec3(1.0f);
+		float roughness = 0.4f;
+		float metallic = 1.0f;
+#else
+		float roughness = 1.0f;
+		float metallic = 0.0f;
+#endif
+		vec3 N = inResult.n;
+
+		// #todo-pbr: Barely seeing specular highlight without direct sampling.
+		// Needs importance sampling; scatter more rays toward specular lobe.
+		vec3 Wi = normalize(RandomInHemisphere(N)); // L
+		if (Random() < 0.05f) {
+			Wi = reflect(inRay.d, N);
+		}
+		vec3 Wo = -inRay.d; // V
+		vec3 H = normalize(Wo + Wi);
+
+		// Early exit
+		if (dot(Wo, N) < 0.0f) {
+			return false;
 		}
 
 #if SUPPORT_PBR_MATERIAL
-		// Default: Lambertian non-metal surface
-		float roughness = 1.0f;
-		float metallic = 0.0f;
-
-		vec3 N = inResult.n;
-		vec3 V = -inRay.d;
-		vec3 H = normalize(V + Wo);
 		if (normalmapTexture)
 		{
 			vec3 localN = normalmapTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
@@ -216,42 +224,25 @@ public:
 		}
 
 		vec3 F0 = vec3(0.04f);
-		F0 = mix(F0, min(albedo, vec3(1.0f)), metallic);
+		F0 = mix(F0, min(baseColor, vec3(1.0f)), metallic);
 
+		vec3 F = BRDF::FresnelSchlick(dot(H, Wo), F0);
+		float G = BRDF::GeometrySmith(N, Wi, Wo, roughness);
 		float NDF = BRDF::DistributionGGX(N, H, roughness);
-		float G = BRDF::GeometrySmith(N, V, Wo, roughness);
-		vec3 F = BRDF::FresnelSchlick(std::max(dot(H, V), 0.0f), F0);
 
-#if 0
 		vec3 kS = F;
-#else
-		// #todo-pbr: How to sample specular component
-		// when I randomly select the outgoing direction?
-		// Let's cancel out for now.
-		vec3 kS = vec3(0.0f);
-#endif
-		vec3 kD = vec3(1.0f) - kS;
-		kD *= 1.0f - metallic;
-		vec3 diffuse = kD * albedo;
+		vec3 kD = 1.0f - kS;
+		vec3 diffuse = baseColor * (1.0f - metallic);
+		vec3 specular = (F * G * NDF) / (4.0f * dot(N, Wi) * dot(N, Wo) + 0.001f);
 
-		// #todo-pbr: Is this right?
-		float NdotL = std::max(dot(N, Wo), 0.0f);
-		float NdotV = std::max(dot(N, V), 0.0f);
-
-#if FIX_BRDF
-		vec3 specular = (BRDF::PI * 0.5f) * (NDF * F * G) / NdotL;
-#else
-		vec3 num = NDF * G * F;
-		float denom = 4.0f * NdotV * NdotL;
-		vec3 specular = num / max(denom, 0.001f);
-#endif
-
-		outScattered = ray(inResult.p, Wo, inRay.t);
-		outAttenuation = (kD * diffuse + kS * specular) * NdotL;
+		outScattered = ray(inResult.p, Wi, inRay.t);
+		// #todo-pbr: Should I multiply cosine weight?
+		outAttenuation = (kD * diffuse + kS * specular) * std::max(0.0f, dot(N, Wi));
+		//outAttenuation = (kD * diffuse + kS * specular);
 		return true;
 #else // SUPPORT_PBR_MATERIAL
-		outScattered = ray(inResult.p, Wo, inRay.t);
-		outAttenuation = albedo;
+		outScattered = ray(inResult.p, Wi, inRay.t);
+		outAttenuation = baseColor;
 		return true;
 #endif // SUPPORT_PBR_MATERIAL
 	}
