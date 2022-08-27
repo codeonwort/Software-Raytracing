@@ -21,7 +21,7 @@
 
 // Test scene settings
 #define CREATE_RANDOM_SCENE     CreateScene_ObjModel
-// TODO: BVH for static mesh is still too slow for bedroom
+// #todo: Bedroom scene is still too slow.
 //#define CREATE_RANDOM_SCENE     CreateScene_Bedroom
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 #define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
@@ -47,7 +47,95 @@
 #define MAX_RECURSION           5
 #define RAY_T_MIN               0.001f
 
-// TODO: ResourceFinder can't find content/ in the project directory (.exe is generated in out/build/{Configuration}/src)
+// Demo scenes
+HitableList* CreateScene_Bedroom();
+HitableList* CreateScene_ObjModel();
+HitableList* CreateScene_RandomSpheres();
+HitableList* CreateScene_FourSpheres();
+
+void InitializeSubsystems() {
+	SCOPED_CPU_COUNTER(InitializeSubsystems);
+
+	StartLogThread();
+	ResourceFinder::Get().AddDirectory("./content/");
+	ImageLoader::Initialize();
+	OBJLoader::Initialize();
+}
+void DestroySubsystems() {
+	OBJLoader::Destroy();
+	ImageLoader::Destroy();
+	WaitForLogThread();
+}
+
+int main(int argc, char** argv) {
+	SCOPED_CPU_COUNTER(main);
+
+	//
+	// Initialize
+	//
+	InitializeSubsystems();
+
+	log("raytracing study");
+
+#if TEST_IMAGE_LOADER
+	Image2D test;
+	if (ImageLoader::SyncLoad("content/odyssey.jpg", test)) {
+		WriteBitmap(test, RESULT_FILENAME);
+		return 0;
+	}
+#endif
+
+	const int32 width = VIEWPORT_WIDTH;
+	const int32 height = VIEWPORT_HEIGHT;
+	Image2D image(width, height, 0x123456);
+
+	log("generate a test image (width: %d, height: %d)", width, height);
+
+	//
+	// Create a scene
+	//
+	BVHNode* worldBVH = nullptr;
+	{
+		HitableList* world = CREATE_RANDOM_SCENE();
+		worldBVH = new BVHNode(world, CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+	}
+
+	const float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
+	Camera camera(
+		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
+		FOV_Y, (float)width / (float)height,
+		CAMERA_APERTURE, dist_to_focus,
+		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+
+	//
+	// Generate an image with multi-threading
+	//
+	RendererSettings rendererSettings;
+	{
+		rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
+		rendererSettings.maxPathLength = MAX_RECURSION;
+		rendererSettings.rayTMin = RAY_T_MIN;
+		rendererSettings.fakeSkyLight = FAKE_SKY_LIGHT;
+	}
+	Renderer renderer;
+	// NOTE: This is a blocking operation for now.
+	renderer.RenderScene(rendererSettings, worldBVH, &camera, &image);
+
+	image.PostProcess();
+
+	WriteBitmap(image, RESULT_FILENAME);
+
+	log("image has been written as bitmap: %s", RESULT_FILENAME);
+
+	//
+	// Cleanup
+	//
+	DestroySubsystems();
+
+	return 0;
+}
+
+
 HitableList* CreateScene_Bedroom()
 {
 	SCOPED_CPU_COUNTER(CreateScene_Bedroom);
@@ -199,86 +287,4 @@ HitableList* CreateScene_FourSpheres()
 	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
 	HitableList* world = new HitableList(list);
 	return world;
-}
-
-void InitializeSubsystems()
-{
-	SCOPED_CPU_COUNTER(InitializeSubsystems);
-
-	StartLogThread();
-	ResourceFinder::Get().AddDirectory("./content/");
-	ImageLoader::Initialize();
-	OBJLoader::Initialize();
-}
-void DestroySubsystems()
-{
-	OBJLoader::Destroy();
-	ImageLoader::Destroy();
-	WaitForLogThread();
-}
-
-int main(int argc, char** argv)
-{
-	SCOPED_CPU_COUNTER(main);
-
-	InitializeSubsystems();
-
-	log("raytracing study");
-
-#if TEST_IMAGE_LOADER
-	Image2D test;
-	if (ImageLoader::SyncLoad("content/odyssey.jpg", test))
-	{
-		WriteBitmap(test, RESULT_FILENAME);
-		return 0;
-	}
-#endif
-
-	const int32 width = VIEWPORT_WIDTH;
-	const int32 height = VIEWPORT_HEIGHT;
-	Image2D image(width, height, 0x123456);
-
-	log("generate a test image (width: %d, height: %d)", width, height);
-
-	//
-	// Create a scene
-	//
-	BVHNode* worldBVH = nullptr;
-	{
-		HitableList* world = CREATE_RANDOM_SCENE();
-		worldBVH = new BVHNode(world, CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
-	}
-
-	const float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
-	Camera camera(
-		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
-		FOV_Y, (float)width/(float)height,
-		CAMERA_APERTURE, dist_to_focus,
-		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
-
-	//
-	// Generate an image with multi-threading
-	//
-	RendererSettings rendererSettings;
-	{
-		rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
-		rendererSettings.maxPathLength = MAX_RECURSION;
-		rendererSettings.rayTMin = RAY_T_MIN;
-		rendererSettings.fakeSkyLight = FAKE_SKY_LIGHT;
-	}
-	Renderer renderer;
-	// NOTE: This is a blocking operation for now.
-	renderer.RenderScene(rendererSettings, worldBVH, &camera, &image);
-
-	image.PostProcess();
-
-	WriteBitmap(image, RESULT_FILENAME);
-
-	log("image has been written as bitmap");
-
-	//////////////////////////////////////////////////////////////////////////
-	// Cleanup
-	DestroySubsystems();
-
-	return 0;
 }
