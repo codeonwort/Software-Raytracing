@@ -177,6 +177,11 @@ inline bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& outRef
 	return false;
 }
 
+inline vec3 abs(const vec3& v)
+{
+	return vec3(abs(v.x), abs(v.y), abs(v.z));
+}
+
 inline vec3 min(const vec3& v1, const vec3& v2)
 {
 	float x = std::min(v1.x, v2.x);

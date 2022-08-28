@@ -92,13 +92,8 @@ bool PBRMaterial::Scatter(
 	vec3 Wo = -inRay.d; // V
 	vec3 H = normalize(Wo + Wi);
 
-	// Early exit
-	if (dot(Wo, N) < 0.0f) {
-		return false;
-	}
-
 	vec3 F0 = vec3(0.04f);
-	F0 = mix(F0, min(baseColor, vec3(1.0f)), metallic);
+	F0 = mix(F0, baseColor, metallic);
 
 	vec3 F = BRDF::FresnelSchlick(dot(H, Wo), F0);
 	float G = BRDF::GeometrySmith(N, Wi, Wo, roughness);
@@ -111,7 +106,7 @@ bool PBRMaterial::Scatter(
 
 	outScattered = ray(inResult.p, Wi, inRay.t);
 	// #todo-pbr: Should I multiply cosine weight?
-	outAttenuation = (kD * diffuse + kS * specular) * std::max(0.0f, dot(N, Wi));
+	outAttenuation = (kD * diffuse + kS * specular) * abs(dot(N, Wi));
 	//outAttenuation = (kD * diffuse + kS * specular);
 	return true;
 }

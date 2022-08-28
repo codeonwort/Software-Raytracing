@@ -39,8 +39,8 @@ namespace BRDF {
 	}
 
 	inline float GeometrySmith(const vec3& N, const vec3& V, const vec3& L, float roughness) {
-		float NdotV = std::max(0.0f, dot(N, V));
-		float NdotL = std::max(0.0f, dot(N, L));
+		float NdotV = abs(dot(N, V));
+		float NdotL = abs(dot(N, L));
 		float ggx2 = GeometrySchlickGGX(NdotV, roughness);
 		float ggx1 = GeometrySchlickGGX(NdotL, roughness);
 
