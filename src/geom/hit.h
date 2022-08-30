@@ -15,14 +15,22 @@ class Material;
 struct HitResult
 {
 	float     t; // ray.at(t) = p
-	vec3      p; // position
-	vec3      n; // normal
+	vec3      p; // position (world space)
+	vec3      n; // normal (world space)
 
 	// surface parameterization
 	float     paramU;
 	float     paramV;
 
 	Material* material;
+
+public:
+	void BuildOrthonormalBasis();
+	vec3 LocalToWorld(const vec3& localDirection);
+	vec3 WorldToLocal(const vec3& worldDirection);
+private:
+	vec3 tangent;
+	vec3 bitangent;
 };
 
 class Hitable
