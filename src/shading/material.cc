@@ -1,8 +1,13 @@
 #include "material.h"
 
-// #todo-pbr: References
-// https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
+// Use Beckmann distribution and shadowing term
+#define BECKMANN 1
+
+// -------------------------------
+
 // https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
+// https://www.gamedev.net/blogs/entry/2261786-microfacet-importance-sampling-for-dummies/
+// https://computergraphics.stackexchange.com/questions/4394/path-tracing-the-cook-torrance-brdf
 
 // #todo: Specially for Dielectric
 inline float Schlick(float cosine, float ref_idx) {
@@ -87,7 +92,9 @@ bool PBRMaterial::Scatter(
 	// Needs importance sampling; scatter more rays toward specular lobe.
 	vec3 Wi = normalize(RandomInHemisphere(N)); // L
 	if (roughness < 1.0f && Random() < 0.05f) {
-		Wi = reflect(inRay.d, N);
+		vec3 R = reflect(inRay.d, N);
+		//Wi = normalize(mix(R, Wi, roughness));
+		Wi = R;
 	}
 	vec3 Wo = -inRay.d; // V
 	vec3 H = normalize(Wo + Wi);
@@ -96,8 +103,13 @@ bool PBRMaterial::Scatter(
 	F0 = mix(F0, baseColor, metallic);
 
 	vec3 F = BRDF::FresnelSchlick(dot(H, Wo), F0);
-	float G = BRDF::GeometrySmith(N, Wi, Wo, roughness);
+#if BECKMANN
+	float G = BRDF::GeometrySmith_Beckmann(N, H, Wo, Wi, roughness);
+	float NDF = BRDF::DistributionBeckmann(N, H, roughness);
+#else
+	float G = BRDF::GeometrySmith_SchlickGGX(N, Wi, Wo, roughness);
 	float NDF = BRDF::DistributionGGX(N, H, roughness);
+#endif
 
 	vec3 kS = F;
 	vec3 kD = 1.0f - kS;
@@ -107,7 +119,6 @@ bool PBRMaterial::Scatter(
 	outScattered = ray(inResult.p, Wi, inRay.t);
 	// #todo-pbr: Should I multiply cosine weight?
 	outAttenuation = (kD * diffuse + kS * specular) * abs(dot(N, Wi));
-	//outAttenuation = (kD * diffuse + kS * specular);
 	return true;
 }
 
