@@ -91,11 +91,11 @@ bool PBRMaterial::Scatter(
 	// #todo-pbr: Barely seeing specular highlight without direct sampling.
 	// Needs importance sampling; scatter more rays toward specular lobe.
 	vec3 Wi = normalize(RandomInHemisphere(N)); // L
-	if (roughness < 1.0f && Random() < 0.05f) {
-		vec3 R = reflect(inRay.d, N);
-		//Wi = normalize(mix(R, Wi, roughness));
-		Wi = R;
-	}
+	//if (roughness < 1.0f && Random() < 0.05f) {
+	//	vec3 R = reflect(inRay.d, N);
+	//	//Wi = normalize(mix(R, Wi, roughness));
+	//	Wi = R;
+	//}
 	vec3 Wo = -inRay.d; // V
 	vec3 H = normalize(Wo + Wi);
 

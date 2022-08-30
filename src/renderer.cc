@@ -32,13 +32,13 @@ struct RayTracingSettings {
 	bool fakeSkyLight;
 };
 
-vec3 TraceScene(const ray& r, const Hitable* world, int depth, const RayTracingSettings& settings) {
+vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayTracingSettings& settings) {
 	HitResult result;
-	if (world->Hit(r, settings.rayTMin, FLOAT_MAX, result)) {
+	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, result)) {
 		ray scattered;
 		vec3 attenuation;
 		vec3 emitted = result.material->Emitted(result.paramU, result.paramV, result.p);
-		if (depth < settings.maxRecursion && result.material->Scatter(r, result, attenuation, scattered)) {
+		if (depth < settings.maxRecursion && result.material->Scatter(pathRay, result, attenuation, scattered)) {
 			return emitted + attenuation * TraceScene(scattered, world, depth + 1, settings);
 		} else {
 			return emitted;
@@ -46,7 +46,7 @@ vec3 TraceScene(const ray& r, const Hitable* world, int depth, const RayTracingS
 	}
 
 	if (settings.fakeSkyLight) {
-		vec3 dir = r.d;
+		vec3 dir = pathRay.d;
 		dir.Normalize();
 		float t = 0.5f * (dir.y + 1.0f);
 		return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));

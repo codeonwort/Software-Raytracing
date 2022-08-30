@@ -69,3 +69,6 @@ vec3 RandomInHemisphere(const vec3& axis);
 float Random();
 
 vec3 RandomInUnitDisk();
+
+// Cosine-weighted samples on hemisphere.
+vec3 RandomInCosineHemisphere();
