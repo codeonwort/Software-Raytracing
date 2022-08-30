@@ -20,7 +20,7 @@
 
 
 // Test scene settings
-#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
+#define CREATE_RANDOM_SCENE     CreateScene_CarShowRoom
 // #todo: Bedroom scene is still too slow.
 //#define CREATE_RANDOM_SCENE     CreateScene_Bedroom
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
@@ -43,11 +43,12 @@
 #define RESULT_FILENAME         SOLUTION_DIR "test.bmp"
 
 // Rendering configuration
-#define SAMPLES_PER_PIXEL       100
+#define SAMPLES_PER_PIXEL       200
 #define MAX_RECURSION           5
 #define RAY_T_MIN               0.001f
 
 // Demo scenes
+HitableList* CreateScene_CarShowRoom();
 HitableList* CreateScene_Bedroom();
 HitableList* CreateScene_ObjModel();
 HitableList* CreateScene_RandomSpheres();
@@ -135,6 +136,147 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
+HitableList* CreateScene_CarShowRoom()
+{
+	SCOPED_CPU_COUNTER(CreateRandomScene);
+
+	std::vector<Hitable*> list;
+
+	// #todo-showroom: Include bmw-m6 model from https://www.pbrt.org/scenes-v3
+	// to make this scene a real show room.
+
+	const int32 numCols = 16;
+	const int32 numRows = 8;
+	const float minRadius = 1.0f;
+	const float maxRadius = 1.8f;
+	const float height = 2.0f;
+
+	const float deltaPhi = (2.0f * (float)M_PI) / (float)numCols;
+	const float deltaHeight = height / (float)numRows;
+
+	auto RadiiFn = [](float r0, float r1, float t) -> float {
+		t = 2.0f * t - 1.0f;
+		t = 1.0f - sqrtf(1.0f - t * t);
+		return r0 + t * (r1 - r0);
+	};
+
+#define USE_STATIC_MESH_PILLAR 1
+
+#if USE_STATIC_MESH_PILLAR
+	StaticMesh* pillar = new StaticMesh;
+	list.push_back(pillar);
+#endif
+
+	for (int32 row = 0; row < numRows; ++row) {
+		float z0 = height * (float)row / numRows;
+		float z1 = z0 + 0.95f * deltaHeight;
+		float radius0 = RadiiFn(minRadius, maxRadius, (float)row / numRows);
+		float radius1 = RadiiFn(minRadius, maxRadius, (float)(row + 1) / numRows);
+		for (int32 col = 0; col < numCols; ++col) {
+			float phi = (float)col * deltaPhi;
+			float phiNext = phi + 0.95f * deltaPhi;
+			float x0 = cosf(phi);
+			float y0 = sinf(phi);
+			float x1 = cosf(phiNext);
+			float y1 = sinf(phiNext);
+
+			vec3 v0 = vec3(radius0, 1.0f, radius0) * vec3(x0, z0, y0);
+			vec3 v1 = vec3(radius0, 1.0f, radius0) * vec3(x1, z0, y1);
+			vec3 v2 = vec3(radius1, 1.0f, radius1) * vec3(x0, z1, y0);
+			vec3 v3 = vec3(radius1, 1.0f, radius1) * vec3(x1, z1, y1);
+
+			vec3 p0 = (v0 + v1) / 2.0f;
+			vec3 p1 = (v1 + v3) / 2.0f;
+			vec3 p2 = (v2 + v0) / 2.0f;
+			vec3 p3 = (v3 + v2) / 2.0f;
+			v0 = p0; v1 = p1; v2 = p2; v3 = p3;
+
+			vec3 n0 = normalize(cross(v1 - v0, v2 - v0));
+			vec3 n1 = normalize(cross(v3 - v1, v0 - v1));
+			vec3 n2 = normalize(cross(v0 - v2, v3 - v2));
+			vec3 n3 = normalize(cross(v2 - v3, v1 - v3));
+
+			//Material* mat = new Lambertian(0.2f + 0.75f * abs(RandomInUnitSphere()));
+			PBRMaterial* mat = new PBRMaterial;
+			mat->SetAlbedoFallback(0.2f + 0.75f * abs(RandomInUnitSphere()));
+			mat->SetRoughnessFallback(0.1f);
+			//mat->SetMetallicFallback(1.0f);
+
+#if USE_STATIC_MESH_PILLAR
+			pillar->AddTriangle(Triangle(v0, v1, v2, n0, n1, n2, mat));
+			pillar->AddTriangle(Triangle(v1, v3, v2, n1, n3, n2, mat));
+#else
+			Triangle* tri0 = new Triangle(v0, v1, v2, n0, n1, n2, mat);
+			Triangle* tri1 = new Triangle(v1, v3, v2, n1, n3, n2, mat);
+			list.push_back(tri0);
+			list.push_back(tri1);
+#endif
+		}
+	}
+	for (int32 row = 0; row < numRows; ++row) {
+		float row2 = (float)row + 0.5f;
+		float z0 = height * ((float)row + 0.5f) / numRows;
+		float z1 = z0 + 0.95f * deltaHeight;
+		float radius0 = RadiiFn(minRadius, maxRadius, row2 / numRows);
+		float radius1 = RadiiFn(minRadius, maxRadius, (row2 + 1.0f) / numRows);
+		for (int32 col = 0; col < numCols; ++col) {
+			float col2 = (float)col + 0.5f;
+			float phi = col2 * deltaPhi;
+			float phiNext = phi + 0.95f * deltaPhi;
+			float x0 = cosf(phi);
+			float y0 = sinf(phi);
+			float x1 = cosf(phiNext);
+			float y1 = sinf(phiNext);
+
+			vec3 v0 = vec3(radius0, 1.0f, radius0) * vec3(x0, z0, y0);
+			vec3 v1 = vec3(radius0, 1.0f, radius0) * vec3(x1, z0, y1);
+			vec3 v2 = vec3(radius1, 1.0f, radius1) * vec3(x0, z1, y0);
+			vec3 v3 = vec3(radius1, 1.0f, radius1) * vec3(x1, z1, y1);
+
+			vec3 p0 = (v0 + v1) / 2.0f;
+			vec3 p1 = (v1 + v3) / 2.0f;
+			vec3 p2 = (v2 + v0) / 2.0f;
+			vec3 p3 = (v3 + v2) / 2.0f;
+			v0 = p0; v1 = p1; v2 = p2; v3 = p3;
+
+			vec3 n0 = normalize(cross(v1 - v0, v2 - v0));
+			vec3 n1 = normalize(cross(v3 - v1, v0 - v1));
+			vec3 n2 = normalize(cross(v0 - v2, v3 - v2));
+			vec3 n3 = normalize(cross(v2 - v3, v1 - v3));
+
+			//Material* mat = new Lambertian(0.2f + 0.75f * abs(RandomInUnitSphere()));
+			PBRMaterial* mat = new PBRMaterial;
+			//mat->SetAlbedoFallback(0.2f + 0.75f * abs(RandomInUnitSphere()));
+			mat->SetAlbedoFallback(vec3(0.9f));
+			mat->SetRoughnessFallback(0.2f);
+			//mat->SetMetallicFallback(1.0f);
+
+#if USE_STATIC_MESH_PILLAR
+			pillar->AddTriangle(Triangle(v0, v1, v2, n0, n1, n2, mat));
+			pillar->AddTriangle(Triangle(v1, v3, v2, n1, n3, n2, mat));
+#else
+			Triangle* tri0 = new Triangle(v0, v1, v2, n0, n1, n2, mat);
+			Triangle* tri1 = new Triangle(v1, v3, v2, n1, n3, n2, mat);
+			list.push_back(tri0);
+			list.push_back(tri1);
+#endif
+		}
+	}
+
+#if USE_STATIC_MESH_PILLAR
+	pillar->Finalize();
+#endif
+
+	list.push_back(new sphere(vec3(3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.9f, 0.2f, 0.2f))));
+	list.push_back(new sphere(vec3(-3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.2f, 0.9f, 0.2f))));
+	list.push_back(new sphere(vec3(0.0f, 1.0f, 3.0f), 1.0f, new Lambertian(vec3(0.2f, 0.2f, 0.9f))));
+
+	// Ground
+	sphere* ground = new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f)));
+	list.push_back(ground);
+
+	return new HitableList(list);
+}
 
 HitableList* CreateScene_Bedroom()
 {
