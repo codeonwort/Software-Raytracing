@@ -20,7 +20,7 @@
 
 
 // Test scene settings
-#define CREATE_RANDOM_SCENE     CreateScene_CarShowRoom
+#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
 // #todo: Bedroom scene is still too slow.
 //#define CREATE_RANDOM_SCENE     CreateScene_Bedroom
 #define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
@@ -248,7 +248,7 @@ HitableList* CreateScene_CarShowRoom()
 			PBRMaterial* mat = new PBRMaterial;
 			//mat->SetAlbedoFallback(0.2f + 0.75f * abs(RandomInUnitSphere()));
 			mat->SetAlbedoFallback(vec3(0.9f));
-			mat->SetRoughnessFallback(0.2f);
+			mat->SetRoughnessFallback(0.1f);
 			//mat->SetMetallicFallback(1.0f);
 
 #if USE_STATIC_MESH_PILLAR
@@ -365,15 +365,28 @@ HitableList* CreateScene_ObjModel()
 	{
 		float fanBegin = pi<float>* fanAngle* i;
 		float fanEnd = pi<float> * fanAngle * (i + 1);
-		float fanRadius = 2.0f + 1.0f * (float)i / numFans;
+		float fanRadius = 3.0f + 1.0f * (float)i / numFans;
 		float z = -2.0f;
 		vec3 v0(fanRadius * std::cos(fanBegin), fanRadius * std::sin(fanBegin), z);
 		vec3 v1(0.0f, 0.0f, z);
 		vec3 v2(fanRadius * std::cos(fanEnd), fanRadius * std::sin(fanEnd), z);
 		vec3 n(0.0f, 0.0f, 1.0f);
-		vec3 color = vec3(0.3f, 0.3f, 0.3f) + 0.7f * RandomInHemisphere(vec3(0.0f, 0.0f, 1.0f));
-		list.push_back(new Triangle(v0, v1, v2, n, n, n, new Lambertian(color)));
+
+		vec3 color = vec3(0.3f, 0.3f, 0.3f) + 0.6f * abs(RandomInUnitSphere());
+#if 0
+		Material* mat = new Lambertian(color);
+#else
+		PBRMaterial* mat = new PBRMaterial;
+		mat->SetAlbedoFallback(color);
+		//mat->SetAlbedoFallback(vec3(0.9f));
+		mat->SetRoughnessFallback(0.1f);
+		mat->SetMetallicFallback(1.0f);
+#endif
+
+		list.push_back(new Triangle(v0, v1, v2, n, n, n, mat));
 	}
+
+	// Ground
 	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
 
 	return new HitableList(list);
