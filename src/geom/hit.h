@@ -26,8 +26,8 @@ struct HitResult
 
 public:
 	void BuildOrthonormalBasis();
-	vec3 LocalToWorld(const vec3& localDirection);
-	vec3 WorldToLocal(const vec3& worldDirection);
+	vec3 LocalToWorld(const vec3& localDirection) const;
+	vec3 WorldToLocal(const vec3& worldDirection) const;
 private:
 	vec3 tangent;
 	vec3 bitangent;

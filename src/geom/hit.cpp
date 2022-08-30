@@ -9,22 +9,22 @@ inline void CalcOrthonormalBasis(const vec3& N, vec3& T, vec3& B) {
 	} else {
 		T = vec3(1.0f, 0.0f, 0.0f);
 	}
-	B = cross(T, N);
-	T = cross(N, B);
+	B = normalize(cross(T, N));
+	T = normalize(cross(N, B));
 }
 
 void HitResult::BuildOrthonormalBasis() {
 	CalcOrthonormalBasis(n, tangent, bitangent);
 }
 
-vec3 HitResult::LocalToWorld(const vec3& v) {
-	float wx = tangent.x * v.x + bitangent.x * v.y + n.x * v.z;
-	float wy = tangent.y * v.x + bitangent.x * v.y + n.y * v.z;
-	float wz = tangent.z * v.x + bitangent.z * v.y + n.z * v.z;
+vec3 HitResult::LocalToWorld(const vec3& v) const {
+	float wx = dot(vec3(tangent.x, bitangent.x, n.x), v);
+	float wy = dot(vec3(tangent.y, bitangent.y, n.y), v);
+	float wz = dot(vec3(tangent.z, bitangent.z, n.z), v);
 	return vec3(wx, wy, wz);
 }
 
-vec3 HitResult::WorldToLocal(const vec3& v) {
+vec3 HitResult::WorldToLocal(const vec3& v) const {
 	return vec3(dot(v, tangent), dot(v, bitangent), dot(v, n));
 }
 
