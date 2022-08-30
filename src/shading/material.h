@@ -9,6 +9,9 @@
 
 #include <algorithm>
 
+// #todo-pbr
+#define LAMBERTIAN_FROM_PBR_MATERIAL 0
+
 // Base class for all materials
 class Material
 {
@@ -18,13 +21,22 @@ public:
 	// 2. If scattered, tell how much the ray should be attenuated
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
-		vec3& outAttenuation, ray& outScattered) const = 0;
+		vec3& outAttenuation, ray& outScattered,
+		float& outPdf) const = 0;
 
 	// u,v : surface parameterization
 	// inPosition : hit point
 	virtual vec3 Emitted(float u, float v, const vec3& inPosition) const
 	{
 		return vec3(0.0f, 0.0f, 0.0f);
+	}
+
+	virtual float ScatteringPdf(
+		const ray& pathRay,
+		const HitResult& hitResult,
+		const ray& scatteredRay) const
+	{
+		return 1.0f;
 	}
 
 };
@@ -40,7 +52,8 @@ public:
 
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
-		vec3& outAttenuation, ray& outScattered) const
+		vec3& outAttenuation, ray& outScattered,
+		float& outPdf) const
 	{
 		return false;
 	}
@@ -67,7 +80,8 @@ public:
 
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
-		vec3& outAttenuation, ray& outScattered) const override;
+		vec3& outAttenuation, ray& outScattered,
+		float& outPdf) const override;
 
 	vec3 albedo;
 	float fuzziness;
@@ -82,7 +96,8 @@ public:
 
 	virtual bool Scatter(
 		const ray& inRay, const HitResult& inResult,
-		vec3& outAttenuation, ray& outScattered) const override;
+		vec3& outAttenuation, ray& outScattered,
+		float& outPdf) const override;
 
 	float ref_idx;
 
@@ -132,11 +147,17 @@ public:
 	void SetMetallicFallback(float inMetallic) { metallicFallback = std::min(1.0f, std::max(0.0f, inMetallic)); }
 	void SetEmissiveFallback(const vec3& inEmissive) { emissiveFallback = saturate(inEmissive); }
 
-	virtual bool Scatter(
+	bool Scatter(
 		const ray& inRay, const HitResult& inResult,
-		vec3& outAttenuation, ray& outScattered) const override;
+		vec3& outAttenuation, ray& outScattered,
+		float& outPdf) const override;
 
-	virtual vec3 Emitted(float u, float v, const vec3& inPosition) const;
+	vec3 Emitted(float u, float v, const vec3& inPosition) const override;
+
+	float ScatteringPdf(
+		const ray& pathRay,
+		const HitResult& hitResult,
+		const ray& scatteredRay) const override;
 
 private:
 	Texture2D* albedoTexture;
@@ -152,13 +173,34 @@ private:
 	vec3 emissiveFallback;
 };
 
+#if LAMBERTIAN_FROM_PBR_MATERIAL
 // Special case of PBRMaterial
 // with roughness = 1, metallic = 0, emissive = (0,0,0).
 class Lambertian : public PBRMaterial
+#else
+class Lambertian : public Material
+#endif
 {
 public:
 	Lambertian(const vec3& inAlbedo)
 	{
+#if LAMBERTIAN_FROM_PBR_MATERIAL
 		SetAlbedoFallback(inAlbedo);
+#else
+		albedo = saturate(inAlbedo);
+#endif
 	}
+
+	bool Scatter(
+		const ray& inRay, const HitResult& inResult,
+		vec3& outAttenuation, ray& outScattered,
+		float& outPdf) const override;
+
+	float ScatteringPdf(
+		const ray& pathRay,
+		const HitResult& hitResult,
+		const ray& scatteredRay) const override;
+
+private:
+	vec3 albedo;
 };

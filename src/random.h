@@ -70,5 +70,5 @@ float Random();
 
 vec3 RandomInUnitDisk();
 
-// Cosine-weighted samples on hemisphere.
+// Cosine-weighted samples on a hemisphere around (0,0,1)
 vec3 RandomInCosineHemisphere();

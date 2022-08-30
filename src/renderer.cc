@@ -33,13 +33,18 @@ struct RayTracingSettings {
 };
 
 vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayTracingSettings& settings) {
-	HitResult result;
-	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, result)) {
+	HitResult hitResult;
+	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult)) {
+		hitResult.BuildOrthonormalBasis();
+
 		ray scattered;
 		vec3 attenuation;
-		vec3 emitted = result.material->Emitted(result.paramU, result.paramV, result.p);
-		if (depth < settings.maxRecursion && result.material->Scatter(pathRay, result, attenuation, scattered)) {
-			return emitted + attenuation * TraceScene(scattered, world, depth + 1, settings);
+		vec3 emitted = hitResult.material->Emitted(hitResult.paramU, hitResult.paramV, hitResult.p);
+		float pdf;
+		if (depth < settings.maxRecursion && hitResult.material->Scatter(pathRay, hitResult, attenuation, scattered, pdf)) {
+			float scatterPdf = hitResult.material->ScatteringPdf(pathRay, hitResult, scattered);
+			vec3 Li = attenuation * TraceScene(scattered, world, depth + 1, settings);
+			return emitted + Li * scatterPdf / pdf;
 		} else {
 			return emitted;
 		}

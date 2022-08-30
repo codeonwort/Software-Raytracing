@@ -58,10 +58,10 @@ vec3 RandomInCosineHemisphere() {
 		if (u1 != 0.0f && u2 != 0.0f) {
 			if (std::abs(u1) > std::abs(u2)) {
 				r = u1;
-				theta = M_PI_4 * (u2 / u1);
+				theta = (float)M_PI_4 * (u2 / u1);
 			} else {
 				r = u2;
-				theta = M_PI_2 - M_PI_4 * (u1 / u2);
+				theta = (float)M_PI_2 - (float)M_PI_4 * (u1 / u2);
 			}
 			u1 = r * std::cos(theta);
 			u2 = r * std::sin(theta);

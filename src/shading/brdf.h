@@ -103,3 +103,45 @@ namespace BRDF {
 	}
 
 };
+
+// #todo-pbr: Support generic BxDF (BRDF + BTDF)
+#if 0
+enum BxDFType : uint32 {
+	BSDF_Reflection      = 1 << 0,
+	BSDF_Transmission    = 1 << 1,
+	BSDF_Diffuse         = 1 << 2,
+	BSDF_Glossy          = 1 << 3,
+	BSDF_Specular        = 1 << 4,
+
+	BSDF_All = BSDF_Reflection | BSDF_Transmission
+			| BSDF_Diffuse | BSDF_Glossy | BSDF_Specular
+};
+
+class BxDF {
+
+public:
+	virtual ~BxDF() {}
+
+	// Distribution function for (Wo, Wi)
+	virtual vec3 f(const vec3& Wo, const vec3& Wi) const = 0;
+
+	virtual vec3 Sample_f(
+		const vec3& Wo, float u1, float u2,
+		vec3& outWi, float& outPdf, BxDFType& outSampledType) const = 0;
+
+	// Hemispherical-directional reflectance
+	// (Total reflection in a given direction due to constant illumination over hemisphere)
+	virtual vec3 rho(const vec3& Wo, int32 nSamples, float& outU1, float& outU2) const = 0;
+
+	// Hemispherical-hemispherical reflectance
+	// (Fraction of incident light reflected by a surface
+	//  when the incident light is the same from all directions)
+	virtual vec3 rho(int32 nSamples, float& outU1, float& outU2, float& outV1, float& outV2) const = 0;
+
+	virtual float pdf(const vec3& Wi, const vec3& Wo) const = 0;
+
+public:
+	const BxDFType type;
+
+};
+#endif
