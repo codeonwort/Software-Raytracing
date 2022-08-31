@@ -13,6 +13,10 @@
 #include <thread>
 #include <vector>
 
+// Determines the number of pixels processed by each task.
+#define WORKGROUP_SIZE_X 8
+#define WORKGROUP_SIZE_Y 8
+
 struct WorkCell {
 	int32 x;
 	int32 y;
@@ -119,15 +123,13 @@ void Renderer::RenderScene(
 	tp.Initialize(numCores);
 
 	std::vector<WorkCell> workCells;
-	constexpr int32 cellWidth = 32;
-	constexpr int32 cellHeight = 32;
-	for (int32 x = 0; x < imageWidth; x += cellWidth) {
-		for (int32 y = 0; y < imageHeight; y += cellHeight) {
+	for (int32 x = 0; x < imageWidth; x += WORKGROUP_SIZE_X) {
+		for (int32 y = 0; y < imageHeight; y += WORKGROUP_SIZE_Y) {
 			WorkCell cell;
 			cell.x = x;
 			cell.y = y;
-			cell.width = std::min(cellWidth, imageWidth - x);
-			cell.height = std::min(cellHeight, imageHeight - y);
+			cell.width = std::min(WORKGROUP_SIZE_X, imageWidth - x);
+			cell.height = std::min(WORKGROUP_SIZE_Y, imageHeight - y);
 			cell.image = outImage;
 			cell.camera = camera;
 			cell.world = world;
