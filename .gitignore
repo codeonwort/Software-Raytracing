@@ -6,6 +6,8 @@ bin/
 external/
 .vs/
 test*.bmp
+test*.jpg
+test*.png
 
 # Prerequisites
 *.d
