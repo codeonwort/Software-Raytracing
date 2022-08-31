@@ -18,19 +18,35 @@
 
 #include <vector>
 
+// #todo: Wrap these with Scene = {objects,camera,viewport}
+// 0: Cornell box
+// 1: Demo scene with some primitives and a model
+// 2: Car show room
+#define SCENE_CHOICE 0
 
-// Test scene settings
-#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
-// #todo: Bedroom scene is still too slow.
-//#define CREATE_RANDOM_SCENE     CreateScene_Bedroom
-#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
-#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
+#if SCENE_CHOICE == 0
+	#define CREATE_RANDOM_SCENE     CreateScene_CornellBox
+	#define CAMERA_LOCATION         vec3(0.0f, 1.0f, 4.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
+	#define VIEWPORT_WIDTH          512
+#elif SCENE_CHOICE == 1
+	#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
+	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
+#else
+	#define CREATE_RANDOM_SCENE     CreateScene_CarShowRoom
+	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
+#endif
+
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
 #define CAMERA_APERTURE         0.01f
 #define CAMERA_BEGIN_CAPTURE    0.0f
 #define CAMERA_END_CAPTURE      5.0f
 #define FOV_Y                   45.0f
-#define VIEWPORT_WIDTH          1024
+#ifndef VIEWPORT_WIDTH
+	#define VIEWPORT_WIDTH      1024
+#endif
 #define VIEWPORT_HEIGHT         512
 
 // Debug configuration (features under development)
@@ -48,6 +64,7 @@
 #define RAY_T_MIN               0.001f
 
 // Demo scenes
+HitableList* CreateScene_CornellBox();
 HitableList* CreateScene_CarShowRoom();
 HitableList* CreateScene_Bedroom();
 HitableList* CreateScene_ObjModel();
@@ -134,6 +151,20 @@ int main(int argc, char** argv) {
 	DestroySubsystems();
 
 	return 0;
+}
+
+HitableList* CreateScene_CornellBox() {
+	SCOPED_CPU_COUNTER(CreateScene_CornellBox);
+
+	std::vector<Hitable*> list;
+
+	OBJModel objModel;
+	if (OBJLoader::SyncLoad("content/cornell_box/CornellBox-Original.obj", objModel)) {
+		objModel.staticMesh->Finalize();
+		list.push_back(objModel.staticMesh);
+	}
+
+	return new HitableList(list);
 }
 
 HitableList* CreateScene_CarShowRoom()
