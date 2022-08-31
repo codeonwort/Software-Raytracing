@@ -257,6 +257,13 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		// And there is no way to check if roughness was just omitted or explicitly set to zero :(
 		if (rawMaterial.roughness > 0.0f) {
 			M->SetRoughnessFallback(rawMaterial.roughness);
+		} else {
+			// #todo-pbr: Invalid result if roughness is too low.
+			constexpr float tempMinRoughness = 0.2f;
+			// Ad-hoc derivation of roughness from specular
+			float avgSpec = (1.0f / 3.0f) * (rawMaterial.specular[0] + rawMaterial.specular[1] + rawMaterial.specular[2]);
+			float fakeRoughness = std::max(tempMinRoughness, 1.0f - avgSpec);
+			M->SetRoughnessFallback(fakeRoughness);
 		}
 		M->SetMetallicFallback(rawMaterial.metallic);
 		M->SetEmissiveFallback(vec3(rawMaterial.emission[0], rawMaterial.emission[1], rawMaterial.emission[2]));
