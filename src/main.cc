@@ -159,7 +159,7 @@ HitableList* CreateScene_CornellBox() {
 	std::vector<Hitable*> list;
 
 	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/cornell_box/CornellBox-Original.obj", objModel)) {
+	if (OBJLoader::SyncLoad("content/cornell_box/CornellBox-Mirror.obj", objModel)) {
 		objModel.staticMesh->Finalize();
 		list.push_back(objModel.staticMesh);
 	}
