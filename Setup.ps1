@@ -1,3 +1,15 @@
+#
+#                          OVERVIEW
+#
+# - This Powershell script download, unzip, or build
+#   the necessary contents and third-party libarires.
+# - All downloaded files are first put into 'external' folder.
+# - Contents are unzipped to 'content' folder.
+# - Libraries are built at 'external' folder,
+#   then only headers and binaries are copied to 'thirdparty' folder.
+#
+
+# TODO: Separate these flags for contents and libraries?
 Param (
 	[Switch]$skipdownload,
 	[Switch]$skipbuild
@@ -5,7 +17,6 @@ Param (
 
 $should_download = !($PSBoundParameters.ContainsKey('skipdownload'))
 $should_build = !($PSBoundParameters.ContainsKey('skipbuild'))
-
 
 #
 # Constants
@@ -20,6 +31,20 @@ $tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
 $content_url        = "https://casual-effects.com/g3d/data10/research/model/bedroom/bedroom.zip"
 $content_zip_path   = "$external_dir/content/bedroom.zip"
 $content_unzip_path = "$content_dir/bedroom/"
+
+$contents_list  = @(
+	# Format: (url, zip_name, unzip_name)
+	@(
+		"https://casual-effects.com/g3d/data10/research/model/bedroom/bedroom.zip",
+		"bedroom.zip",
+		"bedroom"
+	),
+	@(
+		"https://casual-effects.com/g3d/data10/common/model/CornellBox/CornellBox.zip",
+		"cornell_box.zip",
+		"cornell_box"
+	)
+)
 
 #
 # Find MSBuild.exe and devenv.exe
@@ -58,16 +83,35 @@ function Ensure-Subdirectory {
 	Param ($dir)
 	New-Item -ItemType Directory -Path $dir -Force
 }
+function Unzip {
+	Param ($zip_filepath, $unzip_dir)
+	if (Test-Path $unzip_dir) {
+		Remove-Item -Recurse -Force $unzip_dir
+	}
+	Expand-Archive -Path $zip_filepath -DestinationPath $unzip_dir
+}
 
 #
 # - Download 3D models
 # - Download third party libraries
 #
+$num_contents = $contents_list.length
 if ($should_download) {
 	Ensure-Subdirectory "$external_dir/content"
 	$webclient = New-Object System.Net.WebClient
-	Write-Host "Download contents..." -ForegroundColor Green
-	Download-URL $webclient $content_url $content_zip_path
+	
+	Write-Host "Download contents... (count=$num_contents)" -ForegroundColor Green
+	foreach ($desc in $contents_list) {
+		$content_url = $desc[0]
+		$content_zip = $desc[1]
+		$content_unzip = $desc[2]
+		Write-Host ">" $content_zip "(" $content_url ")"
+		$zip_path = "$external_dir/content/$content_zip"
+		$unzip_path = "$content_dir/$content_unzip"
+		Download-URL $webclient $content_url $zip_path
+		Unzip $zip_path $unzip_path
+	}
+	
 	Write-Host "Download libraries..." -ForegroundColor Green
 	Download-URL $webclient $freeimage_url $freeimage_path
 	Download-URL $webclient $tinyobjloader_url $tinyobjloader_path
@@ -79,16 +123,6 @@ if ($should_download) {
 # Build third party libraries
 #
 if ($should_build) {
-	### Content
-	if (Test-Path "$content_dir/bedroom") {
-		Write-Host "Content 'bedroom' already unzipped and will be skipped."
-	} else {
-		Ensure-Subdirectory "$content_dir/bedroom"
-		Write-Host "Unzip content 'bedroom'"
-		Expand-Archive -Path $content_zip_path -DestinationPath $content_unzip_path
-		Write-Host "Unzip done"
-	}
-	
 	### FreeImage
 	# 1. Unzip
 	if (Test-Path "$external_dir/FreeImage") {
