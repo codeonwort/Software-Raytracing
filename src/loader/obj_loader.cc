@@ -72,6 +72,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	std::vector<vec3> customNormals(attrib.vertices.size(), vec3(0.0f, 0.0f, 0.0f));
 	std::vector<int32> customNormalIndices(attrib.vertices.size() * 3, -1);
 
+	int32 p_global = 0;
 	for (const tinyobj::shape_t& shape : shapes)
 	{
 		// mesh
@@ -106,9 +107,9 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 				customNormals[i0] += n;
 				customNormals[i1] += n;
 				customNormals[i2] += n;
-				customNormalIndices[p] = i0;
-				customNormalIndices[p + 1] = i1;
-				customNormalIndices[p + 2] = i2;
+				customNormalIndices[p_global] = i0;
+				customNormalIndices[p_global + 1] = i1;
+				customNormalIndices[p_global + 2] = i2;
 			}
 
 			// #todo-obj: Just min/max attrib.vertices. We're checking same vertices again and again here.
@@ -127,13 +128,18 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			i0 = (int32)shape.mesh.indices[p].texcoord_index;
 			i1 = (int32)shape.mesh.indices[p + 1].texcoord_index;
 			i2 = (int32)shape.mesh.indices[p + 2].texcoord_index;
-			T.SetParameterization(
-				attrib.texcoords[i0 * 2], 1.0f - attrib.texcoords[i0 * 2 + 1],
-				attrib.texcoords[i1 * 2], 1.0f - attrib.texcoords[i1 * 2 + 1],
-				attrib.texcoords[i2 * 2], 1.0f - attrib.texcoords[i2 * 2 + 1]);
+			if (i0 != -1 && i1 != -1 && i2 != -1) {
+				T.SetParameterization(
+					attrib.texcoords[i0 * 2], 1.0f - attrib.texcoords[i0 * 2 + 1],
+					attrib.texcoords[i1 * 2], 1.0f - attrib.texcoords[i1 * 2 + 1],
+					attrib.texcoords[i2 * 2], 1.0f - attrib.texcoords[i2 * 2 + 1]);
+			} else {
+				T.SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+			}
 
 			triangles.emplace_back(T);
 			p += 3;
+			p_global += 3;
 		}
 
 		// #todo-obj: lines
@@ -173,8 +179,8 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 
 void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tinyobj::material_t>& inRawMaterials, std::vector<Material*>& outMaterials)
 {
-	int32 n = (int32)inRawMaterials.size();
-	outMaterials.resize(n, nullptr);
+	int32 nMaterials = (int32)inRawMaterials.size();
+	outMaterials.resize(nMaterials, nullptr);
 
 	std::string basedir;
 	if (objpath.find_last_of("/\\") != std::string::npos)
@@ -187,8 +193,10 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		CHECK(false);
 	}
 
-	for (int32 i = 0; i < n; ++i)
+	for (int32 i = 0; i < nMaterials; ++i)
 	{
+		const tinyobj::material_t& rawMaterial = inRawMaterials[i];
+
 		// #todo-obj: Parse every data in the material
 		// PBR extension in tiny_obj_loader.h
 #if 0
@@ -230,36 +238,28 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 			outValid = ImageLoader::SyncLoad(filepath.data(), outImage);
 		};
 
-		LoadImage(inRawMaterials[i].diffuse_texname, albedoImage, albedoImageValid);
-		LoadImage(inRawMaterials[i].roughness_texname, roughnessImage, roughnessImageValid);
-		LoadImage(inRawMaterials[i].metallic_texname, metallicImage, metallicImageValid);
-		LoadImage(inRawMaterials[i].emissive_texname, emissiveImage, emissiveImageValid);
-		LoadImage(inRawMaterials[i].normal_texname, normalImage, normalImageValid);
-
-		if (!albedoImageValid)
-		{
-			albedoImage.Reallocate(1, 1, Pixel(0.5f, 0.5f, 0.5f));
-			albedoImageValid = true;
-		}
+		LoadImage(rawMaterial.diffuse_texname, albedoImage, albedoImageValid);
+		LoadImage(rawMaterial.roughness_texname, roughnessImage, roughnessImageValid);
+		LoadImage(rawMaterial.metallic_texname, metallicImage, metallicImageValid);
+		LoadImage(rawMaterial.emissive_texname, emissiveImage, emissiveImageValid);
+		LoadImage(rawMaterial.normal_texname, normalImage, normalImageValid);
 
 		PBRMaterial* M = new PBRMaterial;
-		M->SetAlbedoTexture(albedoImage);
-		if (normalImageValid)
-		{
-			M->SetNormalTexture(normalImage);
+
+		if (albedoImageValid) M->SetAlbedoTexture(albedoImage);
+		if (normalImageValid) M->SetNormalTexture(normalImage);
+		if (roughnessImageValid) M->SetRoughnessTexture(roughnessImage);
+		if (metallicImageValid) M->SetMetallicTexture(metallicImage);
+		if (emissiveImageValid) M->SetEmissiveTexture(emissiveImage);
+
+		M->SetAlbedoFallback(vec3(rawMaterial.diffuse[0], rawMaterial.diffuse[1], rawMaterial.diffuse[2]));
+		// #todo-obj: tinyobjloader's roughness defaults to 0.0 if not specified, but it means every materials gonna be specular.
+		// And there is no way to check if roughness was just omitted or explicitly set to zero :(
+		if (rawMaterial.roughness > 0.0f) {
+			M->SetRoughnessFallback(rawMaterial.roughness);
 		}
-		if (roughnessImageValid)
-		{
-			M->SetRoughnessTexture(roughnessImage);
-		}
-		if (metallicImageValid)
-		{
-			M->SetMetallicTexture(metallicImage);
-		}
-		if (emissiveImageValid)
-		{
-			M->SetEmissiveTexture(emissiveImage);
-		}
+		M->SetMetallicFallback(rawMaterial.metallic);
+		M->SetEmissiveFallback(vec3(rawMaterial.emission[0], rawMaterial.emission[1], rawMaterial.emission[2]));
 
 		outMaterials[i] = M;
 	}
