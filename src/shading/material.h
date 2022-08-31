@@ -145,7 +145,7 @@ public:
 	void SetAlbedoFallback(const vec3& inAlbedo) { albedoFallback = saturate(inAlbedo); }
 	void SetRoughnessFallback(float inRoughness) { roughnessFallback = std::min(1.0f, std::max(0.0f, inRoughness)); }
 	void SetMetallicFallback(float inMetallic) { metallicFallback = std::min(1.0f, std::max(0.0f, inMetallic)); }
-	void SetEmissiveFallback(const vec3& inEmissive) { emissiveFallback = saturate(inEmissive); }
+	void SetEmissiveFallback(const vec3& inEmissive) { emissiveFallback = inEmissive; }
 
 	bool Scatter(
 		const ray& inRay, const HitResult& inResult,
