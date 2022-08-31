@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+#include "core/vec.h"
 #include <vector>
 
 struct Pixel

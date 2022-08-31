@@ -22,4 +22,3 @@ private:
 ///////////////////////////////////////////////////////
 
 void WriteBitmap(const Image2D& image, const char* filepath);
-

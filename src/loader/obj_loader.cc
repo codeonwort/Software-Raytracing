@@ -1,12 +1,13 @@
 #include "obj_loader.h"
+#include "image_loader.h"
 #include "type.h"
 #include "log.h"
-#include "util/resource_finder.h"
+#include "image.h"
+#include "core/vec.h"
 #include "geom/static_mesh.h"
 #include "geom/triangle.h"
-#include "image.h"
-#include "image_loader.h"
 #include "shading/material.h"
+#include "util/resource_finder.h"
 
 
 void OBJLoader::Initialize()

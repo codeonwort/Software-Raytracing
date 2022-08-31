@@ -1,7 +1,7 @@
 #pragma once
 
 #include "template/noncopyable.h"
-#include "type.h"
+#include "core/vec.h"
 #include "tiny_obj_loader.h"
 
 class Material;
