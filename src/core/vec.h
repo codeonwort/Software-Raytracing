@@ -156,6 +156,10 @@ inline vec3 saturate(const vec3& v) {
 	return max(vec3(0.0f), min(1.0f, v));
 }
 
+inline bool isnan(const vec3& v) {
+	return isnan(v.x) || isnan(v.y) || isnan(v.z);
+}
+
 inline vec3& vec3::operator+=(const vec3& v) {
 	x += v.x;
 	y += v.y;
