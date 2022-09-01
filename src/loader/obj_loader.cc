@@ -244,7 +244,7 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		LoadImage(rawMaterial.emissive_texname, emissiveImage, emissiveImageValid);
 		LoadImage(rawMaterial.normal_texname, normalImage, normalImageValid);
 
-		PBRMaterial* M = new PBRMaterial;
+		MicrofacetMaterial* M = new MicrofacetMaterial;
 
 		if (albedoImageValid) M->SetAlbedoTexture(albedoImage);
 		if (normalImageValid) M->SetNormalTexture(normalImage);
@@ -259,7 +259,7 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 			M->SetRoughnessFallback(rawMaterial.roughness);
 		} else {
 			// #todo-pbr: Invalid result if roughness is too low.
-			constexpr float tempMinRoughness = 0.2f;
+			constexpr float tempMinRoughness = 0.01f;
 			// Ad-hoc derivation of roughness from specular
 			float avgSpec = (1.0f / 3.0f) * (rawMaterial.specular[0] + rawMaterial.specular[1] + rawMaterial.specular[2]);
 			float fakeRoughness = std::max(tempMinRoughness, 1.0f - avgSpec);

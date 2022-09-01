@@ -35,13 +35,20 @@ namespace BRDF {
 		return num / denom;
 	}
 
+	// #todo: Better not use tan()?
 	inline float DistributionBeckmann(const vec3& N, const vec3& H, float roughness) {
 		float cosH = dot(N, H);
+		if (H.z < 0.0f) cosH = -cosH; // #todo-pbr: Did I mess up sign of Wi, Wo, and H?
 		float cosH2 = cosH * cosH;
-		float thetaH = acosf(cosH);
-		float tanH = tanf(thetaH);
+		//float thetaH = acosf(cosH);
+		//float tanH = tanf(thetaH);
 		float rr = roughness * roughness;
-		float num = (cosH > 0.0f ? 1.0f : 0.0f) * expf(-tanH * tanH / rr);
+
+		//float num = (cosH > 0.0f ? 1.0f : 0.0f) * expf(-tanH * tanH / rr);
+		// cos() only version
+		float exp_x = (1.0f - cosH2) / (rr * cosH);
+		float num = (cosH > 0.0f ? 1.0f : 0.0f) * expf(-exp_x);
+
 		float denom = BRDF::PI * rr * cosH2 * cosH2;
 		return num / denom;
 	}
@@ -100,7 +107,7 @@ namespace BRDF {
 	{
 		float ggx2 = GeometryBeckmann(N, H, V, roughness);
 		float ggx1 = GeometryBeckmann(N, H, L, roughness);
-		return ggx1 * ggx2;
+		return 1.0f / (1.0f + ggx1 * ggx2);
 	}
 
 };
@@ -127,7 +134,7 @@ public:
 	virtual vec3 f(const vec3& Wo, const vec3& Wi) const = 0;
 
 	virtual vec3 Sample_f(
-		const vec3& Wo, float u1, float u2,
+		const vec3& Wo, float u1, float u2, BxDFType type,
 		vec3& outWi, float& outPdf, BxDFType& outSampledType) const = 0;
 
 	// Hemispherical-directional reflectance

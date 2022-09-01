@@ -61,7 +61,7 @@
 // Rendering configuration
 #define SAMPLES_PER_PIXEL       200
 #define MAX_RECURSION           5
-#define RAY_T_MIN               0.001f
+#define RAY_T_MIN               0.0001f
 
 // Demo scenes
 HitableList* CreateScene_CornellBox();
@@ -228,7 +228,7 @@ HitableList* CreateScene_CarShowRoom()
 			vec3 n3 = normalize(cross(v2 - v3, v1 - v3));
 
 			//Material* mat = new Lambertian(0.2f + 0.75f * abs(RandomInUnitSphere()));
-			PBRMaterial* mat = new PBRMaterial;
+			MicrofacetMaterial* mat = new MicrofacetMaterial;
 			mat->SetAlbedoFallback(0.2f + 0.75f * abs(RandomInUnitSphere()));
 			mat->SetRoughnessFallback(0.1f);
 			//mat->SetMetallicFallback(1.0f);
@@ -276,11 +276,11 @@ HitableList* CreateScene_CarShowRoom()
 			vec3 n3 = normalize(cross(v2 - v3, v1 - v3));
 
 			//Material* mat = new Lambertian(0.2f + 0.75f * abs(RandomInUnitSphere()));
-			PBRMaterial* mat = new PBRMaterial;
+			MicrofacetMaterial* mat = new MicrofacetMaterial;
 			//mat->SetAlbedoFallback(0.2f + 0.75f * abs(RandomInUnitSphere()));
 			mat->SetAlbedoFallback(vec3(0.9f));
 			mat->SetRoughnessFallback(0.1f);
-			//mat->SetMetallicFallback(1.0f);
+			mat->SetMetallicFallback(1.0f);
 
 #if USE_STATIC_MESH_PILLAR
 			pillar->AddTriangle(Triangle(v0, v1, v2, n0, n1, n2, mat));
@@ -368,7 +368,7 @@ HitableList* CreateScene_ObjModel()
 	Image2D img;
 	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
 	{
-		PBRMaterial* pbr_mat = new PBRMaterial;
+		MicrofacetMaterial* pbr_mat = new MicrofacetMaterial;
 		pbr_mat->SetAlbedoTexture(img);
 
 		const vec3 origin(1.0f, 0.0f, 0.0f);
@@ -407,11 +407,11 @@ HitableList* CreateScene_ObjModel()
 #if 0
 		Material* mat = new Lambertian(color);
 #else
-		PBRMaterial* mat = new PBRMaterial;
+		MicrofacetMaterial* mat = new MicrofacetMaterial;
 		mat->SetAlbedoFallback(color);
 		//mat->SetAlbedoFallback(vec3(0.9f));
-		mat->SetRoughnessFallback(0.1f);
-		mat->SetMetallicFallback(1.0f);
+		mat->SetRoughnessFallback(0.05f);
+		//mat->SetMetallicFallback(1.0f);
 #endif
 
 		list.push_back(new Triangle(v0, v1, v2, n, n, n, mat));

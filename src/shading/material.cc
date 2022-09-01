@@ -1,8 +1,5 @@
 #include "material.h"
 
-// Use Beckmann distribution and shadowing term
-#define BECKMANN 1
-
 // -------------------------------
 
 // https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
@@ -17,59 +14,89 @@ inline float Schlick(float cosine, float ref_idx) {
 }
 
 // -------------------------------
+// Lambertian
+
+bool Lambertian::Scatter(
+	const ray& pathRay,
+	const HitResult& hitResult,
+	vec3& outReflectance,
+	ray& outScatteredRay,
+	float& outPdf) const
+{
+	vec3 N = hitResult.n;
+	vec3 Wi = normalize(RandomInHemisphere(N));
+
+	outScatteredRay = ray(hitResult.p, Wi, pathRay.t);
+	outReflectance = albedo;
+	outPdf = absDot(N, Wi) / BRDF::PI;
+
+	return true;
+}
+
+float Lambertian::ScatteringPdf(
+	const HitResult& hitResult,
+	const vec3& Wo,
+	const vec3& Wi) const
+{
+	float cosTheta = std::max(0.0f, dot(hitResult.n, Wi));
+	return cosTheta / BRDF::PI;
+}
+
+
+// -------------------------------
 // Metal
 
 bool Metal::Scatter(
-	const ray& inRay,
-	const HitResult& inResult,
-	vec3& outAttenuation,
-	ray& outScattered,
+	const ray& pathRay,
+	const HitResult& hitResult,
+	vec3& outReflectance,
+	ray& outScatteredRay,
 	float& outPdf) const
 {
-	vec3 ud = inRay.d;
+	vec3 ud = pathRay.d;
 	ud.Normalize();
-	vec3 reflected = reflect(ud, inResult.n);
-	outScattered = ray(inResult.p, reflected + fuzziness * RandomInUnitSphere(), inRay.t);
-	outAttenuation = albedo;
+	vec3 reflected = reflect(ud, hitResult.n);
+	outScatteredRay = ray(hitResult.p, reflected + fuzziness * RandomInUnitSphere(), pathRay.t);
+	outReflectance = albedo;
 	outPdf = 1.0f;
-	return (dot(outScattered.d, inResult.n) > 0.0f);
+	return (dot(outScatteredRay.d, hitResult.n) > 0.0f);
 }
 
 // -------------------------------
 // Dielectric
 
 bool Dielectric::Scatter(
-	const ray& inRay,
-	const HitResult& inResult,
-	vec3& outAttenuation,
-	ray& outScattered,
+	const ray& pathRay,
+	const HitResult& hitResult,
+	vec3& outReflectance,
+	ray& outScatteredRay,
 	float& outPdf) const
 {
 	vec3 outward_normal;
-	vec3 reflected = reflect(inRay.d, inResult.n);
+	vec3 reflected = reflect(pathRay.d, hitResult.n);
 	float ni_over_nt;
-	outAttenuation = vec3(1.0f, 1.0f, 1.0f);
+	outReflectance = vec3(1.0f, 1.0f, 1.0f);
 	vec3 refracted;
 	float reflect_prob;
 	float cosine;
-	if (dot(inRay.d, inResult.n) > 0.0f) {
-		outward_normal = -inResult.n;
+	if (dot(pathRay.d, hitResult.n) > 0.0f) {
+		outward_normal = -hitResult.n;
 		ni_over_nt = ref_idx;
-		cosine = ref_idx * dot(inRay.d, inResult.n) / inRay.d.Length();
+		cosine = ref_idx * dot(pathRay.d, hitResult.n) / pathRay.d.Length();
 	} else {
-		outward_normal = inResult.n;
+		outward_normal = hitResult.n;
 		ni_over_nt = 1.0f / ref_idx;
-		cosine = -dot(inRay.d, inResult.n) / inRay.d.Length();
+		cosine = -dot(pathRay.d, hitResult.n) / pathRay.d.Length();
 	}
-	if (refract(inRay.d, outward_normal, ni_over_nt, refracted)) {
+	if (refract(pathRay.d, outward_normal, ni_over_nt, refracted)) {
 		reflect_prob = Schlick(cosine, ref_idx);
 	} else {
 		reflect_prob = 1.0f;
 	}
 	if (Random() < reflect_prob) {
-		outScattered = ray(inResult.p, reflected, inRay.t);
+		outScatteredRay = ray(hitResult.p, reflected, pathRay.t);
 	} else {
-		outScattered = ray(inResult.p, refracted, inRay.t);
+		outScatteredRay = ray(hitResult.p, refracted, pathRay.t);
 	}
 	outPdf = 1.0f;
 	return true;
@@ -78,9 +105,9 @@ bool Dielectric::Scatter(
 // -------------------------------
 // PBRMaterial
 
-bool PBRMaterial::Scatter(
-	const ray& inRay, const HitResult& inResult,
-	vec3& outAttenuation, ray& outScattered,
+bool MicrofacetMaterial::Scatter(
+	const ray& pathRay, const HitResult& hitResult,
+	vec3& outReflectance, ray& outScatteredRay,
 	float& outPdf) const
 {
 	vec3 baseColor = albedoFallback;
@@ -89,123 +116,88 @@ bool PBRMaterial::Scatter(
 
 	if (albedoTexture) {
 		// #todo-texture: Pre-multiply alpha?
-		baseColor = albedoTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
+		baseColor = albedoTexture->Sample(hitResult.paramU, hitResult.paramV).RGBToVec3();
 	}
 	if (normalmapTexture) {
-		vec3 localN = normalmapTexture->Sample(inResult.paramU, inResult.paramV).RGBToVec3();
+		vec3 localN = normalmapTexture->Sample(hitResult.paramU, hitResult.paramV).RGBToVec3();
 		// #todo-pbr: Rotate localN around N (normal mapping)
 	}
 	if (roughnessTexture) {
-		roughness = roughnessTexture->Sample(inResult.paramU, inResult.paramV).r;
+		roughness = roughnessTexture->Sample(hitResult.paramU, hitResult.paramV).r;
 	}
 	if (metallicTexture) {
-		metallic = metallicTexture->Sample(inResult.paramU, inResult.paramV).r;
+		metallic = metallicTexture->Sample(hitResult.paramU, hitResult.paramV).r;
 	}
 
-#define USE_LOCAL_SPACE 1
-
-#if !USE_LOCAL_SPACE
-	vec3 N = inResult.n;
-	// #todo-pbr: Barely seeing specular highlight without direct sampling.
-	// Needs importance sampling; scatter more rays toward specular lobe.
-	vec3 Wi = normalize(RandomInHemisphere(N)); // L
-	if (roughness < 1.0f && Random() < 0.05f) {
-		vec3 R = reflect(inRay.d, N);
-		//Wi = normalize(mix(R, Wi, roughness));
-		Wi = R;
-	}
-	vec3 Wo = -inRay.d; // V
-#else
-	// #todo-pbr: Test cosine-weighted sampling
 	vec3 N = vec3(0.0f, 0.0f, 1.0f);
-	vec3 Wi = RandomInCosineHemisphere();
-	vec3 Wo = inResult.WorldToLocal(-inRay.d);
+	vec3 Wo = hitResult.WorldToLocal(-pathRay.d);
+	vec3 Wi;
+	
+	float u1 = Random();
+	float u2 = Random();
+	float theta = std::atan(std::sqrt(-roughness * roughness * std::log(1.0f - u1)));
+	float phi = 2.0f * BRDF::PI * u2;
+	float xi = std::cos(phi) * std::sin(theta);
+	float yi = std::sin(phi) * std::sin(theta);
+	float zi = std::cos(theta);
+	Wi = vec3(xi, yi, zi);
 	if (Wo.z < 0.0f) {
-		Wi.z *= -1.0f;
+		Wi.z = -Wi.z;
 	}
-	// #todo-pbr: Fake importance sampling
-	if (roughness < 1.0f && Random() < 0.5f) {
-		vec3 R = reflect(-Wo, N);
-		vec3 Wi_R = normalize(mix(R, Wi, roughness * roughness));
-		if (Wo.z < 0.0f) {
-			Wi_R.z *= -1.0f;
-		}
-		Wi = Wi_R;
-	}
-#endif
+	
 	vec3 H = normalize(Wo + Wi);
 
 	vec3 F0 = vec3(0.04f);
 	F0 = mix(F0, baseColor, metallic);
 
-	vec3 F = BRDF::FresnelSchlick(abs(dot(H, Wo)), F0);
-#if BECKMANN
+	vec3 F = BRDF::FresnelSchlick(absDot(H, Wo), F0);
 	float G = BRDF::GeometrySmith_Beckmann(N, H, Wo, Wi, roughness);
 	float NDF = BRDF::DistributionBeckmann(N, H, roughness);
-#else
-	float G = BRDF::GeometrySmith_SchlickGGX(N, Wi, Wo, roughness);
-	float NDF = BRDF::DistributionGGX(N, H, roughness);
-#endif
 
 	vec3 kS = F;
 	vec3 kD = 1.0f - kS;
 	vec3 diffuse = baseColor * (1.0f - metallic);
-	vec3 specular = (F * G * NDF) / (4.0f * abs(dot(N, Wi) * dot(N, Wo)) + 0.001f);
+	vec3 specular = (F * G * NDF) / (4.0f * absDot(N, Wi) * absDot(N, Wo) + 0.001f);
 
-	float NdotWi = abs(dot(N, Wi));
+	float NdotWi = absDot(N, Wi);
 
-#if USE_LOCAL_SPACE
-	Wi = inResult.LocalToWorld(Wi);
-#endif
+	// Transform to world space
+	Wi = hitResult.LocalToWorld(Wi);
 
-	outScattered = ray(inResult.p, Wi, inRay.t);
-	outAttenuation = (kD * diffuse + kS * specular) * NdotWi;
-	outPdf = NdotWi / BRDF::PI;
+	outScatteredRay = ray(hitResult.p, Wi, pathRay.t);
+	outReflectance = (kD * diffuse + kS * specular) * NdotWi;
+	outPdf = ScatteringPdf(hitResult, -pathRay.d, outScatteredRay.d) / (4.0f * dot(Wo, H));
 	return true;
 }
 
-vec3 PBRMaterial::Emitted(float u, float v, const vec3& inPosition) const {
+vec3 MicrofacetMaterial::Emitted(const HitResult& hitResult, const vec3& Wo) const {
+	vec3 emit = emissiveFallback;
 	if (emissiveTexture) {
-		Pixel emissiveSample = emissiveTexture->Sample(u, v);
-		return vec3(emissiveSample.r, emissiveSample.g, emissiveSample.b);
+		Pixel emissiveSample = emissiveTexture->Sample(hitResult.paramU, hitResult.paramU);
+		emit = (emissiveSample.r, emissiveSample.g, emissiveSample.b);
 	}
-	return emissiveFallback;
+
+	return emit;
 }
 
-float PBRMaterial::ScatteringPdf(
-	const ray& pathRay,
+float MicrofacetMaterial::ScatteringPdf(
 	const HitResult& hitResult,
-	const ray& scatteredRay) const
+	const vec3& Wo_world,
+	const vec3& Wi_world) const
 {
-	float cosTheta = std::max(0.0f, dot(hitResult.n, scatteredRay.d));
-	return cosTheta / BRDF::PI;
-}
+	vec3 wo = hitResult.WorldToLocal(Wo_world);
+	vec3 wi = hitResult.WorldToLocal(Wi_world);
+	vec3 wh = normalize(wo + wi);
+	if (wh.z < 0.0f) {
+		wh.z = -wh.z;
+	}
+	vec3 n(0.0f, 0.0f, 1.0f);
 
-// -------------------------------
-// Lambertian
+	float roughness = roughnessFallback;
+	if (roughnessTexture) {
+		roughness = roughnessTexture->Sample(hitResult.paramU, hitResult.paramV).r;
+	}
 
-bool Lambertian::Scatter(
-	const ray& inRay,
-	const HitResult& inResult,
-	vec3& outAttenuation,
-	ray& outScattered,
-	float& outPdf) const
-{
-	vec3 N = inResult.n;
-	vec3 Wi = normalize(RandomInHemisphere(N));
-
-	outScattered = ray(inResult.p, Wi, inRay.t);
-	outAttenuation = albedo;
-	outPdf = std::abs(dot(N, Wi)) / BRDF::PI;
-
-	return true;
-}
-
-float Lambertian::ScatteringPdf(
-	const ray& pathRay,
-	const HitResult& hitResult,
-	const ray& scatteredRay) const
-{
-	float cosTheta = std::max(0.0f, dot(hitResult.n, scatteredRay.d));
-	return cosTheta / BRDF::PI;
+	float D = BRDF::DistributionBeckmann(n, wh, roughness);
+	return D * absDot(wh, hitResult.n);
 }

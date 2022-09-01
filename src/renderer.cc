@@ -30,28 +30,44 @@ struct WorkCell {
 };
 
 // NOTE: Minimize this.
-struct RayTracingSettings {
+struct RayPayload {
 	int32 maxRecursion;
 	float rayTMin;
 	bool fakeSkyLight;
 };
 
-vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayTracingSettings& settings) {
+// Run path tracing to find incoming radiance.
+vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPayload& settings) {
+	if (depth >= settings.maxRecursion) {
+		return vec3(0.0f);
+	}
+
+	// #todo-pbr: Direct sampling of light sources + multiple importance sampling
+	// #todo-pbr: Still not sure if I did importance sampling right. Verify again.
+
 	HitResult hitResult;
 	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult)) {
 		hitResult.BuildOrthonormalBasis();
 
-		ray scattered;
-		vec3 attenuation;
-		vec3 emitted = hitResult.material->Emitted(hitResult.paramU, hitResult.paramV, hitResult.p);
+		vec3 radiance(0.0f);
+
+		// Recursively trace light scattering.
+		vec3 reflectance;
+		ray scatteredRay;
 		float pdf;
-		if (depth < settings.maxRecursion && hitResult.material->Scatter(pathRay, hitResult, attenuation, scattered, pdf)) {
-			float scatterPdf = hitResult.material->ScatteringPdf(pathRay, hitResult, scattered);
-			vec3 Li = attenuation * TraceScene(scattered, world, depth + 1, settings);
-			return emitted + Li * scatterPdf / pdf;
-		} else {
-			return emitted;
+		if (hitResult.material->Scatter(pathRay, hitResult, reflectance, scatteredRay, pdf)) {
+			if (pdf > 0.0f) {
+				vec3 Li = TraceScene(scatteredRay, world, depth + 1, settings);
+				float scatteringPdf = hitResult.material->ScatteringPdf(hitResult, -pathRay.d, scatteredRay.d);
+				radiance += reflectance * Li * scatteringPdf / pdf;
+			}
 		}
+
+		// Emission from the surface itself.
+		// This is irrelevant to incoming radiances for the surface.
+		radiance += hitResult.material->Emitted(hitResult, pathRay.d);
+		
+		return radiance;
 	}
 
 	if (settings.fakeSkyLight) {
@@ -62,8 +78,9 @@ vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayTr
 	}
 	return vec3(0.0f, 0.0f, 0.0f);
 }
-vec3 TraceScene(const ray& r, const Hitable* world, const RayTracingSettings& settings) {
-	return TraceScene(r, world, 0, settings);
+// Initial ray is a camera ray.
+vec3 TraceScene(const ray& cameraRay, const Hitable* world, const RayPayload& settings) {
+	return TraceScene(cameraRay, world, 0, settings);
 }
 
 void GenerateCell(const WorkItemParam* param) {
@@ -80,7 +97,7 @@ void GenerateCell(const WorkItemParam* param) {
 
 	// #todo-multithread: Bad utilization of threads; Some cells might take longer than others.
 	const int32 SPP = std::max(1, cell->rendererSettings.samplesPerPixel);
-	RayTracingSettings rtSettings{
+	RayPayload rtSettings{
 		cell->rendererSettings.maxPathLength,
 		cell->rendererSettings.rayTMin,
 		cell->rendererSettings.fakeSkyLight
