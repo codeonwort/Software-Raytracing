@@ -16,7 +16,7 @@ using WorkItemRoutine = std::function<void(const WorkItemParam*)>;
 struct ThreadPoolWork
 {
 	WorkItemRoutine routine;
-	void* arg;
+	void* arg = nullptr;
 };
 
 // Parameter for threads in the thread pool

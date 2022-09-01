@@ -6,7 +6,7 @@ class ray
 {
 
 public:
-	ray() {}
+	ray() : t(0.0f) {}
 	ray(const vec3& origin, const vec3& direction, float worldTime)
 		: o(origin)
 		, d(direction)
