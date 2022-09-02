@@ -17,6 +17,9 @@
 #define WORKGROUP_SIZE_X 8
 #define WORKGROUP_SIZE_Y 8
 
+// For easy debugging
+#define SINGLE_THREADED_RENDERING 0
+
 struct WorkCell {
 	int32 x;
 	int32 y;
@@ -129,8 +132,13 @@ void Renderer::RenderScene(
 	const Camera* camera,
 	Image2D* outImage)
 {
+#if SINGLE_THREADED_RENDERING
+	const uint32 numCores = 1;
+	log("CAUTION: Rendering is forced to be single threaded - search for 'SINGLE_THREADED_RENDERING'");
+#else
 	const uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
-	log("number of logical cores: %u", numCores);
+	log("Number of logical cores: %u", numCores);
+#endif
 
 	const int32 imageWidth = outImage->GetWidth();
 	const int32 imageHeight = outImage->GetHeight();
