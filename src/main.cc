@@ -33,17 +33,26 @@
 	#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
 	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
-#else
+#elif SCENE_CHOICE == 2
 	#define CREATE_RANDOM_SCENE     CreateScene_CarShowRoom
 	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
+#elif SCENE_CHOICE == 3
+	#define CREATE_RANDOM_SCENE     CreateScene_Bedroom
+	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
+	#define FOV_Y                   60.0f
+#else
+	#error Invalid value for SCENE_CHOICE
 #endif
 
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
 #define CAMERA_APERTURE         0.01f
 #define CAMERA_BEGIN_CAPTURE    0.0f
 #define CAMERA_END_CAPTURE      5.0f
-#define FOV_Y                   45.0f
+#ifndef FOV_Y
+	#define FOV_Y               45.0f
+#endif
 #ifndef VIEWPORT_WIDTH
 	#define VIEWPORT_WIDTH      1024
 #endif
@@ -160,8 +169,8 @@ HitableList* CreateScene_CornellBox() {
 
 	OBJModel objModel;
 	if (OBJLoader::SyncLoad("content/cornell_box/CornellBox-Mirror.obj", objModel)) {
-		objModel.staticMesh->Finalize();
-		list.push_back(objModel.staticMesh);
+		objModel.FinalizeAllMeshes();
+		list.push_back(objModel.rootObject);
 	}
 
 	return new HitableList(list);
@@ -319,10 +328,13 @@ HitableList* CreateScene_Bedroom()
 	if (OBJLoader::SyncLoad("content/bedroom/iscv2.obj", bedroomModel))
 	{
 		Transform transform;
-		transform.Init(vec3(0.0f, 0.0f, 0.0f), Rotator(-90.0f, 0.0f, 0.0f), vec3(0.1f, 0.1f, 0.1f));
-		bedroomModel.staticMesh->ApplyTransform(transform);
-		bedroomModel.staticMesh->Finalize();
-		list.push_back(bedroomModel.staticMesh);
+		transform.Init(vec3(0.0f), Rotator(0.0f, 90.0f, 0.0f), vec3(0.1f));
+
+		std::for_each(bedroomModel.staticMeshes.begin(), bedroomModel.staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
+		bedroomModel.FinalizeAllMeshes();
+
+		list.push_back(bedroomModel.rootObject);
 	}
 
 	return new HitableList(list);
@@ -351,9 +363,10 @@ HitableList* CreateScene_ObjModel()
 			vec3(0.0f, 0.0f, 0.0f),
 			Rotator(-10.0f, 0.0f, 0.0f),
 			vec3(0.07f, 0.07f, 0.07f));
-		model.staticMesh->ApplyTransform(transform);
-		model.staticMesh->Finalize();
-		list.push_back(model.staticMesh);
+		std::for_each(model.staticMeshes.begin(), model.staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
+		model.FinalizeAllMeshes();
+		list.push_back(model.rootObject);
 	}
 #endif
 

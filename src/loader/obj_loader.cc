@@ -6,9 +6,21 @@
 #include "core/vec.h"
 #include "geom/static_mesh.h"
 #include "geom/triangle.h"
+#include "geom/bvh.h"
 #include "shading/material.h"
 #include "util/resource_finder.h"
 
+// -------------------------------
+// OBJModel
+
+void OBJModel::FinalizeAllMeshes() {
+	for (StaticMesh* mesh : staticMeshes) {
+		mesh->Finalize();
+	}
+}
+
+// -------------------------------
+// OBJLoader
 
 void OBJLoader::Initialize()
 {
@@ -41,11 +53,14 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	std::string file = ResourceFinder::Get().Find(filepath);
 	if (file.size() == 0)
 	{
+		log("%s: File not exist: %s", __FUNCTION__, filepath);
 		return false;
 	}
 
+	// Call tiny_obj_loader.
 	if (!internalLoader.ParseFromFile(file))
 	{
+		log("%s: tiny_obj_loader failed: %s", __FUNCTION__, filepath);
 		return false;
 	}
 
@@ -53,31 +68,48 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	const std::vector<tinyobj::shape_t>& shapes = internalLoader.GetShapes();
 	const std::vector<tinyobj::material_t>& raw_materials = internalLoader.GetMaterials();
 
-	log("%s: load %s", __FUNCTION__, filepath);
-	log("\tvertices: %d", (int32)(attrib.vertices.size() / 3));
-	log("\tmaterials: %d", (int32)raw_materials.size());
+	if (shapes.size() == 0) {
+		log("%s: No shapes found in: %s", __FUNCTION__, filepath);
+		return false;
+	}
 
-	// #todo-obj: Parse material info
-	Lambertian* fallbackMaterial = new Lambertian(vec3(1.0f, 0.2f, 0.2f));
+	log("%s: Load %s", __FUNCTION__, filepath);
+	log("\tTotal shapes: %d", (int32)shapes.size());
+	log("\tTotal vertices: %d", (int32)(attrib.vertices.size() / 3));
+	log("\tTotal materials: %d", (int32)raw_materials.size());
+
+	// Used for faces whose materials are not specified.
+	Lambertian* const fallbackMaterial = new Lambertian(vec3(0.5f, 0.5f, 0.5f));
+
+	log("Parsing materials...");
 	ParseMaterials(filepath, raw_materials, materials);
 
-	StaticMesh* mesh = new StaticMesh;
-	vec3 minBound(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
-	vec3 maxBound(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
+	vec3 localMinBound(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
+	vec3 localMaxBound(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
+	for (auto i = 0u; i < attrib.vertices.size(); i += 3) {
+		vec3 v(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
+		localMinBound = min(localMinBound, v);
+		localMaxBound = max(localMaxBound, v);
+	}
 
 	const bool hasNormals = (attrib.normals.size() > 0) && (attrib.normals.size() == attrib.vertices.size());
 
-	std::vector<Triangle> triangles;
-
-	std::vector<vec3> customNormals(attrib.vertices.size(), vec3(0.0f, 0.0f, 0.0f));
-	std::vector<int32> customNormalIndices(attrib.vertices.size() * 3, -1);
-
-	int32 p_global = 0;
+	// Convert each tinyobj::shape_t into a StaticMesh.
+	log("Parsing shapes...");
+	int32 shapeIx = 0;
 	for (const tinyobj::shape_t& shape : shapes)
 	{
+		log("\tParsing shape %d: %s", shapeIx++, shape.name.c_str() ? shape.name.c_str() : "<noname>");
+
+		// Temp storages for current shape.
+		std::vector<Triangle> triangles;
+		std::vector<vec3> customNormals(attrib.vertices.size(), vec3(0.0f, 0.0f, 0.0f));
+		std::vector<int32> customNormalIndices(attrib.vertices.size() * 3, -1);
+
 		// mesh
 		int32 p = 0;
 		int32 numFaces = (int32)shape.mesh.num_face_vertices.size();
+
 		for (int32 f = 0; f < numFaces; ++f)
 		{
 			int32 fv = shape.mesh.num_face_vertices[f];
@@ -107,14 +139,10 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 				customNormals[i0] += n;
 				customNormals[i1] += n;
 				customNormals[i2] += n;
-				customNormalIndices[p_global] = i0;
-				customNormalIndices[p_global + 1] = i1;
-				customNormalIndices[p_global + 2] = i2;
+				customNormalIndices[p] = i0;
+				customNormalIndices[p + 1] = i1;
+				customNormalIndices[p + 2] = i2;
 			}
-
-			// #todo-obj: Just min/max attrib.vertices. We're checking same vertices again and again here.
-			minBound = min(min(min(minBound, v0), v1), v2);
-			maxBound = max(max(max(maxBound, v0), v1), v2);
 
 			Material* faceMaterial = fallbackMaterial;
 			int32 material_ix = shape.mesh.material_ids[f];
@@ -139,40 +167,47 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 
 			triangles.emplace_back(T);
 			p += 3;
-			p_global += 3;
 		}
 
 		// #todo-obj: lines
 		// #todo-obj: points
-	}
 
-	if (!hasNormals)
-	{
-		for (auto i = 0; i < customNormals.size(); ++i)
-		{
-			customNormals[i] = normalize(customNormals[i]);
+		if (!hasNormals) {
+			for (auto i = 0; i < customNormals.size(); ++i) {
+				customNormals[i] = normalize(customNormals[i]);
+			}
+			for (auto i = 0; i < triangles.size(); ++i) {
+				const vec3& n0 = customNormals[customNormalIndices[i * 3]];
+				const vec3& n1 = customNormals[customNormalIndices[i * 3 + 1]];
+				const vec3& n2 = customNormals[customNormalIndices[i * 3 + 2]];
+				triangles[i].SetNormals(n0, n1, n2);
+			}
 		}
-		for (auto i = 0; i < triangles.size(); ++i)
-		{
-			const vec3& n0 = customNormals[customNormalIndices[i * 3]];
-			const vec3& n1 = customNormals[customNormalIndices[i * 3 + 1]];
-			const vec3& n2 = customNormals[customNormalIndices[i * 3 + 2]];
-			triangles[i].SetNormals(n0, n1, n2);
+
+		StaticMesh* mesh = new StaticMesh;
+		for (const Triangle& T : triangles) {
+			mesh->AddTriangle(T);
 		}
+		mesh->CalculateBounds();
+
+		outModel.staticMeshes.push_back(mesh);
 	}
 
-	for (const Triangle& T : triangles)
-	{
-		mesh->AddTriangle(T);
+	if (outModel.staticMeshes.size() == 1) {
+		outModel.rootObject = outModel.staticMeshes[0];
+	} else {
+		std::vector<Hitable*> hitables;
+		for (StaticMesh* mesh : outModel.staticMeshes) {
+			hitables.push_back(mesh);
+		}
+		outModel.rootObject = new BVHNode(new HitableList(hitables), 0.0f, 0.0f);
+		//outModel.rootObject = new HitableList(hitables);
 	}
 
-	outModel.staticMesh = mesh;
-	outModel.minBound = minBound;
-	outModel.maxBound = maxBound;
+	outModel.localMinBound = localMinBound;
+	outModel.localMaxBound = localMaxBound;
 
-	outModel.staticMesh->SetBounds(AABB(minBound, maxBound));
-
-	log("\t> loading done");
+	log("> OBJ loading done");
 
 	return true;
 }
@@ -196,6 +231,8 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 	for (int32 i = 0; i < nMaterials; ++i)
 	{
 		const tinyobj::material_t& rawMaterial = inRawMaterials[i];
+
+		log("\tParsing material %d: %s", i, rawMaterial.name.c_str() ? rawMaterial.name.c_str() : "<noname>");
 
 		// #todo-obj: Parse every data in the material
 		// PBR extension in tiny_obj_loader.h

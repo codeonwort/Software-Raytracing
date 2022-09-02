@@ -2,23 +2,36 @@
 
 #include "template/noncopyable.h"
 #include "core/vec.h"
+
 #include "tiny_obj_loader.h"
+
+#include <vector>
 
 class Material;
 class StaticMesh;
+class Hitable;
 
+// Parsing result of a Wavefront OBJ file.
+// CAUTION: You shoul finalize static meshes by StaticMesh::Finalize(),
+//          or you can just call OBJModel::FinalizeAllMeshes().
 struct OBJModel
 {
 	OBJModel()
-		: staticMesh(nullptr)
-		, minBound(vec3(0.0f, 0.0f, 0.0f))
-		, maxBound(vec3(0.0f, 0.0f, 0.0f))
+		: rootObject(nullptr)
+		, localMinBound(vec3(0.0f, 0.0f, 0.0f))
+		, localMaxBound(vec3(0.0f, 0.0f, 0.0f))
+		
 	{
 	}
 
-	StaticMesh* staticMesh;
-	vec3 minBound;
-	vec3 maxBound;
+	void FinalizeAllMeshes();
+
+	Hitable* rootObject;
+	std::vector<StaticMesh*> staticMeshes;
+
+	// CAUTION: These will become invalid after applying transforms to the meshes.
+	vec3 localMinBound;
+	vec3 localMaxBound;
 };
 
 class OBJLoader : public Noncopyable
