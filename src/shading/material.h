@@ -140,6 +140,10 @@ public:
 	void SetAlbedoTexture(const Image2D& inImage) {
 		if (albedoTexture) delete albedoTexture;
 		albedoTexture = Texture2D::CreateFromImage2D(inImage);
+
+		SamplerState sampler;
+		sampler.bSRGB = true;
+		albedoTexture->SetSamplerState(sampler);
 	}
 	void SetNormalTexture(const Image2D& inImage) {
 		if (normalmapTexture) delete normalmapTexture;

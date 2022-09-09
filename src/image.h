@@ -67,6 +67,20 @@ struct Pixel
 		return vec3(r, g, b);
 	}
 
+	// Assumes current values are in linear color space.
+	inline Pixel LinearToSRGB()
+	{
+		const float K = 1.0f / 2.2f;
+		return Pixel{ powf(r, K), powf(g, K), powf(b, K), powf(a, K) };
+	}
+
+	// Assumes current values are in sRGB color space.
+	inline Pixel SRGBToLinear()
+	{
+		const float K = 2.2f;
+		return Pixel{ powf(r, K), powf(g, K), powf(b, K), powf(a, K) };
+	}
+
 };
 
 // Can be used as a 2D texture mipmap or a 2D render target

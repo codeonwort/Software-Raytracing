@@ -39,7 +39,11 @@ Pixel Texture2D::Sample(float u, float v)
 	int32 y = (int32)(image.GetHeight() * v);
 	x = std::max(0, std::min((int32)image.GetWidth() - 1, x));
 	y = std::max(0, std::min((int32)image.GetHeight() - 1, y));
-	return image.GetPixel(x, y);
+	Pixel px = image.GetPixel(x, y);
+	if (sampler.bSRGB) {
+		px = px.SRGBToLinear();
+	}
+	return px;
 }
 
 void Texture2D::FixUV(float& u, float& v)

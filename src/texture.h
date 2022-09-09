@@ -24,11 +24,13 @@ struct SamplerState
 	SamplerState()
 		: filter(ETextureFilter::Linear)
 		, wrap(ETextureWrap::Repeat)
+		, bSRGB(false)
 	{
 	}
 
 	ETextureFilter filter;
 	ETextureWrap wrap;
+	bool bSRGB;
 };
 
 // Collection of mipmaps
