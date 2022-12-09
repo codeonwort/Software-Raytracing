@@ -22,6 +22,7 @@
 // 0: Cornell box
 // 1: Demo scene with some primitives and a model
 // 2: Car show room
+// 3: Breakfast Room
 #define SCENE_CHOICE 0
 
 #if SCENE_CHOICE == 0
@@ -38,8 +39,8 @@
 	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
 	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 #elif SCENE_CHOICE == 3
-	#define CREATE_RANDOM_SCENE     CreateScene_Bedroom
-	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
+	#define CREATE_RANDOM_SCENE     CreateScene_BreakfastRoom
+	#define CAMERA_LOCATION         vec3(0.0f, 1.0f, 5.0f)
 	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 	#define FOV_Y                   60.0f
 #else
@@ -75,7 +76,7 @@
 // Demo scenes
 HitableList* CreateScene_CornellBox();
 HitableList* CreateScene_CarShowRoom();
-HitableList* CreateScene_Bedroom();
+HitableList* CreateScene_BreakfastRoom();
 HitableList* CreateScene_ObjModel();
 HitableList* CreateScene_RandomSpheres();
 HitableList* CreateScene_FourSpheres();
@@ -318,23 +319,23 @@ HitableList* CreateScene_CarShowRoom()
 	return new HitableList(list);
 }
 
-HitableList* CreateScene_Bedroom()
+HitableList* CreateScene_BreakfastRoom()
 {
-	SCOPED_CPU_COUNTER(CreateScene_Bedroom);
+	SCOPED_CPU_COUNTER(CreateScene_BreakfastRoom);
 
 	std::vector<Hitable*> list;
 
-	OBJModel bedroomModel;
-	if (OBJLoader::SyncLoad("content/bedroom/iscv2.obj", bedroomModel))
+	OBJModel objModel;
+	if (OBJLoader::SyncLoad("content/breakfast_room/breakfast_room.obj", objModel))
 	{
 		Transform transform;
-		transform.Init(vec3(0.0f), Rotator(0.0f, 90.0f, 0.0f), vec3(0.1f));
+		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
 
-		std::for_each(bedroomModel.staticMeshes.begin(), bedroomModel.staticMeshes.end(),
+		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
 			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		bedroomModel.FinalizeAllMeshes();
+		objModel.FinalizeAllMeshes();
 
-		list.push_back(bedroomModel.rootObject);
+		list.push_back(objModel.rootObject);
 	}
 
 	return new HitableList(list);

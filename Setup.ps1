@@ -8,6 +8,8 @@
 # - Libraries are built at 'external' folder,
 #   then only headers and binaries are copied to 'thirdparty' folder.
 #
+# - Run this script with execution policy like this:
+#       powershell -ExecutionPolicy Bypass -File Setup.ps1
 
 # TODO: Separate these flags for contents and libraries?
 Param (
@@ -28,16 +30,13 @@ $freeimage_url      = "http://downloads.sourceforge.net/freeimage/FreeImage3180.
 $freeimage_path     = "$external_dir/FreeImage.zip"
 $tinyobjloader_url  = "https://github.com/syoyo/tinyobjloader/archive/v2.0.0-rc1.zip"
 $tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
-$content_url        = "https://casual-effects.com/g3d/data10/research/model/bedroom/bedroom.zip"
-$content_zip_path   = "$external_dir/content/bedroom.zip"
-$content_unzip_path = "$content_dir/bedroom/"
 
 $contents_list  = @(
 	# Format: (url, zip_name, unzip_name)
 	@(
-		"https://casual-effects.com/g3d/data10/research/model/bedroom/bedroom.zip",
-		"bedroom.zip",
-		"bedroom"
+		"https://casual-effects.com/g3d/data10/research/model/breakfast_room/breakfast_room.zip",
+		"breakfast_room.zip",
+		"breakfast_room"
 	),
 	@(
 		"https://casual-effects.com/g3d/data10/common/model/CornellBox/CornellBox.zip",
@@ -92,8 +91,7 @@ function Unzip {
 }
 
 #
-# - Download 3D models
-# - Download third party libraries
+# Download 3D models and third party libraries
 #
 $num_contents = $contents_list.length
 if ($should_download) {
