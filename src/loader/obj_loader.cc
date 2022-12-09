@@ -92,11 +92,12 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 		localMaxBound = max(localMaxBound, v);
 	}
 
-	const bool hasNormals = (attrib.normals.size() > 0) && (attrib.normals.size() == attrib.vertices.size());
-
 	// Convert each tinyobj::shape_t into a StaticMesh.
 	log("Parsing shapes...");
+	const bool hasNormals = (attrib.normals.size() > 0);
 	int32 shapeIx = 0;
+	int32 DEBUG_numInvalidTexcoords = 0;
+
 	for (const tinyobj::shape_t& shape : shapes)
 	{
 		log("\tParsing shape %d: %s", shapeIx++, shape.name.c_str() ? shape.name.c_str() : "<noname>");
@@ -129,6 +130,9 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			vec3 n0, n1, n2;
 			if (hasNormals)
 			{
+				i0 = (int32)shape.mesh.indices[p].normal_index;
+				i1 = (int32)shape.mesh.indices[p + 1].normal_index;
+				i2 = (int32)shape.mesh.indices[p + 2].normal_index;
 				n0 = vec3(attrib.normals[i0 * 3], attrib.normals[i0 * 3 + 1], attrib.normals[i0 + 3 + 2]);
 				n1 = vec3(attrib.normals[i1 * 3], attrib.normals[i1 * 3 + 1], attrib.normals[i1 + 3 + 2]);
 				n2 = vec3(attrib.normals[i2 * 3], attrib.normals[i2 * 3 + 1], attrib.normals[i2 + 3 + 2]);
@@ -163,6 +167,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 					attrib.texcoords[i2 * 2], 1.0f - attrib.texcoords[i2 * 2 + 1]);
 			} else {
 				T.SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+				++DEBUG_numInvalidTexcoords;
 			}
 
 			triangles.emplace_back(T);
@@ -207,6 +212,10 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	outModel.localMinBound = localMinBound;
 	outModel.localMaxBound = localMaxBound;
 
+	if (DEBUG_numInvalidTexcoords > 0)
+	{
+		log("WARNING: Num triangles with invalid UVs: %d", DEBUG_numInvalidTexcoords);
+	}
 	log("> OBJ loading done");
 
 	return true;
