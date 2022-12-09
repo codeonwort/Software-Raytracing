@@ -33,6 +33,11 @@ Pixel Texture2D::Sample(float u, float v)
 	{
 		return Pixel(0.0f, 0.0f, 0.0f, 0.0f);
 	}
+
+	// Fixup UV
+	u = fmod(u, 1.0f); if (u < 0.0f) u += 1.0f;
+	v = fmod(v, 1.0f); if (v < 0.0f) v += 1.0f; v = 1.0f - v;
+
 	// #todo-texture: Filtering and wrapping
 	const Image2D& image = mipmaps[0];
 	int32 x = (int32)(image.GetWidth() * u);

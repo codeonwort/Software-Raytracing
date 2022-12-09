@@ -9,7 +9,7 @@ static void* pooledThreadMain(void* _param)
 	int32 threadID           = param->threadID;
 	ThreadPool* pool         = param->pool;
 
-	log("Thread %d started to work", threadID);
+	//log("Thread %d started to work", threadID);
 
 	bool hasWork = true;
 
@@ -28,7 +28,7 @@ static void* pooledThreadMain(void* _param)
 		}
 	}
 
-	log("Thread %d has finished", threadID);
+	//log("Thread %d has finished", threadID);
 	param->done = true;
 
 	return 0;

@@ -1,15 +1,20 @@
 #pragma once
 
 #include "type.h"
+#include "core/vec.h"
+#include <functional>
 
 class Hitable;
 class Camera;
 class Image2D;
 
+using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
+
 enum class EDebugMode {
 	None,
 	VertexNormal,
-	Texcoord
+	Texcoord,
+	Reflectance,
 };
 
 struct RendererSettings {
@@ -17,8 +22,7 @@ struct RendererSettings {
 	int32 maxPathLength;
 	float rayTMin;
 
-	// #todo: Support sky cubemap
-	bool fakeSkyLight;
+	FakeSkyLightFunction skyLightFn = nullptr;
 
 	EDebugMode debugMode = EDebugMode::None;
 };

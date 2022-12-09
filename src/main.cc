@@ -23,6 +23,7 @@
 // 1: Demo scene with some primitives and a model
 // 2: Car show room
 // 3: Breakfast Room
+// 4: Dabrovic Sponza
 #define SCENE_CHOICE 3
 
 #if SCENE_CHOICE == 0
@@ -43,6 +44,11 @@
 	#define CAMERA_LOCATION         vec3(0.0f, 1.0f, 5.0f)
 	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
 	#define FOV_Y                   60.0f
+#elif SCENE_CHOICE == 4
+	#define CREATE_RANDOM_SCENE     CreateScene_DabrovicSponza
+	#define CAMERA_LOCATION         vec3(10.0f, 2.0f, 0.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 3.0f, 0.0f)
+	#define FOV_Y                   60.0f
 #else
 	#error Invalid value for SCENE_CHOICE
 #endif
@@ -60,7 +66,12 @@
 #define VIEWPORT_HEIGHT         512
 
 // Debug configuration (features under development)
-#define FAKE_SKY_LIGHT          1
+vec3 FAKE_SKY_LIGHT(const vec3& dir)
+{
+	float t = 0.5f * (dir.y + 1.0f);
+	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+	//return vec3(10.0f);
+}
 #define LOCAL_LIGHTS            1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
@@ -78,6 +89,7 @@
 HitableList* CreateScene_CornellBox();
 HitableList* CreateScene_CarShowRoom();
 HitableList* CreateScene_BreakfastRoom();
+HitableList* CreateScene_DabrovicSponza();
 HitableList* CreateScene_ObjModel();
 HitableList* CreateScene_RandomSpheres();
 HitableList* CreateScene_FourSpheres();
@@ -144,7 +156,7 @@ int main(int argc, char** argv) {
 		rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
 		rendererSettings.maxPathLength = MAX_RECURSION;
 		rendererSettings.rayTMin = RAY_T_MIN;
-		rendererSettings.fakeSkyLight = FAKE_SKY_LIGHT;
+		rendererSettings.skyLightFn = FAKE_SKY_LIGHT;
 		rendererSettings.debugMode = RENDERER_DEBUG_MODE;
 	}
 	Renderer renderer;
@@ -329,6 +341,28 @@ HitableList* CreateScene_BreakfastRoom()
 
 	OBJModel objModel;
 	if (OBJLoader::SyncLoad("content/breakfast_room/breakfast_room.obj", objModel))
+	{
+		Transform transform;
+		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
+
+		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
+		objModel.FinalizeAllMeshes();
+
+		list.push_back(objModel.rootObject);
+	}
+
+	return new HitableList(list);
+}
+
+HitableList* CreateScene_DabrovicSponza()
+{
+	SCOPED_CPU_COUNTER(CreateScene_DabrovicSponza);
+
+	std::vector<Hitable*> list;
+
+	OBJModel objModel;
+	if (OBJLoader::SyncLoad("content/dabrovic_sponza/sponza.obj", objModel))
 	{
 		Transform transform;
 		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));

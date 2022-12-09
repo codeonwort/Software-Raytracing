@@ -36,7 +36,7 @@ struct WorkCell {
 struct RayPayload {
 	int32 maxRecursion;
 	float rayTMin;
-	bool fakeSkyLight;
+	FakeSkyLightFunction fakeSkyLight;
 };
 
 vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayload& settings, EDebugMode debugMode) {
@@ -47,13 +47,16 @@ vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayl
 			debugValue = vec3(0.5f) + 0.5f * hitResult.n;
 		} else if (debugMode == EDebugMode::Texcoord) {
 			debugValue = vec3(hitResult.paramU, hitResult.paramV, 0.0f);
+		} else if (debugMode == EDebugMode::Reflectance) {
+			ray dummy; float dummy2;
+			hitResult.material->Scatter(pathRay, hitResult, debugValue, dummy, dummy2);
 		}
 	}
 	return debugValue;
 }
 
 // Run path tracing to find incoming radiance.
-vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPayload& settings) {
+vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPayload& settings, FakeSkyLightFunction skyLightFn) {
 	if (depth >= settings.maxRecursion) {
 		return vec3(0.0f);
 	}
@@ -73,7 +76,7 @@ vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPa
 		float pdf;
 		if (hitResult.material->Scatter(pathRay, hitResult, reflectance, scatteredRay, pdf)) {
 			if (pdf > 0.0f) {
-				vec3 Li = TraceScene(scatteredRay, world, depth + 1, settings);
+				vec3 Li = TraceScene(scatteredRay, world, depth + 1, settings, skyLightFn);
 				float scatteringPdf = hitResult.material->ScatteringPdf(hitResult, -pathRay.d, scatteredRay.d);
 				radiance += reflectance * Li * scatteringPdf / pdf;
 			}
@@ -86,17 +89,16 @@ vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPa
 		return radiance;
 	}
 
-	if (settings.fakeSkyLight) {
+	if (skyLightFn != nullptr) {
 		vec3 dir = pathRay.d;
 		dir.Normalize();
-		float t = 0.5f * (dir.y + 1.0f);
-		return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+		return skyLightFn(dir);
 	}
 	return vec3(0.0f, 0.0f, 0.0f);
 }
 // Initial ray is a camera ray.
-vec3 TraceScene(const ray& cameraRay, const Hitable* world, const RayPayload& settings) {
-	return TraceScene(cameraRay, world, 0, settings);
+vec3 TraceScene(const ray& cameraRay, const Hitable* world, const RayPayload& settings, FakeSkyLightFunction skyLightFn) {
+	return TraceScene(cameraRay, world, 0, settings, skyLightFn);
 }
 
 void GenerateCell(const WorkItemParam* param) {
@@ -117,7 +119,6 @@ void GenerateCell(const WorkItemParam* param) {
 		RayPayload rtSettings{
 			cell->rendererSettings.maxPathLength,
 			cell->rendererSettings.rayTMin,
-			cell->rendererSettings.fakeSkyLight,
 		};
 		for (int32 y = cell->y; y < endY; ++y) {
 			for (int32 x = cell->x; x < endX; ++x) {
@@ -130,7 +131,7 @@ void GenerateCell(const WorkItemParam* param) {
 						v += (randomsAA.Peek() - 0.5f) * 2.0f / imageHeight;
 					}
 					ray r = cell->camera->GetRay(u, v);
-					vec3 scene = TraceScene(r, cell->world, rtSettings);
+					vec3 scene = TraceScene(r, cell->world, rtSettings, cell->rendererSettings.skyLightFn);
 					accum += scene;
 				}
 				accum /= (float)SPP;
@@ -142,7 +143,6 @@ void GenerateCell(const WorkItemParam* param) {
 		RayPayload rtSettings{
 			cell->rendererSettings.maxPathLength,
 			cell->rendererSettings.rayTMin,
-			cell->rendererSettings.fakeSkyLight,
 		};
 		for (int32 y = cell->y; y < endY; ++y) {
 			for (int32 x = cell->x; x < endX; ++x) {

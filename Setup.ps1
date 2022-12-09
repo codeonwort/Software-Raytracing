@@ -13,12 +13,13 @@
 
 # TODO: Separate these flags for contents and libraries?
 Param (
-	[Switch]$skipdownload,
-	[Switch]$skipbuild
+	[Switch]$skipdownload
 )
 
 $should_download = !($PSBoundParameters.ContainsKey('skipdownload'))
-$should_build = !($PSBoundParameters.ContainsKey('skipbuild'))
+
+$skip_build = Read-Host "Skip build of thirdparty libraries? [y(default)/n]"
+$should_build = ($skip_build -eq "n")
 
 #
 # Constants
@@ -42,6 +43,11 @@ $contents_list  = @(
 		"https://casual-effects.com/g3d/data10/common/model/CornellBox/CornellBox.zip",
 		"cornell_box.zip",
 		"cornell_box"
+	),
+	@(
+		"https://casual-effects.com/g3d/data10/research/model/dabrovic_sponza/sponza.zip",
+		"dabrovic_sponza.zip",
+		"dabrovic_sponza"
 	)
 )
 

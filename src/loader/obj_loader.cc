@@ -134,8 +134,9 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 				float texV = 0.0f;
 				if (idx.texcoord_index >= 0)
 				{
+					// UV wrapping should be performed at texture sampling, not here.
 					texU = tiny_attrib.texcoords[2 * idx.texcoord_index + 0];
-					texV = 1.0f - tiny_attrib.texcoords[2 * idx.texcoord_index + 1];
+					texV = tiny_attrib.texcoords[2 * idx.texcoord_index + 1];
 				}
 				else
 				{
