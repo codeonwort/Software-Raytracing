@@ -31,3 +31,12 @@ public:
 	 */
 	
 };
+
+enum class EImageFileType
+{
+	Bitmap,
+	Jpg,
+	Png
+};
+
+void WriteImageToDisk(const Image2D& image, const char* filepath, EImageFileType fileType);

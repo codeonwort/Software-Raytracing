@@ -1,5 +1,4 @@
 #include "image.h"
-#include "file.h"
 #include "log.h"
 #include "camera.h"
 #include "random.h"
@@ -77,7 +76,8 @@ vec3 FAKE_SKY_LIGHT(const vec3& dir)
 #define INCLUDE_CUBE            1
 #define TEST_TEXTURE_MAPPING    1
 #define TEST_IMAGE_LOADER       0
-#define RESULT_FILENAME         SOLUTION_DIR "test.bmp"
+#define RESULT_FILENAME_BMP     SOLUTION_DIR "test.bmp"
+#define RESULT_FILENAME_JPG     SOLUTION_DIR "test.jpg"
 
 // Rendering configuration
 #define SAMPLES_PER_PIXEL       200
@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
 #if TEST_IMAGE_LOADER
 	Image2D test;
 	if (ImageLoader::SyncLoad("content/odyssey.jpg", test)) {
-		WriteBitmap(test, RESULT_FILENAME);
+		WriteBitmap(test, RESULT_FILENAME_BMP);
 		return 0;
 	}
 #endif
@@ -165,9 +165,11 @@ int main(int argc, char** argv) {
 
 	image.PostProcess();
 
-	WriteBitmap(image, RESULT_FILENAME);
+	WriteImageToDisk(image, RESULT_FILENAME_BMP, EImageFileType::Bitmap);
+	WriteImageToDisk(image, RESULT_FILENAME_JPG, EImageFileType::Jpg);
 
-	log("image has been written as bitmap: %s", RESULT_FILENAME);
+	log("image has been written as bitmap: %s", RESULT_FILENAME_BMP);
+	log("image has been written as jpg: %s", RESULT_FILENAME_JPG);
 
 	//
 	// Cleanup
