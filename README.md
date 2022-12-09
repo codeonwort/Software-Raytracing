@@ -1,13 +1,20 @@
-# Overview
-Study <Ray Tracing in a Weekend>
+# Goal
+
+Implement CPU ray tracing
 
 # Environment
-* Language : C++
-* IDE      : Visual Studio 2019 or newer
-* Build    : cmake
-* OS       : Windows 10, WSL
 
-# Screenshots
+* Language   : C++11
+* IDE        : Visual Studio 2019 or newer
+* Build tool : Cmake
+* OS         : Windows 10 or newer
+
+# Sample images
+
+![CornellBox](https://user-images.githubusercontent.com/11644393/206691703-35e7985a-a5bc-4e74-8ed9-0ce6cf4543f4.jpg)
+![BreakfastRoom](https://user-images.githubusercontent.com/11644393/206691960-0d3def29-b561-4185-9815-e621bcb5c183.jpg)
+![BreakfastRoomDebug](https://user-images.githubusercontent.com/11644393/206693424-017dec2d-35b8-4d21-a4fd-33d791c8fcea.jpg)
+
 ![preview3](https://user-images.githubusercontent.com/11644393/51801447-49746080-2281-11e9-9d56-2954ab4039c1.jpg)
 ![preview5](https://user-images.githubusercontent.com/11644393/153760159-e1e8b09c-00b9-4ca9-97c9-9e8421bbecd8.jpg)
 ![preview6](https://user-images.githubusercontent.com/11644393/186878829-f7ce3927-c30e-4686-abec-94df6e6a5ccb.jpg)
