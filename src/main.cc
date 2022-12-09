@@ -72,6 +72,7 @@
 #define SAMPLES_PER_PIXEL       200
 #define MAX_RECURSION           5
 #define RAY_T_MIN               0.0001f
+#define RENDERER_DEBUG_MODE     EDebugMode::None
 
 // Demo scenes
 HitableList* CreateScene_CornellBox();
@@ -144,6 +145,7 @@ int main(int argc, char** argv) {
 		rendererSettings.maxPathLength = MAX_RECURSION;
 		rendererSettings.rayTMin = RAY_T_MIN;
 		rendererSettings.fakeSkyLight = FAKE_SKY_LIGHT;
+		rendererSettings.debugMode = RENDERER_DEBUG_MODE;
 	}
 	Renderer renderer;
 	// NOTE: This is a blocking operation for now.

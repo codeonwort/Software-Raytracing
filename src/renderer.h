@@ -6,6 +6,12 @@ class Hitable;
 class Camera;
 class Image2D;
 
+enum class EDebugMode {
+	None,
+	VertexNormal,
+	Texcoord
+};
+
 struct RendererSettings {
 	int32 samplesPerPixel;
 	int32 maxPathLength;
@@ -13,6 +19,8 @@ struct RendererSettings {
 
 	// #todo: Support sky cubemap
 	bool fakeSkyLight;
+
+	EDebugMode debugMode = EDebugMode::None;
 };
 
 class Renderer {

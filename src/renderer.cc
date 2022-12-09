@@ -39,6 +39,19 @@ struct RayPayload {
 	bool fakeSkyLight;
 };
 
+vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayload& settings, EDebugMode debugMode) {
+	vec3 debugValue = vec3(0.0f);
+	HitResult hitResult;
+	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult)) {
+		if (debugMode == EDebugMode::VertexNormal) {
+			debugValue = vec3(0.5f) + 0.5f * hitResult.n;
+		} else if (debugMode == EDebugMode::Texcoord) {
+			debugValue = vec3(hitResult.paramU, hitResult.paramV, 0.0f);
+		}
+	}
+	return debugValue;
+}
+
 // Run path tracing to find incoming radiance.
 vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPayload& settings) {
 	if (depth >= settings.maxRecursion) {
@@ -99,29 +112,47 @@ void GenerateCell(const WorkItemParam* param) {
 	const float imageHeight = (float)cell->image->GetHeight();
 
 	// #todo-multithread: Bad utilization of threads; Some cells might take longer than others.
-	const int32 SPP = std::max(1, cell->rendererSettings.samplesPerPixel);
-	RayPayload rtSettings{
-		cell->rendererSettings.maxPathLength,
-		cell->rendererSettings.rayTMin,
-		cell->rendererSettings.fakeSkyLight
-	};
-	for (int32 y = cell->y; y < endY; ++y) {
-		for (int32 x = cell->x; x < endX; ++x) {
-			vec3 accum(0.0f, 0.0f, 0.0f);
-			for (int32 s = 0; s < SPP; ++s) {
+	if (cell->rendererSettings.debugMode == EDebugMode::None) {
+		const int32 SPP = std::max(1, cell->rendererSettings.samplesPerPixel);
+		RayPayload rtSettings{
+			cell->rendererSettings.maxPathLength,
+			cell->rendererSettings.rayTMin,
+			cell->rendererSettings.fakeSkyLight,
+		};
+		for (int32 y = cell->y; y < endY; ++y) {
+			for (int32 x = cell->x; x < endX; ++x) {
+				vec3 accum(0.0f, 0.0f, 0.0f);
+				for (int32 s = 0; s < SPP; ++s) {
+					float u = (float)x / imageWidth;
+					float v = (float)y / imageHeight;
+					if (s != 0) {
+						u += (randomsAA.Peek() - 0.5f) * 2.0f / imageWidth;
+						v += (randomsAA.Peek() - 0.5f) * 2.0f / imageHeight;
+					}
+					ray r = cell->camera->GetRay(u, v);
+					vec3 scene = TraceScene(r, cell->world, rtSettings);
+					accum += scene;
+				}
+				accum /= (float)SPP;
+				Pixel px(accum.x, accum.y, accum.z);
+				cell->image->SetPixel(x, y, px);
+			}
+		}
+	} else {
+		RayPayload rtSettings{
+			cell->rendererSettings.maxPathLength,
+			cell->rendererSettings.rayTMin,
+			cell->rendererSettings.fakeSkyLight,
+		};
+		for (int32 y = cell->y; y < endY; ++y) {
+			for (int32 x = cell->x; x < endX; ++x) {
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
-				if (s != 0) {
-					u += (randomsAA.Peek() - 0.5f) * 2.0f / imageWidth;
-					v += (randomsAA.Peek() - 0.5f) * 2.0f / imageHeight;
-				}
 				ray r = cell->camera->GetRay(u, v);
-				vec3 scene = TraceScene(r, cell->world, rtSettings);
-				accum += scene;
+				vec3 debugValue = TraceSceneDebugMode(r, cell->world, rtSettings, cell->rendererSettings.debugMode);
+				Pixel px(debugValue.x, debugValue.y, debugValue.z);
+				cell->image->SetPixel(x, y, px);
 			}
-			accum /= (float)SPP;
-			Pixel px(accum.x, accum.y, accum.z);
-			cell->image->SetPixel(x, y, px);
 		}
 	}
 }
