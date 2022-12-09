@@ -10,6 +10,20 @@
 #include "shading/material.h"
 #include "util/resource_finder.h"
 
+/* 'illum' cheat sheet
+0. Color on and Ambient off
+1. Color on and Ambient on
+2. Highlight on
+3. Reflection on and Ray trace on
+4. Transparency: Glass on, Reflection: Ray trace on
+5. Reflection: Fresnel on and Ray trace on
+6. Transparency: Refraction on, Reflection: Fresnel off and Ray trace on
+7. Transparency: Refraction on, Reflection: Fresnel on and Ray trace on
+8. Reflection on and Ray trace off
+9. Transparency: Glass on, Reflection: Ray trace off
+10. Casts shadows onto invisible surfaces
+*/
+
 // -------------------------------
 // OBJModel
 
@@ -286,36 +300,67 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 			outValid = ImageLoader::SyncLoad(filepath.data(), outImage);
 		};
 
+		// #todo-obj: Multiple materials may share same image files
 		LoadImage(rawMaterial.diffuse_texname, albedoImage, albedoImageValid);
 		LoadImage(rawMaterial.roughness_texname, roughnessImage, roughnessImageValid);
 		LoadImage(rawMaterial.metallic_texname, metallicImage, metallicImageValid);
 		LoadImage(rawMaterial.emissive_texname, emissiveImage, emissiveImageValid);
 		LoadImage(rawMaterial.normal_texname, normalImage, normalImageValid);
 
-		MicrofacetMaterial* M = new MicrofacetMaterial;
-
-		if (albedoImageValid) M->SetAlbedoTexture(albedoImage);
-		if (normalImageValid) M->SetNormalTexture(normalImage);
-		if (roughnessImageValid) M->SetRoughnessTexture(roughnessImage);
-		if (metallicImageValid) M->SetMetallicTexture(metallicImage);
-		if (emissiveImageValid) M->SetEmissiveTexture(emissiveImage);
-
-		M->SetAlbedoFallback(vec3(rawMaterial.diffuse[0], rawMaterial.diffuse[1], rawMaterial.diffuse[2]));
-		// #todo-obj: tinyobjloader's roughness defaults to 0.0 if not specified, but it means every materials gonna be specular.
-		// And there is no way to check if roughness was just omitted or explicitly set to zero :(
-		if (rawMaterial.roughness > 0.0f) {
-			M->SetRoughnessFallback(rawMaterial.roughness);
-		} else {
-			// #todo-pbr: Invalid result if roughness is too low.
-			constexpr float tempMinRoughness = 0.01f;
-			// Ad-hoc derivation of roughness from specular
-			float avgSpec = (1.0f / 3.0f) * (rawMaterial.specular[0] + rawMaterial.specular[1] + rawMaterial.specular[2]);
-			float fakeRoughness = std::max(tempMinRoughness, 1.0f - avgSpec);
-			M->SetRoughnessFallback(fakeRoughness);
+		bool bTransparentIllum = (rawMaterial.illum == 4 || rawMaterial.illum == 6);
+		bool bZeroDiffuse = rawMaterial.diffuse_texname.size() == 0
+			&& rawMaterial.diffuse[0] == 0.0f
+			&& rawMaterial.diffuse[1] == 0.0f
+			&& rawMaterial.diffuse[2] == 0.0f;
+		// Ad-hoc conditions as some opaque models have illum 4
+		if (bTransparentIllum && bZeroDiffuse)
+		{
+			vec3 transmittance(
+				rawMaterial.transmittance[0],
+				rawMaterial.transmittance[1],
+				rawMaterial.transmittance[2]);
+			Dielectric* M = new Dielectric(rawMaterial.ior, transmittance);
+			outMaterials[i] = M;
 		}
-		M->SetMetallicFallback(rawMaterial.metallic);
-		M->SetEmissiveFallback(vec3(rawMaterial.emission[0], rawMaterial.emission[1], rawMaterial.emission[2]));
+		else if (rawMaterial.illum == 3)
+		{
+			vec3 baseColor(rawMaterial.diffuse[0], rawMaterial.diffuse[1], rawMaterial.diffuse[2]);
+			Mirror* M = new Mirror(baseColor);
+			outMaterials[i] = M;
+		}
+		else
+		{
+			MicrofacetMaterial* M = new MicrofacetMaterial;
 
-		outMaterials[i] = M;
+			if (albedoImageValid) M->SetAlbedoTexture(albedoImage);
+			if (normalImageValid) M->SetNormalTexture(normalImage);
+			if (roughnessImageValid) M->SetRoughnessTexture(roughnessImage);
+			if (metallicImageValid) M->SetMetallicTexture(metallicImage);
+			if (emissiveImageValid) M->SetEmissiveTexture(emissiveImage);
+
+			M->SetAlbedoFallback(vec3(rawMaterial.diffuse[0], rawMaterial.diffuse[1], rawMaterial.diffuse[2]));
+			// #todo-obj: tinyobjloader's roughness defaults to 0.0 if not specified, but it means every materials gonna be specular.
+			// And there is no way to check if roughness was just omitted or explicitly set to zero :(
+			if (rawMaterial.roughness > 0.0f) {
+				M->SetRoughnessFallback(rawMaterial.roughness);
+			} else {
+				// #todo-pbr: Invalid result if roughness is too low.
+				constexpr float tempMinRoughness = 0.01f;
+#if 0
+				// Ad-hoc derivation of roughness from specular power
+				float avgSpec = (1.0f / 3.0f) * (rawMaterial.specular[0] + rawMaterial.specular[1] + rawMaterial.specular[2]);
+				float fakeRoughness = std::max(tempMinRoughness, 1.0f - avgSpec);
+#else
+				// Ad-hoc derivation of roughness from shininess
+				float fakeRoughness = std::min(1.0f, ::sqrtf(2.0f / (rawMaterial.shininess + 2.0f)));
+				fakeRoughness = std::max(tempMinRoughness, fakeRoughness);
+#endif
+				M->SetRoughnessFallback(fakeRoughness);
+			}
+			M->SetMetallicFallback(rawMaterial.metallic);
+			M->SetEmissiveFallback(vec3(rawMaterial.emission[0], rawMaterial.emission[1], rawMaterial.emission[2]));
+
+			outMaterials[i] = M;
+		}
 	}
 }

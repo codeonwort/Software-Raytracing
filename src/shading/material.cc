@@ -2,6 +2,7 @@
 
 // #todo: Include in renderer settings?
 #define FURNACE_TEST 0
+#define CUTOUT_ALPHA 0.5f
 
 // -------------------------------
 
@@ -78,7 +79,7 @@ bool Dielectric::Scatter(
 	vec3 outward_normal;
 	vec3 reflected = reflect(pathRay.d, hitResult.n);
 	float ni_over_nt;
-	outReflectance = vec3(1.0f, 1.0f, 1.0f);
+	outReflectance = transmissionFilter;
 	vec3 refracted;
 	float reflect_prob;
 	float cosine;
@@ -108,6 +109,9 @@ bool Dielectric::Scatter(
 // -------------------------------
 // PBRMaterial
 
+// #todo-pbr: Is my specular lobe right?
+// roughness = 0.0 should act like a mirror
+// but it seems all rays are scattered to the surface normal in that case...
 bool MicrofacetMaterial::Scatter(
 	const ray& pathRay, const HitResult& hitResult,
 	vec3& outReflectance, ray& outScatteredRay,
@@ -118,8 +122,8 @@ bool MicrofacetMaterial::Scatter(
 	float metallic = metallicFallback;
 
 	if (albedoTexture) {
-		// #todo-texture: Pre-multiply alpha?
-		baseColor = albedoTexture->Sample(hitResult.paramU, hitResult.paramV).RGBToVec3();
+		Pixel albedoPixel = albedoTexture->Sample(hitResult.paramU, hitResult.paramV);
+		baseColor = albedoPixel.RGBToVec3() * albedoPixel.a;
 	}
 	if (normalmapTexture) {
 		vec3 localN = normalmapTexture->Sample(hitResult.paramU, hitResult.paramV).RGBToVec3();
@@ -213,4 +217,13 @@ float MicrofacetMaterial::ScatteringPdf(
 
 	float D = BRDF::DistributionBeckmann(n, wh, roughness);
 	return D * absDot(wh, hitResult.n);
+}
+
+bool MicrofacetMaterial::AlphaTest(float texcoordU, float texcoordV)
+{
+	if (albedoTexture != nullptr) {
+		Pixel albedoPixel = albedoTexture->Sample(texcoordU, texcoordV);
+		return albedoPixel.a >= CUTOUT_ALPHA;
+	}
+	return true;
 }

@@ -15,6 +15,8 @@ enum class EDebugMode {
 	VertexNormal,
 	Texcoord,
 	Reflectance,
+	ReflectanceFromOneBounce, // To debug mirror reflection
+	Emission,
 };
 
 struct RendererSettings {

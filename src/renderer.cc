@@ -49,7 +49,21 @@ vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayl
 			debugValue = vec3(hitResult.paramU, hitResult.paramV, 0.0f);
 		} else if (debugMode == EDebugMode::Reflectance) {
 			ray dummy; float dummy2;
+			debugValue = vec3(1.0f, 0.75f, 0.8f);
 			hitResult.material->Scatter(pathRay, hitResult, debugValue, dummy, dummy2);
+		} else if (debugMode == EDebugMode::ReflectanceFromOneBounce) {
+			debugValue = vec3(1.0f, 0.75f, 0.8f);
+			ray scatteredRay; float dummyPdf;
+			if (hitResult.material->Scatter(pathRay, hitResult, debugValue, scatteredRay, dummyPdf))
+			{
+				if (world->Hit(scatteredRay, settings.rayTMin, FLOAT_MAX, hitResult))
+				{
+					ray dummy;
+					hitResult.material->Scatter(scatteredRay, hitResult, debugValue, dummy, dummyPdf);
+				}
+			}
+		} else if (debugMode == EDebugMode::Emission) {
+			debugValue = hitResult.material->Emitted(hitResult, pathRay.d);
 		}
 	}
 	return debugValue;

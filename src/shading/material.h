@@ -37,6 +37,7 @@ public:
 		return 1.0f / BRDF::PI;
 	}
 
+	virtual bool AlphaTest(float texcoordU, float texcoordV) { return true; }
 };
 
 class DiffuseLight : public Material
@@ -109,7 +110,10 @@ class Dielectric : public Material
 {
 
 public:
-	Dielectric(float indexOfRefraction) : ref_idx(indexOfRefraction) {}
+	Dielectric(float indexOfRefraction, const vec3& inTransmissionFilter = vec3(1.0f))
+		: ref_idx(indexOfRefraction)
+		, transmissionFilter(inTransmissionFilter)
+	{}
 
 	bool Scatter(
 		const ray& inRay, const HitResult& inResult,
@@ -117,7 +121,33 @@ public:
 		float& outPdf) const override;
 
 	float ref_idx;
+	vec3 transmissionFilter;
+};
 
+class Mirror : public Material
+{
+public:
+	Mirror(const vec3& inBaseColor = vec3(1.0f))
+		: baseColor(inBaseColor)
+	{}
+
+	virtual bool Scatter(
+		const ray& inRay, const HitResult& inResult,
+		vec3& outReflectance, ray& outScatteredRay,
+		float& outPdf) const override
+	{
+		outReflectance = baseColor;
+		outScatteredRay = ray(inResult.p, reflect(inRay.d, inResult.n), inRay.t);
+		outPdf = 1.0f;
+		return true;
+	}
+
+	virtual float ScatteringPdf(const HitResult& hitResult, const vec3& Wo, const vec3& Wi) const
+	{
+		return 1.0f;
+	}
+
+	vec3 baseColor;
 };
 
 // Cook-Torrance BRDF
@@ -178,6 +208,8 @@ public:
 		const HitResult& hitResult,
 		const vec3& Wo,
 		const vec3& Wi) const override;
+
+	virtual bool AlphaTest(float texcoordU, float texcoordV) override;
 
 private:
 	Texture2D* albedoTexture;

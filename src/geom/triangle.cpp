@@ -38,7 +38,7 @@ bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult)
 		outResult.paramV = (1 - paramU - paramV) * t0 + paramU * t1 + paramV * t2;
 		outResult.material = material;
 
-		return true;
+		return material->AlphaTest(outResult.paramU, outResult.paramV);
 	}
 
 	return false;

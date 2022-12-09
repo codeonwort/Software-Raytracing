@@ -87,7 +87,7 @@ vec3 FAKE_SKY_LIGHT(const vec3& dir)
 {
 	float t = 0.5f * (dir.y + 1.0f);
 	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
-	//return vec3(10.0f);
+	//return vec3(50.0f);
 }
 #define LOCAL_LIGHTS            1
 #define INCLUDE_TOADTTE         1
