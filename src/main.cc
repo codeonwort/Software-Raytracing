@@ -48,6 +48,24 @@
 	#define CAMERA_LOCATION         vec3(10.0f, 2.0f, 0.0f)
 	#define CAMERA_LOOKAT           vec3(0.0f, 3.0f, 0.0f)
 	#define FOV_Y                   60.0f
+#elif SCENE_CHOICE == 5
+	// #todo-obj: Support 1) alpha test for foliage, 2) other illumination models
+	#define CREATE_RANDOM_SCENE     CreateScene_FireplaceRoom
+	#define CAMERA_LOCATION         vec3(5.0f, 1.0f, -1.5f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.5f)
+	#define FOV_Y                   60.0f
+#elif SCENE_CHOICE == 6
+	// #todo-obj: 7602 materials?????? There's only ~40 materials in living_room.mtl...
+	#define CREATE_RANDOM_SCENE     CreateScene_LivingRoom
+	#define CAMERA_LOCATION         vec3(1.0f, 2.0f, 0.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 2.0f, 0.0f)
+	#define FOV_Y                   60.0f
+#elif SCENE_CHOICE == 7
+	// #todo-obj: Sky light cannnot penetrate opaque windows (need to handle translucency)
+	#define CREATE_RANDOM_SCENE     CreateScene_SibenikCathedral
+	#define CAMERA_LOCATION         vec3(-10.0f, -12.0f, 0.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, -11.5f, 0.0f)
+	#define FOV_Y                   60.0f
 #else
 	#error Invalid value for SCENE_CHOICE
 #endif
@@ -90,6 +108,9 @@ HitableList* CreateScene_CornellBox();
 HitableList* CreateScene_CarShowRoom();
 HitableList* CreateScene_BreakfastRoom();
 HitableList* CreateScene_DabrovicSponza();
+HitableList* CreateScene_FireplaceRoom();
+HitableList* CreateScene_LivingRoom();
+HitableList* CreateScene_SibenikCathedral();
 HitableList* CreateScene_ObjModel();
 HitableList* CreateScene_RandomSpheres();
 HitableList* CreateScene_FourSpheres();
@@ -365,6 +386,75 @@ HitableList* CreateScene_DabrovicSponza()
 
 	OBJModel objModel;
 	if (OBJLoader::SyncLoad("content/dabrovic_sponza/sponza.obj", objModel))
+	{
+		Transform transform;
+		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
+
+		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
+		objModel.FinalizeAllMeshes();
+
+		list.push_back(objModel.rootObject);
+	}
+
+	return new HitableList(list);
+}
+
+
+HitableList* CreateScene_FireplaceRoom()
+{
+	SCOPED_CPU_COUNTER(CreateScene_FireplaceRoom);
+
+	std::vector<Hitable*> list;
+
+	OBJModel objModel;
+	if (OBJLoader::SyncLoad("content/fireplace_room/fireplace_room.obj", objModel))
+	{
+		Transform transform;
+		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
+
+		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
+		objModel.FinalizeAllMeshes();
+
+		list.push_back(objModel.rootObject);
+	}
+
+	return new HitableList(list);
+}
+
+
+HitableList* CreateScene_LivingRoom()
+{
+	SCOPED_CPU_COUNTER(CreateScene_LivingRoom);
+
+	std::vector<Hitable*> list;
+
+	OBJModel objModel;
+	if (OBJLoader::SyncLoad("content/living_room/living_room.obj", objModel))
+	{
+		Transform transform;
+		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
+
+		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
+		objModel.FinalizeAllMeshes();
+
+		list.push_back(objModel.rootObject);
+	}
+
+	return new HitableList(list);
+}
+
+
+HitableList* CreateScene_SibenikCathedral()
+{
+	SCOPED_CPU_COUNTER(CreateScene_SibenikCathedral);
+
+	std::vector<Hitable*> list;
+
+	OBJModel objModel;
+	if (OBJLoader::SyncLoad("content/sibenik/sibenik.obj", objModel))
 	{
 		Transform transform;
 		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));

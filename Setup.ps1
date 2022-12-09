@@ -48,6 +48,21 @@ $contents_list  = @(
 		"https://casual-effects.com/g3d/data10/research/model/dabrovic_sponza/sponza.zip",
 		"dabrovic_sponza.zip",
 		"dabrovic_sponza"
+	),
+	@(
+		"https://casual-effects.com/g3d/data10/research/model/fireplace_room/fireplace_room.zip",
+		"fireplace_room.zip",
+		"fireplace_room"
+	),
+	@(
+		"https://casual-effects.com/g3d/data10/research/model/living_room/living_room.zip",
+		"living_room.zip",
+		"living_room"
+	),
+	@(
+		"https://casual-effects.com/g3d/data10/research/model/sibenik/sibenik.zip",
+		"sibenik.zip",
+		"sibenik"
 	)
 )
 

@@ -11,6 +11,8 @@ Implement CPU ray tracing
 
 # Sample images
 
+Most of OBJ models are downloaded from Morgan McGuire's [Computer Graphics Archive](https://casual-effects.com/data)
+
 ![CornellBox](https://user-images.githubusercontent.com/11644393/206691703-35e7985a-a5bc-4e74-8ed9-0ce6cf4543f4.jpg)
 ![BreakfastRoom](https://user-images.githubusercontent.com/11644393/206691960-0d3def29-b561-4185-9815-e621bcb5c183.jpg)
 ![BreakfastRoomDebug](https://user-images.githubusercontent.com/11644393/206693424-017dec2d-35b8-4d21-a4fd-33d791c8fcea.jpg)
