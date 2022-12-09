@@ -64,7 +64,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 		return false;
 	}
 
-	const tinyobj::attrib_t& attrib = internalLoader.GetAttrib();
+	const tinyobj::attrib_t& tiny_attrib = internalLoader.GetAttrib();
 	const std::vector<tinyobj::shape_t>& shapes = internalLoader.GetShapes();
 	const std::vector<tinyobj::material_t>& raw_materials = internalLoader.GetMaterials();
 
@@ -75,7 +75,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 
 	log("%s: Load %s", __FUNCTION__, filepath);
 	log("\tTotal shapes: %d", (int32)shapes.size());
-	log("\tTotal vertices: %d", (int32)(attrib.vertices.size() / 3));
+	log("\tTotal vertices: %d", (int32)(tiny_attrib.vertices.size() / 3));
 	log("\tTotal materials: %d", (int32)raw_materials.size());
 
 	// Used for faces whose materials are not specified.
@@ -86,15 +86,14 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 
 	vec3 localMinBound(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
 	vec3 localMaxBound(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
-	for (auto i = 0u; i < attrib.vertices.size(); i += 3) {
-		vec3 v(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
+	for (auto i = 0u; i < tiny_attrib.vertices.size(); i += 3) {
+		vec3 v(tiny_attrib.vertices[i], tiny_attrib.vertices[i + 1], tiny_attrib.vertices[i + 2]);
 		localMinBound = min(localMinBound, v);
 		localMaxBound = max(localMaxBound, v);
 	}
 
 	// Convert each tinyobj::shape_t into a StaticMesh.
 	log("Parsing shapes...");
-	const bool hasNormals = (attrib.normals.size() > 0);
 	int32 shapeIx = 0;
 	int32 DEBUG_numInvalidTexcoords = 0;
 
@@ -104,90 +103,92 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 
 		// Temp storages for current shape.
 		std::vector<Triangle> triangles;
-		std::vector<vec3> customNormals(attrib.vertices.size(), vec3(0.0f, 0.0f, 0.0f));
-		std::vector<int32> customNormalIndices(attrib.vertices.size() * 3, -1);
 
-		// mesh
-		int32 p = 0;
 		int32 numFaces = (int32)shape.mesh.num_face_vertices.size();
+		size_t index_offset = 0;
 
-		for (int32 f = 0; f < numFaces; ++f)
+		for (int32 faceID = 0; faceID < numFaces; ++faceID)
 		{
-			int32 fv = shape.mesh.num_face_vertices[f];
-			if (fv != 3)
+			int32 numFaceVertices = shape.mesh.num_face_vertices[faceID];
+			if (numFaceVertices != 3)
 			{
 				// #todo-obj: deal with non-triangle
-				log("%s: (%s) %d-th face is non-triangle", __FUNCTION__, shape.name.data(), f);
+				log("%s: (%s) %d-th face is non-triangle", __FUNCTION__, shape.name.data(), faceID);
 				continue;
 			}
-			int32 i0 = (int32)shape.mesh.indices[p].vertex_index;
-			int32 i1 = (int32)shape.mesh.indices[p + 1].vertex_index;
-			int32 i2 = (int32)shape.mesh.indices[p + 2].vertex_index;
-			vec3 v0(attrib.vertices[i0 * 3], attrib.vertices[i0 * 3 + 1], attrib.vertices[i0 * 3 + 2]);
-			vec3 v1(attrib.vertices[i1 * 3], attrib.vertices[i1 * 3 + 1], attrib.vertices[i1 * 3 + 2]);
-			vec3 v2(attrib.vertices[i2 * 3], attrib.vertices[i2 * 3 + 1], attrib.vertices[i2 * 3 + 2]);
 
-			vec3 n0, n1, n2;
-			if (hasNormals)
+			vec3 positions[3], normals[3];
+			float texUs[3], texVs[3];
+			bool bValidNormal = true;
+			for (int32 faceVertexID = 0; faceVertexID < numFaceVertices; ++faceVertexID)
 			{
-				i0 = (int32)shape.mesh.indices[p].normal_index;
-				i1 = (int32)shape.mesh.indices[p + 1].normal_index;
-				i2 = (int32)shape.mesh.indices[p + 2].normal_index;
-				n0 = vec3(attrib.normals[i0 * 3], attrib.normals[i0 * 3 + 1], attrib.normals[i0 + 3 + 2]);
-				n1 = vec3(attrib.normals[i1 * 3], attrib.normals[i1 * 3 + 1], attrib.normals[i1 + 3 + 2]);
-				n2 = vec3(attrib.normals[i2 * 3], attrib.normals[i2 * 3 + 1], attrib.normals[i2 + 3 + 2]);
+				tinyobj::index_t idx = shape.mesh.indices[index_offset + faceVertexID];
+
+				// position data (should exist)
+				float posX = tiny_attrib.vertices[3 * idx.vertex_index + 0];
+				float posY = tiny_attrib.vertices[3 * idx.vertex_index + 1];
+				float posZ = tiny_attrib.vertices[3 * idx.vertex_index + 2];
+
+				// texcoord data (optional)
+				float texU = 0.0f;
+				float texV = 0.0f;
+				if (idx.texcoord_index >= 0)
+				{
+					texU = tiny_attrib.texcoords[2 * idx.texcoord_index + 0];
+					texV = 1.0f - tiny_attrib.texcoords[2 * idx.texcoord_index + 1];
+				}
+				else
+				{
+					++DEBUG_numInvalidTexcoords;
+				}
+
+				// normal data (optional)
+				float nx = 0.0f, ny = 0.0f, nz = 0.0f;
+				if (idx.normal_index >= 0)
+				{
+					nx = tiny_attrib.normals[3 * idx.normal_index + 0];
+					ny = tiny_attrib.normals[3 * idx.normal_index + 1];
+					nz = tiny_attrib.normals[3 * idx.normal_index + 2];
+				}
+				else
+				{
+					bValidNormal = false;
+				}
+
+				positions[faceVertexID] = vec3(posX, posY, posZ);
+				texUs[faceVertexID] = texU;
+				texVs[faceVertexID] = texV;
+				normals[faceVertexID] = vec3(nx, ny, nz);
 			}
-			else
+
+			// Well let's not try to smooth out the face normals...
+			if (!bValidNormal)
 			{
-				vec3 n = normalize(cross(v1 - v0, v2 - v0));
-				customNormals[i0] += n;
-				customNormals[i1] += n;
-				customNormals[i2] += n;
-				customNormalIndices[p] = i0;
-				customNormalIndices[p + 1] = i1;
-				customNormalIndices[p + 2] = i2;
+				vec3 n = cross(positions[1] - positions[0], positions[2] - positions[0]);
+				normals[0] = normals[1] = normals[2] = normalize(n);
 			}
 
 			Material* faceMaterial = fallbackMaterial;
-			int32 material_ix = shape.mesh.material_ids[f];
+			int32 material_ix = shape.mesh.material_ids[faceID];
 			if (0 <= material_ix && material_ix < materials.size() && materials[material_ix] != nullptr)
 			{
 				faceMaterial = materials[material_ix];
 			}
 
-			Triangle T(v0, v1, v2, n0, n1, n2, faceMaterial);
+			Triangle T(
+				positions[0], positions[1], positions[2],
+				normals[0], normals[1], normals[2],
+				faceMaterial);
 
-			i0 = (int32)shape.mesh.indices[p].texcoord_index;
-			i1 = (int32)shape.mesh.indices[p + 1].texcoord_index;
-			i2 = (int32)shape.mesh.indices[p + 2].texcoord_index;
-			if (i0 != -1 && i1 != -1 && i2 != -1) {
-				T.SetParameterization(
-					attrib.texcoords[i0 * 2], 1.0f - attrib.texcoords[i0 * 2 + 1],
-					attrib.texcoords[i1 * 2], 1.0f - attrib.texcoords[i1 * 2 + 1],
-					attrib.texcoords[i2 * 2], 1.0f - attrib.texcoords[i2 * 2 + 1]);
-			} else {
-				T.SetParameterization(0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
-				++DEBUG_numInvalidTexcoords;
-			}
+			T.SetParameterization(texUs[0], texVs[0], texUs[1], texVs[1], texUs[2], texVs[2]);
 
 			triangles.emplace_back(T);
-			p += 3;
+
+			index_offset += numFaceVertices;
 		}
 
 		// #todo-obj: lines
 		// #todo-obj: points
-
-		if (!hasNormals) {
-			for (auto i = 0; i < customNormals.size(); ++i) {
-				customNormals[i] = normalize(customNormals[i]);
-			}
-			for (auto i = 0; i < triangles.size(); ++i) {
-				const vec3& n0 = customNormals[customNormalIndices[i * 3]];
-				const vec3& n1 = customNormals[customNormalIndices[i * 3 + 1]];
-				const vec3& n2 = customNormals[customNormalIndices[i * 3 + 2]];
-				triangles[i].SetNormals(n0, n1, n2);
-			}
-		}
 
 		StaticMesh* mesh = new StaticMesh;
 		for (const Triangle& T : triangles) {

@@ -23,7 +23,7 @@
 // 1: Demo scene with some primitives and a model
 // 2: Car show room
 // 3: Breakfast Room
-#define SCENE_CHOICE 0
+#define SCENE_CHOICE 3
 
 #if SCENE_CHOICE == 0
 	#define CREATE_RANDOM_SCENE     CreateScene_CornellBox
