@@ -1,5 +1,8 @@
 #include "material.h"
 
+// #todo: Include in renderer settings?
+#define FURNACE_TEST 0
+
 // -------------------------------
 
 // https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
@@ -129,6 +132,12 @@ bool MicrofacetMaterial::Scatter(
 		metallic = metallicTexture->Sample(hitResult.paramU, hitResult.paramV).r;
 	}
 
+#if FURNACE_TEST
+	baseColor = vec3(0.18f);
+	roughness = 1.0f;
+	metallic = 0.0f;
+#endif
+
 	vec3 N = vec3(0.0f, 0.0f, 1.0f);
 	vec3 Wo = hitResult.WorldToLocal(-pathRay.d);
 	vec3 Wi;
@@ -197,6 +206,10 @@ float MicrofacetMaterial::ScatteringPdf(
 	if (roughnessTexture) {
 		roughness = roughnessTexture->Sample(hitResult.paramU, hitResult.paramV).r;
 	}
+
+#if FURNACE_TEST
+	roughness = 1.0f;
+#endif
 
 	float D = BRDF::DistributionBeckmann(n, wh, roughness);
 	return D * absDot(wh, hitResult.n);
