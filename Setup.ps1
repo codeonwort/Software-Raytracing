@@ -1,17 +1,19 @@
+# Run this script with execution policy like this:
+# > powershell -ExecutionPolicy Bypass -File Setup.ps1
+# Or:
+# > Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+# > .\Setup.ps1
+
 #
 #                          OVERVIEW
 #
 # - This Powershell script download, unzip, or build
 #   the necessary contents and third-party libarires.
-# - All downloaded files are first put into 'external' folder.
-# - Contents are unzipped to 'content' folder.
-# - Libraries are built at 'external' folder,
-#   then only headers and binaries are copied to 'thirdparty' folder.
+# - All downloaded files are first put into 'external' folder and then unzipped.
+# - Libraries are built and then only their headers and binaries are
+#   copied to 'thirdparty' folder.
 #
-# - Run this script with execution policy like this:
-#       powershell -ExecutionPolicy Bypass -File Setup.ps1
 
-# TODO: Separate these flags for contents and libraries?
 Param (
 	[Switch]$skipdownload
 )
@@ -20,6 +22,10 @@ $should_download = !($PSBoundParameters.ContainsKey('skipdownload'))
 
 $skip_build = Read-Host "Skip build of thirdparty libraries? [y(default)/n]"
 $should_build = ($skip_build -eq "n")
+
+if ($should_build) {
+	Write-Host "You chose to build thirdparty libraries. Visual Studio 2022 should be installed in your system. If the build fails, try to run this script 2~3 times and it might succeess."
+}
 
 #
 # Constants
@@ -71,7 +77,6 @@ $contents_list  = @(
 # https://stackoverflow.com/questions/328017/path-to-msbuild
 $vswhere_path = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 $msbuild_path = &$vswhere_path -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
-#$msbuild_path = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe"
 Write-Host "msbuild.exe:", $msbuild_path -ForegroundColor Green
 $devenv_path = &$vswhere_path -latest | Select-String -Pattern 'productPath' -SimpleMatch
 $devenv_path = $devenv_path.ToString().Substring(13)
@@ -145,7 +150,7 @@ if ($should_build) {
 	### FreeImage
 	# 1. Unzip
 	if (Test-Path "$external_dir/FreeImage") {
-		Write-Host "FreeImage already unzipped. skip unzip."
+		Write-Host "FreeImage is already unzipped"
 	} else {
 		Write-Host "Unzip FreeImage"
 		Expand-Archive -Path $freeimage_path -DestinationPath $external_dir
