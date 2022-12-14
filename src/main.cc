@@ -14,8 +14,20 @@
 #include "loader/obj_loader.h"
 #include "loader/image_loader.h"
 #include "shading/material.h"
+#include "platform/platform.h"
 
 #include <vector>
+
+// oidn is not Windows-only but I'm downloading Windows pre-built binaries.
+#if PLATFORM_WINDOWS
+	#define INTEL_DENOISER 1
+#endif
+
+#if INTEL_DENOISER
+#include <oidn.h>
+#pragma comment(lib, "OpenImageDenoise.lib")
+//#pragma comment(lib, "tbb.lib")
+#endif
 
 // #todo: Wrap these with Scene = {objects,camera,viewport}
 // 0: Cornell box
@@ -85,9 +97,9 @@
 // Debug configuration (features under development)
 vec3 FAKE_SKY_LIGHT(const vec3& dir)
 {
-	float t = 0.5f * (dir.y + 1.0f);
-	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
-	//return vec3(50.0f);
+	//float t = 0.5f * (dir.y + 1.0f);
+	//return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+	return vec3(10.0f);
 }
 #define LOCAL_LIGHTS            1
 #define INCLUDE_TOADTTE         1
@@ -96,6 +108,9 @@ vec3 FAKE_SKY_LIGHT(const vec3& dir)
 #define TEST_IMAGE_LOADER       0
 #define RESULT_FILENAME_BMP     SOLUTION_DIR "test.bmp"
 #define RESULT_FILENAME_JPG     SOLUTION_DIR "test.jpg"
+#define ALBEDO_FILENAME_JPG     SOLUTION_DIR "test_0.jpg"
+#define NORMAL_FILENAME_JPG     SOLUTION_DIR "test_1.jpg"
+#define DENOISE_FILENAME_JPG    SOLUTION_DIR "test_2.jpg"
 
 // Rendering configuration
 #define SAMPLES_PER_PIXEL       200
@@ -149,7 +164,7 @@ int main(int argc, char** argv) {
 
 	const int32 width = VIEWPORT_WIDTH;
 	const int32 height = VIEWPORT_HEIGHT;
-	Image2D image(width, height, 0x123456);
+	Image2D image(width, height, 0x0);
 
 	log("generate a test image (width: %d, height: %d)", width, height);
 
@@ -184,6 +199,28 @@ int main(int argc, char** argv) {
 	// NOTE: This is a blocking operation for now.
 	renderer.RenderScene(rendererSettings, worldBVH, &camera, &image);
 
+#if INTEL_DENOISER
+	//
+	// Generate aux output
+	//
+	Image2D imageWorldNormal(width, height, 0x0);
+	Image2D imageAlbedo(width, height, 0x0);
+
+	rendererSettings.debugMode = EDebugMode::Reflectance;
+	renderer.RenderScene(rendererSettings, worldBVH, &camera, &imageAlbedo);
+	rendererSettings.debugMode = EDebugMode::VertexNormal;
+	renderer.RenderScene(rendererSettings, worldBVH, &camera, &imageWorldNormal);
+
+	WriteImageToDisk(imageAlbedo, ALBEDO_FILENAME_JPG, EImageFileType::Jpg);
+	WriteImageToDisk(imageWorldNormal, NORMAL_FILENAME_JPG, EImageFileType::Jpg);
+
+	// Dump as float array to pass to oidn
+	std::vector<float> noisyInputBlob, albedoBlob, worldNormalBlob;
+	image.DumpFloatRGBs(noisyInputBlob);
+	imageAlbedo.DumpFloatRGBs(albedoBlob);
+	imageWorldNormal.DumpFloatRGBs(worldNormalBlob);
+#endif
+
 	image.PostProcess();
 
 	WriteImageToDisk(image, RESULT_FILENAME_BMP, EImageFileType::Bitmap);
@@ -191,6 +228,54 @@ int main(int argc, char** argv) {
 
 	log("image has been written as bitmap: %s", RESULT_FILENAME_BMP);
 	log("image has been written as jpg: %s", RESULT_FILENAME_JPG);
+
+#if INTEL_DENOISER
+	{
+		log("Denoise the result using Intel OpenImageDenoise");
+
+		OIDNDevice device = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
+		oidnCommitDevice(device);
+
+		std::vector<float> denoisedOutputBlob(noisyInputBlob.size(), 0.0f);
+
+		OIDNFilter filter = oidnNewFilter(device, "RT");
+		oidnSetSharedFilterImage(filter, "color", noisyInputBlob.data(),
+			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
+		oidnSetSharedFilterImage(filter, "albedo", albedoBlob.data(),
+			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
+		oidnSetSharedFilterImage(filter, "normal", worldNormalBlob.data(),
+			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
+		oidnSetSharedFilterImage(filter, "output", denoisedOutputBlob.data(),
+			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
+		oidnSetFilter1b(filter, "hdr", true);
+		oidnCommitFilter(filter);
+
+		oidnExecuteFilter(filter);
+
+		const char* err;
+		if (oidnGetDeviceError(device, &err) != OIDN_ERROR_NONE)
+		{
+			log("oidn error: %s", err);
+		}
+
+		oidnReleaseFilter(filter);
+		oidnReleaseDevice(device);
+
+		Image2D denoisedOutput(width, height);
+		size_t k = 0;
+		for (uint32_t y = 0; y < height; ++y)
+		{
+			for (uint32_t x = 0; x < width; ++x)
+			{
+				Pixel px(denoisedOutputBlob[k], denoisedOutputBlob[k + 1], denoisedOutputBlob[k + 2]);
+				denoisedOutput.SetPixel(x, y, px);
+				k += 3;
+			}
+		}
+		denoisedOutput.PostProcess();
+		WriteImageToDisk(denoisedOutput, DENOISE_FILENAME_JPG, EImageFileType::Jpg);
+	}
+#endif
 
 	//
 	// Cleanup

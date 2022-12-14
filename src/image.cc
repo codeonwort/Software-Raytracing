@@ -100,3 +100,30 @@ void Image2D::PostProcess()
 		image[i].b = rgb.z;
 	}
 }
+
+Image2D Image2D::Clone() const
+{
+	Image2D img{};
+	img.width = width;
+	img.height = height;
+	img.image = image;
+	return img;
+}
+
+void Image2D::DumpFloatRGBs(std::vector<float>& outArray)
+{
+	outArray.clear();
+	outArray.reserve(3 * width * height);
+
+	size_t k = 0;
+	for (uint32_t y = 0; y < height; ++y)
+	{
+		for (uint32_t x = 0; x < width; ++x)
+		{
+			outArray.push_back(image[k].r);
+			outArray.push_back(image[k].g);
+			outArray.push_back(image[k].b);
+			++k;
+		}
+	}
+}

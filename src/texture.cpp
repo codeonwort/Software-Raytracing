@@ -35,8 +35,8 @@ Pixel Texture2D::Sample(float u, float v)
 	}
 
 	// Fixup UV
-	u = fmod(u, 1.0f); if (u < 0.0f) u += 1.0f;
-	v = fmod(v, 1.0f); if (v < 0.0f) v += 1.0f; v = 1.0f - v;
+	u = fmodf(u, 1.0f); if (u < 0.0f) u += 1.0f;
+	v = fmodf(v, 1.0f); if (v < 0.0f) v += 1.0f; v = 1.0f - v;
 
 	// #todo-texture: Filtering and wrapping
 	const Image2D& image = mipmaps[0];
