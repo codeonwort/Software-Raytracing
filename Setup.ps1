@@ -33,12 +33,13 @@ if ($should_build) {
 $external_dir       = "$pwd/external"
 $content_dir        = "$pwd/content"
 
+# TODO: Include in thirdparty_list
 $freeimage_url      = "http://downloads.sourceforge.net/freeimage/FreeImage3180.zip"
 $freeimage_path     = "$external_dir/FreeImage.zip"
 $tinyobjloader_url  = "https://github.com/syoyo/tinyobjloader/archive/v2.0.0-rc1.zip"
 $tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
 
-$contents_list  = @(
+$contents_list = @(
 	# Format: (url, zip_name, unzip_name)
 	@(
 		"https://casual-effects.com/g3d/data10/research/model/breakfast_room/breakfast_room.zip",
@@ -69,6 +70,15 @@ $contents_list  = @(
 		"https://casual-effects.com/g3d/data10/research/model/sibenik/sibenik.zip",
 		"sibenik.zip",
 		"sibenik"
+	)
+)
+
+$thirdparty_list = @(
+	# Format: (url, zip_name, unzip_name)
+	,@(
+		"https://github.com/OpenImageDenoise/oidn/releases/download/v1.4.3/oidn-1.4.3.x64.vc14.windows.zip",
+		"oidn-1.4.3-windows.zip",
+		"oidn"
 	)
 )
 
@@ -139,6 +149,17 @@ if ($should_download) {
 	Write-Host "Download libraries..." -ForegroundColor Green
 	Download-URL $webclient $freeimage_url $freeimage_path
 	Download-URL $webclient $tinyobjloader_url $tinyobjloader_path
+	foreach ($desc in $thirdparty_list) {
+		$thirdparty_url = $desc[0]
+		$thirdparty_zip = $desc[1]
+		$thirdparty_unzip = $desc[2]
+		Write-Host ">" $thirdparty_zip "(" $thirdparty_url ")"
+		$zip_path = "$external_dir/$thirdparty_zip"
+		$unzip_path = "$external_dir/$thirdparty_unzip"
+		Download-URL $webclient $thirdparty_url $zip_path
+		Unzip $zip_path $unzip_path
+	}
+	
 	# TODO: How to close connection
 	#$webclient.Close()
 }
@@ -188,5 +209,11 @@ if ($should_build) {
 	Copy-Item "./external/tinyobjloader-2.0.0-rc1/tiny_obj_loader.h" -Destination $tinyobjloader_source_dir
 	Copy-Item "./external/tinyobjloader-2.0.0-rc1/tiny_obj_loader.cc" -Destination $tinyobjloader_source_dir
 }
+Ensure-Subdirectory "./thirdparty/OpenImageDenoise/include"
+Ensure-Subdirectory "./thirdparty/OpenImageDenoise/lib"
+Ensure-Subdirectory "./thirdparty/OpenImageDenoise/bin"
+Copy-Item -Recurse -Path "./external/oidn/oidn-1.4.3.x64.vc14.windows/include/OpenImageDenoise/*" -Destination "./thirdparty/OpenImageDenoise/include/"
+Copy-Item -Path "./external/oidn/oidn-1.4.3.x64.vc14.windows/lib/*" -Destination "./thirdparty/OpenImageDenoise/lib/"
+Copy-Item -Path "./external/oidn/oidn-1.4.3.x64.vc14.windows/bin/*" -Destination "./thirdparty/OpenImageDenoise/bin/"
 
 Write-Host "> Done" -ForegroundColor Green

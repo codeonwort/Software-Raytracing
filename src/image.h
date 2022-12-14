@@ -104,6 +104,9 @@ public:
 	inline Pixel GetPixel(int32 x, int32 y) const { return image[ix(x, y)]; }
 	inline const std::vector<Pixel>& GetPixelArray() const { return image; }
 
+	Image2D Clone() const;
+	void DumpFloatRGBs(std::vector<float>& outArray);
+
 //private:
 public:
 	inline int32 ix(int32 x, int32 y) const { return y * width + x; }
