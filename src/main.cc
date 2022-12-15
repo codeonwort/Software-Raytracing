@@ -78,10 +78,18 @@
 	#define CAMERA_LOCATION         vec3(-10.0f, -12.0f, 0.0f)
 	#define CAMERA_LOOKAT           vec3(0.0f, -11.5f, 0.0f)
 	#define FOV_Y                   60.0f
+#elif SCENE_CHOICE == 8
+	// #todo-obj: Again bloated number of materials.
+	// Also not included in Setup.ps1 as this model is too big.
+	#define CREATE_RANDOM_SCENE     CreateScene_SanMiguel
+	#define CAMERA_LOCATION         vec3(0.0f, 0.0f, 0.0f)
+	#define CAMERA_LOOKAT           vec3(0.0f, 0.0f, 1.0f)
+	#define FOV_Y                   60.0f
 #else
 	#error Invalid value for SCENE_CHOICE
 #endif
 
+// Rendering configuration
 #define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
 #define CAMERA_APERTURE         0.01f
 #define CAMERA_BEGIN_CAPTURE    0.0f
@@ -94,29 +102,28 @@
 #endif
 #define VIEWPORT_HEIGHT         512
 
-// Debug configuration (features under development)
+#define SAMPLES_PER_PIXEL       200
+#define MAX_RECURSION           5
+#define RAY_T_MIN               0.0001f
+#define RENDERER_DEBUG_MODE     EDebugMode::None
+
 vec3 FAKE_SKY_LIGHT(const vec3& dir)
 {
-	//float t = 0.5f * (dir.y + 1.0f);
-	//return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
-	return vec3(10.0f);
+	float t = 0.5f * (dir.y + 1.0f);
+	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
 }
+
+// #todo-wip: Magic values
+// Only for CreateScene_ObjModel()
 #define LOCAL_LIGHTS            1
 #define INCLUDE_TOADTTE         1
 #define INCLUDE_CUBE            1
-#define TEST_TEXTURE_MAPPING    1
-#define TEST_IMAGE_LOADER       0
+// Output file names
 #define RESULT_FILENAME_BMP     SOLUTION_DIR "test.bmp"
 #define RESULT_FILENAME_JPG     SOLUTION_DIR "test.jpg"
 #define ALBEDO_FILENAME_JPG     SOLUTION_DIR "test_0.jpg"
 #define NORMAL_FILENAME_JPG     SOLUTION_DIR "test_1.jpg"
 #define DENOISE_FILENAME_JPG    SOLUTION_DIR "test_2.jpg"
-
-// Rendering configuration
-#define SAMPLES_PER_PIXEL       200
-#define MAX_RECURSION           5
-#define RAY_T_MIN               0.0001f
-#define RENDERER_DEBUG_MODE     EDebugMode::None
 
 // Demo scenes
 HitableList* CreateScene_CornellBox();
@@ -126,6 +133,7 @@ HitableList* CreateScene_DabrovicSponza();
 HitableList* CreateScene_FireplaceRoom();
 HitableList* CreateScene_LivingRoom();
 HitableList* CreateScene_SibenikCathedral();
+HitableList* CreateScene_SanMiguel();
 HitableList* CreateScene_ObjModel();
 HitableList* CreateScene_RandomSpheres();
 HitableList* CreateScene_FourSpheres();
@@ -144,6 +152,7 @@ void DestroySubsystems() {
 	WaitForLogThread();
 }
 
+// #todo-wip: Run a (input command -> execute command) loop.
 int main(int argc, char** argv) {
 	SCOPED_CPU_COUNTER(main);
 
@@ -153,14 +162,6 @@ int main(int argc, char** argv) {
 	InitializeSubsystems();
 
 	log("raytracing study");
-
-#if TEST_IMAGE_LOADER
-	Image2D test;
-	if (ImageLoader::SyncLoad("content/odyssey.jpg", test)) {
-		WriteBitmap(test, RESULT_FILENAME_BMP);
-		return 0;
-	}
-#endif
 
 	const int32 width = VIEWPORT_WIDTH;
 	const int32 height = VIEWPORT_HEIGHT;
@@ -206,10 +207,16 @@ int main(int argc, char** argv) {
 	Image2D imageWorldNormal(width, height, 0x0);
 	Image2D imageAlbedo(width, height, 0x0);
 
+	Camera debugCamera(
+		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
+		FOV_Y, (float)width / (float)height,
+		0.0f, dist_to_focus,
+		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+
 	rendererSettings.debugMode = EDebugMode::Reflectance;
-	renderer.RenderScene(rendererSettings, worldBVH, &camera, &imageAlbedo);
+	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageAlbedo);
 	rendererSettings.debugMode = EDebugMode::VertexNormal;
-	renderer.RenderScene(rendererSettings, worldBVH, &camera, &imageWorldNormal);
+	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageWorldNormal);
 
 	WriteImageToDisk(imageAlbedo, ALBEDO_FILENAME_JPG, EImageFileType::Jpg);
 	WriteImageToDisk(imageWorldNormal, NORMAL_FILENAME_JPG, EImageFileType::Jpg);
@@ -554,6 +561,28 @@ HitableList* CreateScene_SibenikCathedral()
 	return new HitableList(list);
 }
 
+HitableList* CreateScene_SanMiguel()
+{
+	SCOPED_CPU_COUNTER(CreateScene_SanMiguel);
+
+	std::vector<Hitable*> list;
+
+	OBJModel objModel;
+	if (OBJLoader::SyncLoad("content/San_Miguel/san-miguel-low-poly.obj", objModel))
+	{
+		Transform transform;
+		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
+
+		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
+		objModel.FinalizeAllMeshes();
+
+		list.push_back(objModel.rootObject);
+	}
+
+	return new HitableList(list);
+}
+
 HitableList* CreateScene_ObjModel()
 {
 	SCOPED_CPU_COUNTER(CreateRandomScene);
@@ -591,7 +620,6 @@ HitableList* CreateScene_ObjModel()
 	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat2));
 #endif
 
-#if TEST_TEXTURE_MAPPING
 	Image2D img;
 	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
 	{
@@ -615,7 +643,6 @@ HitableList* CreateScene_ObjModel()
 			list.push_back(T);
  		}
 	}
-#endif
 
 	const int32 numFans = 8;
 	const float fanAngle = 1.0f / (float)(numFans + 1);

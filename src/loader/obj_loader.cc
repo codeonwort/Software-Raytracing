@@ -300,7 +300,7 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 			outValid = ImageLoader::SyncLoad(filepath.data(), outImage);
 		};
 
-		// #todo-obj: Multiple materials may share same image files
+		// #todo-wip: Multiple materials may share same image files
 		LoadImage(rawMaterial.diffuse_texname, albedoImage, albedoImageValid);
 		LoadImage(rawMaterial.roughness_texname, roughnessImage, roughnessImageValid);
 		LoadImage(rawMaterial.metallic_texname, metallicImage, metallicImageValid);
@@ -346,11 +346,12 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 			} else {
 				// #todo-pbr: Invalid result if roughness is too low.
 				constexpr float tempMinRoughness = 0.01f;
-#if 0
+#if 1
 				// Ad-hoc derivation of roughness from specular power
 				float avgSpec = (1.0f / 3.0f) * (rawMaterial.specular[0] + rawMaterial.specular[1] + rawMaterial.specular[2]);
 				float fakeRoughness = std::max(tempMinRoughness, 1.0f - avgSpec);
 #else
+				// #todo-wip: This is buggy
 				// Ad-hoc derivation of roughness from shininess
 				float fakeRoughness = std::min(1.0f, ::sqrtf(2.0f / (rawMaterial.shininess + 2.0f)));
 				fakeRoughness = std::max(tempMinRoughness, fakeRoughness);

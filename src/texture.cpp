@@ -40,10 +40,8 @@ Pixel Texture2D::Sample(float u, float v)
 
 	// #todo-texture: Filtering and wrapping
 	const Image2D& image = mipmaps[0];
-	int32 x = (int32)(image.GetWidth() * u);
-	int32 y = (int32)(image.GetHeight() * v);
-	x = std::max(0, std::min((int32)image.GetWidth() - 1, x));
-	y = std::max(0, std::min((int32)image.GetHeight() - 1, y));
+	int32 x = (int32)((image.GetWidth() - 1) * u);
+	int32 y = (int32)((image.GetHeight() - 1) * v);
 	Pixel px = image.GetPixel(x, y);
 	if (sampler.bSRGB) {
 		px = px.SRGBToLinear();

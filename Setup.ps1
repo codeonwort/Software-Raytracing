@@ -36,8 +36,8 @@ $content_dir        = "$pwd/content"
 # TODO: Include in thirdparty_list
 $freeimage_url      = "http://downloads.sourceforge.net/freeimage/FreeImage3180.zip"
 $freeimage_path     = "$external_dir/FreeImage.zip"
-$tinyobjloader_url  = "https://github.com/syoyo/tinyobjloader/archive/v2.0.0-rc1.zip"
-$tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0-rc1.zip"
+$tinyobjloader_url  = "https://github.com/tinyobjloader/tinyobjloader/archive/refs/tags/v2.0.0rc10.zip"
+$tinyobjloader_path = "$external_dir/tinyobjloader-v2.0.0rc10.zip"
 
 $contents_list = @(
 	# Format: (url, zip_name, unzip_name)
@@ -192,23 +192,25 @@ if ($should_build) {
 	Copy-Item "./external/FreeImage/Dist/x64/FreeImage.h" -Destination $freeimage_source_dir
 	Copy-Item "./external/FreeImage/Dist/x64/FreeImage.dll" -Destination $freeimage_binary_dir
 	Copy-Item "./external/FreeImage/Dist/x64/FreeImage.lib" -Destination $freeimage_binary_dir
-	
-	### tinyobjloader
-	# 1. Unzip
-	if (Test-Path "$external_dir/tinyobjloader-2.0.0-rc1") {
-		Write-Host "tinyobjloader already unzipped. skip unzip."
-	} else {
-		Write-Host "Unzip tinyobjloader"
-		Expand-Archive -Path $tinyobjloader_path -DestinationPath $external_dir
-		Write-Host "Unzip done"
-	}
-	# 2. Copy
-	$tinyobjloader_source_dir = "./thirdparty/tinyobjloader/source"
-	Clear-Directory $tinyobjloader_source_dir
-	Write-Host "Copy source to $tinyobjloader_source_dir"
-	Copy-Item "./external/tinyobjloader-2.0.0-rc1/tiny_obj_loader.h" -Destination $tinyobjloader_source_dir
-	Copy-Item "./external/tinyobjloader-2.0.0-rc1/tiny_obj_loader.cc" -Destination $tinyobjloader_source_dir
 }
+
+### tinyobjloader
+# 1. Unzip
+if (Test-Path "$external_dir/tinyobjloader-2.0.0rc10") {
+	Write-Host "tinyobjloader already unzipped. skip unzip."
+} else {
+	Write-Host "Unzip tinyobjloader"
+	Expand-Archive -Path $tinyobjloader_path -DestinationPath $external_dir
+	Write-Host "Unzip done"
+}
+# 2. Copy
+$tinyobjloader_source_dir = "./thirdparty/tinyobjloader/source"
+Clear-Directory $tinyobjloader_source_dir
+Write-Host "Copy source to $tinyobjloader_source_dir"
+Copy-Item "./external/tinyobjloader-2.0.0rc10/tiny_obj_loader.h" -Destination $tinyobjloader_source_dir
+Copy-Item "./external/tinyobjloader-2.0.0rc10/tiny_obj_loader.cc" -Destination $tinyobjloader_source_dir
+
+### OpenImageDenoise
 Ensure-Subdirectory "./thirdparty/OpenImageDenoise/include"
 Ensure-Subdirectory "./thirdparty/OpenImageDenoise/lib"
 Ensure-Subdirectory "./thirdparty/OpenImageDenoise/bin"
