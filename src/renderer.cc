@@ -179,10 +179,10 @@ void Renderer::RenderScene(
 {
 #if SINGLE_THREADED_RENDERING
 	const uint32 numCores = 1;
-	log("CAUTION: Rendering is forced to be single threaded - search for 'SINGLE_THREADED_RENDERING'");
+	LOG("CAUTION: Rendering is forced to be single threaded - search for 'SINGLE_THREADED_RENDERING'");
 #else
 	const uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
-	log("Number of logical cores: %u", numCores);
+	LOG("Number of logical cores: %u", numCores);
 #endif
 
 	const int32 imageWidth = outImage->GetWidth();
@@ -215,7 +215,7 @@ void Renderer::RenderScene(
 		tp.AddWork(work);
 	}
 
-	log("number of work items: %d", (int32)workCells.size());
+	LOG("number of work items: %d", (int32)workCells.size());
 
 	{
 		SCOPED_CPU_COUNTER(ThreadPoolWorkTime);
@@ -236,7 +236,7 @@ void Renderer::RenderScene(
 			} else {
 				float progress = tp.GetProgress();
 				if (milestoneIx < milestones.size() && progress >= milestones[milestoneIx]) {
-					log("%d percent complete...", (int32)(progress * 100));
+					LOG("%d percent complete...", (int32)(progress * 100));
 					milestoneIx += 1;
 				}
 			}

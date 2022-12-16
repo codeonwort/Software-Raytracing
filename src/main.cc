@@ -165,13 +165,13 @@ int main(int argc, char** argv) {
 	g_programArgs.init(argc, argv);
 	InitializeSubsystems();
 
-	log("[Software raytracer]");
+	LOG("[Software raytracer]");
 
 	const int32 width = VIEWPORT_WIDTH;
 	const int32 height = VIEWPORT_HEIGHT;
 	Image2D image(width, height, 0x0);
 
-	log("generate a test image (width: %d, height: %d)", width, height);
+	LOG("generate a test image (width: %d, height: %d)", width, height);
 
 	//
 	// Create a scene
@@ -237,12 +237,12 @@ int main(int argc, char** argv) {
 	WriteImageToDisk(image, RESULT_FILENAME_BMP, EImageFileType::Bitmap);
 	WriteImageToDisk(image, RESULT_FILENAME_JPG, EImageFileType::Jpg);
 
-	log("image has been written as bitmap: %s", RESULT_FILENAME_BMP);
-	log("image has been written as jpg: %s", RESULT_FILENAME_JPG);
+	LOG("image has been written as bitmap: %s", RESULT_FILENAME_BMP);
+	LOG("image has been written as jpg: %s", RESULT_FILENAME_JPG);
 
 #if INTEL_DENOISER
 	{
-		log("Denoise the result using Intel OpenImageDenoise");
+		LOG("Denoise the result using Intel OpenImageDenoise");
 
 		OIDNDevice device = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
 		oidnCommitDevice(device);
@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
 		const char* err;
 		if (oidnGetDeviceError(device, &err) != OIDN_ERROR_NONE)
 		{
-			log("oidn error: %s", err);
+			LOG("oidn error: %s", err);
 		}
 
 		oidnReleaseFilter(filter);

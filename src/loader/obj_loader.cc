@@ -38,12 +38,12 @@ void OBJModel::FinalizeAllMeshes() {
 
 void OBJLoader::Initialize()
 {
-	log("Initialize obj loader");
+	LOG("Initialize obj loader");
 }
 
 void OBJLoader::Destroy()
 {
-	log("Destroy obj loader");
+	LOG("Destroy obj loader");
 }
 
 bool OBJLoader::SyncLoad(const char* filepath, OBJModel& outModel)
@@ -67,14 +67,14 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	std::string file = ResourceFinder::Get().Find(filepath);
 	if (file.size() == 0)
 	{
-		log("%s: File not exist: %s", __FUNCTION__, filepath);
+		LOG("%s: File not exist: %s", __FUNCTION__, filepath);
 		return false;
 	}
 
 	// Call tiny_obj_loader.
 	if (!internalLoader.ParseFromFile(file))
 	{
-		log("%s: tiny_obj_loader failed: %s", __FUNCTION__, filepath);
+		LOG("%s: tiny_obj_loader failed: %s", __FUNCTION__, filepath);
 		return false;
 	}
 
@@ -83,19 +83,19 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	const std::vector<tinyobj::material_t>& raw_materials = internalLoader.GetMaterials();
 
 	if (shapes.size() == 0) {
-		log("%s: No shapes found in: %s", __FUNCTION__, filepath);
+		LOG("%s: No shapes found in: %s", __FUNCTION__, filepath);
 		return false;
 	}
 
-	log("%s: Load %s", __FUNCTION__, filepath);
-	log("\tTotal shapes: %d", (int32)shapes.size());
-	log("\tTotal vertices: %d", (int32)(tiny_attrib.vertices.size() / 3));
-	log("\tTotal materials: %d", (int32)raw_materials.size());
+	LOG("%s: Load %s", __FUNCTION__, filepath);
+	LOG("\tTotal shapes: %d", (int32)shapes.size());
+	LOG("\tTotal vertices: %d", (int32)(tiny_attrib.vertices.size() / 3));
+	LOG("\tTotal materials: %d", (int32)raw_materials.size());
 
 	// Used for faces whose materials are not specified.
 	Lambertian* const fallbackMaterial = new Lambertian(vec3(0.5f, 0.5f, 0.5f));
 
-	log("Parsing materials...");
+	LOG("Parsing materials...");
 	ParseMaterials(filepath, raw_materials, materials);
 
 	vec3 localMinBound(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
@@ -107,13 +107,13 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	}
 
 	// Convert each tinyobj::shape_t into a StaticMesh.
-	log("Parsing shapes...");
+	LOG("Parsing shapes...");
 	int32 shapeIx = 0;
 	int32 DEBUG_numInvalidTexcoords = 0;
 
 	for (const tinyobj::shape_t& shape : shapes)
 	{
-		log("\tParsing shape %d: %s", shapeIx++, shape.name.c_str() ? shape.name.c_str() : "<noname>");
+		LOG("\tParsing shape %d: %s", shapeIx++, shape.name.c_str() ? shape.name.c_str() : "<noname>");
 
 		// Temp storages for current shape.
 		std::vector<Triangle> triangles;
@@ -127,7 +127,7 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 			if (numFaceVertices != 3)
 			{
 				// #todo-obj: deal with non-triangle
-				log("%s: (%s) %d-th face is non-triangle", __FUNCTION__, shape.name.data(), faceID);
+				LOG("%s: (%s) %d-th face is non-triangle", __FUNCTION__, shape.name.data(), faceID);
 				continue;
 			}
 
@@ -230,9 +230,9 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 
 	if (DEBUG_numInvalidTexcoords > 0)
 	{
-		log("WARNING: Num triangles with invalid UVs: %d", DEBUG_numInvalidTexcoords);
+		LOG("WARNING: Num triangles with invalid UVs: %d", DEBUG_numInvalidTexcoords);
 	}
-	log("> OBJ loading done");
+	LOG("> OBJ loading done");
 
 	return true;
 }
@@ -257,7 +257,7 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 	{
 		const tinyobj::material_t& rawMaterial = inRawMaterials[i];
 
-		log("\tParsing material %d: %s", i, rawMaterial.name.c_str() ? rawMaterial.name.c_str() : "<noname>");
+		LOG("\tParsing material %d: %s", i, rawMaterial.name.c_str() ? rawMaterial.name.c_str() : "<noname>");
 
 		// #todo-obj: Parse every data in the material
 		// PBR extension in tiny_obj_loader.h

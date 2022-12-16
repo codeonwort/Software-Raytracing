@@ -64,7 +64,7 @@ std::string ResourceFinder::Find(const std::string& subpath)
 		}
 	}
 
-	log("%s: not found: %s", __FUNCTION__, subpath.data());
+	LOG("%s: not found: %s", __FUNCTION__, subpath.data());
 
 	return "";
 }

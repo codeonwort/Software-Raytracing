@@ -73,7 +73,7 @@ void Image2D::PostProcess()
 		}
 	}
 
-	log("Max white luminance: %f", maxWhiteLuminance);
+	LOG("Max white luminance: %f", maxWhiteLuminance);
 
 	for (size_t i = 0; i < len; ++i)
 	{

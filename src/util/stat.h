@@ -17,7 +17,7 @@ struct ScopedCycleCounter
 		std::chrono::duration<double> diff = std::chrono::system_clock::now() - startTime;
 		double seconds = diff.count();
 
-		log("[STAT] %s: %lf seconds", label, seconds);
+		LOG("[STAT] %s: %lf seconds", label, seconds);
 	}
 
 private:

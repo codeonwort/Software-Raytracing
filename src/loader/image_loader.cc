@@ -6,13 +6,13 @@
 void ImageLoader::Initialize()
 {
 	FreeImage_Initialise();
-	log("Initialize image loader");
+	LOG("Initialize image loader");
 }
 
 void ImageLoader::Destroy()
 {
 	FreeImage_DeInitialise();
-	log("Destroy image loader");
+	LOG("Destroy image loader");
 }
 
 bool ImageLoader::SyncLoad(const char* filepath, Image2D& outImage)

@@ -3,4 +3,4 @@
 void StartLogThread();
 void WaitForLogThread();
 
-void log(const char* format, ...);
+void LOG(const char* format, ...);
