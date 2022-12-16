@@ -96,8 +96,8 @@ SceneDesc g_sceneDescs[] = {
 	{
 		CreateScene_LivingRoom,
 		"LivingRoom",
-		vec3(1.0f, 2.0f, 0.0f),
-		vec3(0.0f, 2.0f, 0.0f),
+		vec3(3.0f, 2.0f, 2.0f),
+		vec3(0.0f, 1.5f, 2.5f),
 		60.0f
 	},
 	// #todo-obj: Sky light cannnot penetrate opaque windows (need to handle translucency)
@@ -133,11 +133,10 @@ SceneDesc g_sceneDescs[] = {
 #endif
 };
 
-// Rendering configuration
+// Default rendering configuration
 #define CAMERA_APERTURE         0.01f
 #define CAMERA_BEGIN_CAPTURE    0.0f
 #define CAMERA_END_CAPTURE      5.0f
-
 #define SAMPLES_PER_PIXEL       10
 #define MAX_RECURSION           5
 #define RAY_T_MIN               0.0001f
@@ -163,7 +162,7 @@ void DestroySubsystems() {
 	WaitForLogThread();
 }
 
-void ExecuteRenderer(uint32 sceneID, uint32 viewportWidth, uint32 viewportHeight);
+void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings);
 
 // #todo-wip: Run a (input command -> execute command) loop.
 int main(int argc, char** argv) {
@@ -175,24 +174,37 @@ int main(int argc, char** argv) {
 	g_programArgs.init(argc, argv);
 	InitializeSubsystems();
 
-	uint32 viewportWidth = DEFAULT_VIEWPORT_WIDTH;
-	uint32 viewportHeight = DEFAULT_VIEWPORT_HEIGHT;
-	uint32 sceneID = 0;
-	Image2D image(viewportWidth, viewportHeight, 0x0);
+	uint32 currentSceneID = 0;
 
+	RendererSettings rendererSettings;
+	rendererSettings.viewportWidth   = DEFAULT_VIEWPORT_WIDTH;
+	rendererSettings.viewportHeight  = DEFAULT_VIEWPORT_HEIGHT;
+	rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
+	rendererSettings.maxPathLength   = MAX_RECURSION;
+	rendererSettings.rayTMin         = RAY_T_MIN;
+	rendererSettings.skyLightFn      = FAKE_SKY_LIGHT;
+	rendererSettings.debugMode       = RENDERER_DEBUG_MODE;
+	rendererSettings.bRunDenoiser    = INTEL_DENOISER;
+
+	FlushLogThread();
 	std::cout << "Type 'help' to see help message" << std::endl;
+
 	while (true)
 	{
+		std::cin.clear();
 		std::cout << "> ";
 
 		std::string command;
 		std::cin >> command;
 		if (command == "help")
 		{
-			std::cout << "list     : print all default scene descs" << std::endl;
-			std::cout << "select n : select a scene to render" << std::endl;
-			std::cout << "run      : render the scene currently selected" << std::endl;
-			std::cout << "exit     : exit the program" << std::endl;
+			std::cout << "list         : print all default scene descs" << std::endl;
+			std::cout << "select n     : select a scene to render" << std::endl;
+			std::cout << "run          : render the scene currently selected" << std::endl;
+			std::cout << "denoiser n   : toggle denoiser (0/1)" << std::endl;
+			std::cout << "spp n        : set samplers per pixel" << std::endl;
+			std::cout << "viewport w h : set viewport size" << std::endl;
+			std::cout << "exit         : exit the program" << std::endl;
 		}
 		else if (command == "list")
 		{
@@ -203,13 +215,51 @@ int main(int argc, char** argv) {
 		}
 		else if (command == "select")
 		{
-			std::cin >> sceneID;
-			if (sceneID >= _countof(g_sceneDescs)) sceneID = 0;
-			std::cout << "select: " << g_sceneDescs[sceneID].sceneName << std::endl;
+			std::cin >> currentSceneID;
+			if (currentSceneID >= _countof(g_sceneDescs)) currentSceneID = 0;
+			std::cout << "select: " << g_sceneDescs[currentSceneID].sceneName << std::endl;
 		}
 		else if (command == "run")
 		{
-			ExecuteRenderer(sceneID, viewportWidth, viewportHeight);
+			ExecuteRenderer(currentSceneID, rendererSettings);
+		}
+		else if (command == "denoiser")
+		{
+			uint32 dmode;
+			std::cin >> dmode;
+#if INTEL_DENOISER
+			rendererSettings.bRunDenoiser = (dmode != 0);
+			std::cout << "Denoiser " << (rendererSettings.bRunDenoiser ? "on" : "off") << std::endl;
+#else
+			std::cout << "Denoiser was not integrated" << std::endl;
+#endif
+		}
+		else if (command == "spp")
+		{
+			uint32 spp;
+			std::cin >> spp;
+			if (std::cin.good())
+			{
+				rendererSettings.samplesPerPixel = std::max(1u, spp);
+			}
+			else
+			{
+				std::cout << "Invalid SPP" << std::endl;
+			}
+		}
+		else if (command == "viewport")
+		{
+			uint32 w, h;
+			std::cin >> w >> h;
+			if (std::cin.good())
+			{
+				rendererSettings.viewportWidth = w;
+				rendererSettings.viewportHeight = h;
+			}
+			else
+			{
+				std::cout << "Invalid viewport size" << std::endl;
+			}
 		}
 		else if (command == "exit")
 		{
@@ -230,7 +280,7 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-void ExecuteRenderer(uint32 sceneID, uint32 viewportWidth, uint32 viewportHeight)
+void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 {
 	const SceneDesc& sceneDesc = g_sceneDescs[sceneID];
 	
@@ -251,96 +301,93 @@ void ExecuteRenderer(uint32 sceneID, uint32 viewportWidth, uint32 viewportHeight
 		sceneDesc.cameraLookat,
 		DEFAULT_CAMERA_UP,
 		sceneDesc.fovY,
-		(float)viewportWidth/ (float)viewportHeight,
+		settings.getViewportAspectWH(),
 		CAMERA_APERTURE,
 		(sceneDesc.cameraLocation - sceneDesc.cameraLookat).Length(),
 		CAMERA_BEGIN_CAPTURE,
 		CAMERA_END_CAPTURE);
 
-	RendererSettings rendererSettings;
-	{
-		rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
-		rendererSettings.maxPathLength = MAX_RECURSION;
-		rendererSettings.rayTMin = RAY_T_MIN;
-		rendererSettings.skyLightFn = FAKE_SKY_LIGHT;
-		rendererSettings.debugMode = RENDERER_DEBUG_MODE;
-	}
-
 	// Render default image
+	const uint32 viewportWidth = settings.viewportWidth;
+	const uint32 viewportHeight = settings.viewportHeight;
 	Image2D image(viewportWidth, viewportHeight);
 	Renderer renderer;
-	renderer.RenderScene(rendererSettings, worldBVH, &camera, &image);
+	renderer.RenderScene(settings, worldBVH, &camera, &image);
 	// NOTE: I'll input HDR image to denoiser
 
+	if (settings.bRunDenoiser)
+	{
 #if INTEL_DENOISER
-	// Render aux images
-	Image2D imageWorldNormal(viewportWidth, viewportHeight);
-	Image2D imageAlbedo(viewportWidth, viewportHeight);
+		// Render aux images
+		Image2D imageWorldNormal(viewportWidth, viewportHeight);
+		Image2D imageAlbedo(viewportWidth, viewportHeight);
 
-	Camera debugCamera = camera;
-	debugCamera.lens_radius = 0.0f;
+		Camera debugCamera = camera;
+		debugCamera.lens_radius = 0.0f;
 
-	rendererSettings.debugMode = EDebugMode::Reflectance;
-	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageAlbedo);
-	rendererSettings.debugMode = EDebugMode::VertexNormal;
-	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageWorldNormal);
+		RendererSettings debugSettings = settings;
+		debugSettings.debugMode = EDebugMode::Reflectance;
+		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageAlbedo);
+		debugSettings.debugMode = EDebugMode::VertexNormal;
+		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageWorldNormal);
 
-	std::string albedoFilenameJPG = makeFilename("_0.jpg");
-	std::string normalFilenameJPG = makeFilename("_1.jpg");
-	WriteImageToDisk(imageAlbedo, albedoFilenameJPG.c_str(), EImageFileType::Jpg);
-	WriteImageToDisk(imageWorldNormal, normalFilenameJPG.c_str(), EImageFileType::Jpg);
+		std::string albedoFilenameJPG = makeFilename("_0.jpg");
+		std::string normalFilenameJPG = makeFilename("_1.jpg");
+		WriteImageToDisk(imageAlbedo, albedoFilenameJPG.c_str(), EImageFileType::Jpg);
+		WriteImageToDisk(imageWorldNormal, normalFilenameJPG.c_str(), EImageFileType::Jpg);
 
-	// Dump as float array to pass to oidn
-	std::vector<float> noisyInputBlob, albedoBlob, worldNormalBlob;
-	image.DumpFloatRGBs(noisyInputBlob);
-	imageAlbedo.DumpFloatRGBs(albedoBlob);
-	imageWorldNormal.DumpFloatRGBs(worldNormalBlob);
+		// Dump as float array to pass to oidn
+		std::vector<float> noisyInputBlob, albedoBlob, worldNormalBlob;
+		image.DumpFloatRGBs(noisyInputBlob);
+		imageAlbedo.DumpFloatRGBs(albedoBlob);
+		imageWorldNormal.DumpFloatRGBs(worldNormalBlob);
 
-	LOG("Denoise the result using Intel OpenImageDenoise");
+		LOG("Denoise the result using Intel OpenImageDenoise");
 
-	OIDNDevice device = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
-	oidnCommitDevice(device);
+		OIDNDevice device = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
+		oidnCommitDevice(device);
 
-	std::vector<float> denoisedOutputBlob(noisyInputBlob.size(), 0.0f);
+		std::vector<float> denoisedOutputBlob(noisyInputBlob.size(), 0.0f);
 
-	OIDNFilter filter = oidnNewFilter(device, "RT");
-	oidnSetSharedFilterImage(filter, "color", noisyInputBlob.data(),
-		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-	oidnSetSharedFilterImage(filter, "albedo", albedoBlob.data(),
-		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-	oidnSetSharedFilterImage(filter, "normal", worldNormalBlob.data(),
-		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-	oidnSetSharedFilterImage(filter, "output", denoisedOutputBlob.data(),
-		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-	oidnSetFilter1b(filter, "hdr", true);
-	oidnCommitFilter(filter);
+		OIDNFilter filter = oidnNewFilter(device, "RT");
+		oidnSetSharedFilterImage(filter, "color", noisyInputBlob.data(),
+			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+		oidnSetSharedFilterImage(filter, "albedo", albedoBlob.data(),
+			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+		oidnSetSharedFilterImage(filter, "normal", worldNormalBlob.data(),
+			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+		oidnSetSharedFilterImage(filter, "output", denoisedOutputBlob.data(),
+			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+		oidnSetFilter1b(filter, "hdr", true);
+		oidnCommitFilter(filter);
 
-	oidnExecuteFilter(filter);
+		oidnExecuteFilter(filter);
 
-	const char* oidnErr;
-	if (oidnGetDeviceError(device, &oidnErr) != OIDN_ERROR_NONE)
-	{
-		LOG("oidn error: %s", oidnErr);
-	}
-
-	oidnReleaseFilter(filter);
-	oidnReleaseDevice(device);
-
-	Image2D denoisedOutput(viewportWidth, viewportHeight);
-	size_t k = 0;
-	for (uint32_t y = 0; y < viewportHeight; ++y)
-	{
-		for (uint32_t x = 0; x < viewportWidth; ++x)
+		const char* oidnErr;
+		if (oidnGetDeviceError(device, &oidnErr) != OIDN_ERROR_NONE)
 		{
-			Pixel px(denoisedOutputBlob[k], denoisedOutputBlob[k + 1], denoisedOutputBlob[k + 2]);
-			denoisedOutput.SetPixel(x, y, px);
-			k += 3;
+			LOG("oidn error: %s", oidnErr);
 		}
-	}
-	denoisedOutput.PostProcess();
 
-	std::string denoiseFilenameJPG = makeFilename("_2.jpg");
-	WriteImageToDisk(denoisedOutput, denoiseFilenameJPG.c_str(), EImageFileType::Jpg);
+		oidnReleaseFilter(filter);
+		oidnReleaseDevice(device);
+
+		Image2D denoisedOutput(viewportWidth, viewportHeight);
+		size_t k = 0;
+		for (uint32_t y = 0; y < viewportHeight; ++y)
+		{
+			for (uint32_t x = 0; x < viewportWidth; ++x)
+			{
+				Pixel px(denoisedOutputBlob[k], denoisedOutputBlob[k + 1], denoisedOutputBlob[k + 2]);
+				denoisedOutput.SetPixel(x, y, px);
+				k += 3;
+			}
+		}
+		denoisedOutput.PostProcess();
+
+		std::string denoiseFilenameJPG = makeFilename("_2.jpg");
+		WriteImageToDisk(denoisedOutput, denoiseFilenameJPG.c_str(), EImageFileType::Jpg);
+	}
 #endif // INTEL_DENOISER
 
 	// Apply postprocessing after denoising

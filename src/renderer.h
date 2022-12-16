@@ -20,13 +20,21 @@ enum class EDebugMode {
 };
 
 struct RendererSettings {
-	int32 samplesPerPixel;
-	int32 maxPathLength;
-	float rayTMin;
+	uint32               viewportWidth;
+	uint32               viewportHeight;
 
-	FakeSkyLightFunction skyLightFn = nullptr;
+	int32                samplesPerPixel;
+	int32                maxPathLength;
+	float                rayTMin;
 
-	EDebugMode debugMode = EDebugMode::None;
+	FakeSkyLightFunction skyLightFn      = nullptr;
+	EDebugMode           debugMode       = EDebugMode::None;
+
+	bool                 bRunDenoiser    = false;
+
+	inline float getViewportAspectWH() const {
+		return (float)viewportWidth / (float)viewportHeight;
+	}
 };
 
 class Renderer {
