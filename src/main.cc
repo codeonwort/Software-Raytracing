@@ -17,6 +17,8 @@
 #include "shading/material.h"
 #include "platform/platform.h"
 
+#include <functional>
+#include <iostream>
 #include <vector>
 
 // oidn is not Windows-only but I'm downloading Windows pre-built binaries.
@@ -32,101 +34,12 @@
 
 static ProgramArguments g_programArgs;
 
-// #todo: Wrap these with Scene = {objects,camera,viewport}
-// 0: Cornell box
-// 1: Demo scene with some primitives and a model
-// 2: Car show room
-// 3: Breakfast Room
-// 4: Dabrovic Sponza
-#define SCENE_CHOICE 3
-
-#if SCENE_CHOICE == 0
-	#define CREATE_RANDOM_SCENE     CreateScene_CornellBox
-	#define CAMERA_LOCATION         vec3(0.0f, 1.0f, 4.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
-	#define VIEWPORT_WIDTH          512
-#elif SCENE_CHOICE == 1
-	#define CREATE_RANDOM_SCENE     CreateScene_ObjModel
-	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
-#elif SCENE_CHOICE == 2
-	#define CREATE_RANDOM_SCENE     CreateScene_CarShowRoom
-	#define CAMERA_LOCATION         vec3(3.0f, 1.0f, 3.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
-#elif SCENE_CHOICE == 3
-	#define CREATE_RANDOM_SCENE     CreateScene_BreakfastRoom
-	#define CAMERA_LOCATION         vec3(0.0f, 1.0f, 5.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.0f)
-	#define FOV_Y                   60.0f
-#elif SCENE_CHOICE == 4
-	#define CREATE_RANDOM_SCENE     CreateScene_DabrovicSponza
-	#define CAMERA_LOCATION         vec3(10.0f, 2.0f, 0.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 3.0f, 0.0f)
-	#define FOV_Y                   60.0f
-#elif SCENE_CHOICE == 5
-	// #todo-obj: Support 1) alpha test for foliage, 2) other illumination models
-	#define CREATE_RANDOM_SCENE     CreateScene_FireplaceRoom
-	#define CAMERA_LOCATION         vec3(5.0f, 1.0f, -1.5f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 1.0f, -1.5f)
-	#define FOV_Y                   60.0f
-#elif SCENE_CHOICE == 6
-	// #todo-obj: 7602 materials?????? There's only ~40 materials in living_room.mtl...
-	#define CREATE_RANDOM_SCENE     CreateScene_LivingRoom
-	#define CAMERA_LOCATION         vec3(1.0f, 2.0f, 0.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 2.0f, 0.0f)
-	#define FOV_Y                   60.0f
-#elif SCENE_CHOICE == 7
-	// #todo-obj: Sky light cannnot penetrate opaque windows (need to handle translucency)
-	#define CREATE_RANDOM_SCENE     CreateScene_SibenikCathedral
-	#define CAMERA_LOCATION         vec3(-10.0f, -12.0f, 0.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, -11.5f, 0.0f)
-	#define FOV_Y                   60.0f
-#elif SCENE_CHOICE == 8
-	// #todo-obj: Again bloated number of materials.
-	// Also not included in Setup.ps1 as this model is too big.
-	#define CREATE_RANDOM_SCENE     CreateScene_SanMiguel
-	#define CAMERA_LOCATION         vec3(0.0f, 0.0f, 0.0f)
-	#define CAMERA_LOOKAT           vec3(0.0f, 0.0f, 1.0f)
-	#define FOV_Y                   60.0f
-#else
-	#error Invalid value for SCENE_CHOICE
-#endif
-
-// Rendering configuration
-#define CAMERA_UP               vec3(0.0f, 1.0f, 0.0f)
-#define CAMERA_APERTURE         0.01f
-#define CAMERA_BEGIN_CAPTURE    0.0f
-#define CAMERA_END_CAPTURE      5.0f
-#ifndef FOV_Y
-	#define FOV_Y               45.0f
-#endif
-#ifndef VIEWPORT_WIDTH
-	#define VIEWPORT_WIDTH      1024
-#endif
-#define VIEWPORT_HEIGHT         512
-
-#define SAMPLES_PER_PIXEL       200
-#define MAX_RECURSION           5
-#define RAY_T_MIN               0.0001f
-#define RENDERER_DEBUG_MODE     EDebugMode::None
-
-vec3 FAKE_SKY_LIGHT(const vec3& dir)
-{
-	float t = 0.5f * (dir.y + 1.0f);
-	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
-}
-
-// #todo-wip: Magic values
-// Only for CreateScene_ObjModel()
-#define LOCAL_LIGHTS            1
-#define INCLUDE_TOADTTE         1
-#define INCLUDE_CUBE            1
-// Output file names
-#define RESULT_FILENAME_BMP     SOLUTION_DIR "test.bmp"
-#define RESULT_FILENAME_JPG     SOLUTION_DIR "test.jpg"
-#define ALBEDO_FILENAME_JPG     SOLUTION_DIR "test_0.jpg"
-#define NORMAL_FILENAME_JPG     SOLUTION_DIR "test_1.jpg"
-#define DENOISE_FILENAME_JPG    SOLUTION_DIR "test_2.jpg"
+#define DEFAULT_VIEWPORT_WIDTH     1024
+#define DEFAULT_VIEWPORT_HEIGHT    512
+#define DEFAULT_CAMERA_LOCATION    vec3(0.0f, 0.0f, 0.0f)
+#define DEFAULT_CAMERA_LOOKAT      vec3(0.0f, 0.0f, -1.0f)
+#define DEFAULT_CAMERA_UP          vec3(0.0f, 1.0f, 0.0f)
+#define DEFAULT_FOV_Y              45.0f
 
 // Demo scenes
 HitableList* CreateScene_CornellBox();
@@ -140,6 +53,101 @@ HitableList* CreateScene_SanMiguel();
 HitableList* CreateScene_ObjModel();
 HitableList* CreateScene_RandomSpheres();
 HitableList* CreateScene_FourSpheres();
+
+struct SceneDesc
+{
+	std::function<HitableList*(void)> createSceneFn;
+	std::string sceneName;
+	vec3 cameraLocation = DEFAULT_CAMERA_LOCATION;
+	vec3 cameraLookat   = DEFAULT_CAMERA_LOOKAT;
+	float fovY          = DEFAULT_FOV_Y;
+};
+
+SceneDesc g_sceneDescs[] = {
+	{
+		CreateScene_CornellBox,
+		"CornellBox",
+		vec3(0.0f, 1.0f, 4.0f),
+		vec3(0.0f, 1.0f, -1.0f),
+	},
+	{
+		CreateScene_BreakfastRoom,
+		"BreakfastRoom",
+		vec3(0.0f, 1.0f, 5.0f),
+		vec3(0.0f, 1.0f, -1.0f),
+		60.0f,
+	},
+	{
+		CreateScene_DabrovicSponza,
+		"DabrovicSponza",
+		vec3(10.0f, 2.0f, 0.0f),
+		vec3(0.0f, 3.0f, 0.0f),
+		60.0f
+	},
+	// #todo-obj: Handle all illumination models
+	{
+		CreateScene_FireplaceRoom,
+		"FireplaceRoom",
+		vec3(5.0f, 1.0f, -1.5f),
+		vec3(0.0f, 1.0f, -1.5f),
+		60.0f,
+	},
+	// #todo-obj: 7602 materials?????? There's only ~40 materials in living_room.mtl...
+	{
+		CreateScene_LivingRoom,
+		"LivingRoom",
+		vec3(1.0f, 2.0f, 0.0f),
+		vec3(0.0f, 2.0f, 0.0f),
+		60.0f
+	},
+	// #todo-obj: Sky light cannnot penetrate opaque windows (need to handle translucency)
+	{
+		CreateScene_SibenikCathedral,
+		"SibenikCathedral",
+		vec3(-10.0f, -12.0f, 0.0f),
+		vec3(0.0f, -11.5f, 0.0f),
+		60.0f
+	},
+	// #todo-obj: Again bloated number of materials.
+	// Also not included in Setup.ps1 as this model is too big.
+	{
+		CreateScene_SanMiguel,
+		"SanMiguel",
+		vec3(0.0f, 0.0f, 0.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f
+	},
+#if 0
+	{
+		CreateScene_ObjModel,
+		"ObjTest",
+		vec3(3.0f, 1.0f, 3.0f),
+		vec3(0.0f, 1.0f, -1.0f)
+	},
+	{
+		CreateScene_CarShowRoom,
+		"CarShowRoom",
+		vec3(3.0f, 1.0f, 3.0f),
+		vec3(0.0f, 1.0f, -1.0f)
+	},
+#endif
+};
+
+// Rendering configuration
+#define CAMERA_APERTURE         0.01f
+#define CAMERA_BEGIN_CAPTURE    0.0f
+#define CAMERA_END_CAPTURE      5.0f
+
+#define SAMPLES_PER_PIXEL       10
+#define MAX_RECURSION           5
+#define RAY_T_MIN               0.0001f
+#define RENDERER_DEBUG_MODE     EDebugMode::None
+
+vec3 FAKE_SKY_LIGHT(const vec3& dir)
+{
+	float t = 0.5f * (dir.y + 1.0f);
+	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+}
 
 void InitializeSubsystems() {
 	SCOPED_CPU_COUNTER(InitializeSubsystems);
@@ -155,9 +163,11 @@ void DestroySubsystems() {
 	WaitForLogThread();
 }
 
+void ExecuteRenderer(uint32 sceneID, uint32 viewportWidth, uint32 viewportHeight);
+
 // #todo-wip: Run a (input command -> execute command) loop.
 int main(int argc, char** argv) {
-	SCOPED_CPU_COUNTER(main);
+	LOG("=== Software Raytracer ===");
 
 	//
 	// Initialize
@@ -165,128 +175,52 @@ int main(int argc, char** argv) {
 	g_programArgs.init(argc, argv);
 	InitializeSubsystems();
 
-	LOG("[Software raytracer]");
+	uint32 viewportWidth = DEFAULT_VIEWPORT_WIDTH;
+	uint32 viewportHeight = DEFAULT_VIEWPORT_HEIGHT;
+	uint32 sceneID = 0;
+	Image2D image(viewportWidth, viewportHeight, 0x0);
 
-	const int32 width = VIEWPORT_WIDTH;
-	const int32 height = VIEWPORT_HEIGHT;
-	Image2D image(width, height, 0x0);
-
-	LOG("generate a test image (width: %d, height: %d)", width, height);
-
-	//
-	// Create a scene
-	//
-	BVHNode* worldBVH = nullptr;
+	std::cout << "Type 'help' to see help message" << std::endl;
+	while (true)
 	{
-		HitableList* world = CREATE_RANDOM_SCENE();
-		worldBVH = new BVHNode(world, CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
-	}
+		std::cout << "> ";
 
-	const float dist_to_focus = (CAMERA_LOCATION - CAMERA_LOOKAT).Length();
-	Camera camera(
-		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
-		FOV_Y, (float)width / (float)height,
-		CAMERA_APERTURE, dist_to_focus,
-		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
-
-	//
-	// Generate an image with multi-threading
-	//
-	RendererSettings rendererSettings;
-	{
-		rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
-		rendererSettings.maxPathLength = MAX_RECURSION;
-		rendererSettings.rayTMin = RAY_T_MIN;
-		rendererSettings.skyLightFn = FAKE_SKY_LIGHT;
-		rendererSettings.debugMode = RENDERER_DEBUG_MODE;
-	}
-	Renderer renderer;
-	// NOTE: This is a blocking operation for now.
-	renderer.RenderScene(rendererSettings, worldBVH, &camera, &image);
-
-#if INTEL_DENOISER
-	//
-	// Generate aux output
-	//
-	Image2D imageWorldNormal(width, height, 0x0);
-	Image2D imageAlbedo(width, height, 0x0);
-
-	Camera debugCamera(
-		CAMERA_LOCATION, CAMERA_LOOKAT, CAMERA_UP,
-		FOV_Y, (float)width / (float)height,
-		0.0f, dist_to_focus,
-		CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
-
-	rendererSettings.debugMode = EDebugMode::Reflectance;
-	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageAlbedo);
-	rendererSettings.debugMode = EDebugMode::VertexNormal;
-	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageWorldNormal);
-
-	WriteImageToDisk(imageAlbedo, ALBEDO_FILENAME_JPG, EImageFileType::Jpg);
-	WriteImageToDisk(imageWorldNormal, NORMAL_FILENAME_JPG, EImageFileType::Jpg);
-
-	// Dump as float array to pass to oidn
-	std::vector<float> noisyInputBlob, albedoBlob, worldNormalBlob;
-	image.DumpFloatRGBs(noisyInputBlob);
-	imageAlbedo.DumpFloatRGBs(albedoBlob);
-	imageWorldNormal.DumpFloatRGBs(worldNormalBlob);
-#endif
-
-	image.PostProcess();
-
-	WriteImageToDisk(image, RESULT_FILENAME_BMP, EImageFileType::Bitmap);
-	WriteImageToDisk(image, RESULT_FILENAME_JPG, EImageFileType::Jpg);
-
-	LOG("image has been written as bitmap: %s", RESULT_FILENAME_BMP);
-	LOG("image has been written as jpg: %s", RESULT_FILENAME_JPG);
-
-#if INTEL_DENOISER
-	{
-		LOG("Denoise the result using Intel OpenImageDenoise");
-
-		OIDNDevice device = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
-		oidnCommitDevice(device);
-
-		std::vector<float> denoisedOutputBlob(noisyInputBlob.size(), 0.0f);
-
-		OIDNFilter filter = oidnNewFilter(device, "RT");
-		oidnSetSharedFilterImage(filter, "color", noisyInputBlob.data(),
-			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
-		oidnSetSharedFilterImage(filter, "albedo", albedoBlob.data(),
-			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
-		oidnSetSharedFilterImage(filter, "normal", worldNormalBlob.data(),
-			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
-		oidnSetSharedFilterImage(filter, "output", denoisedOutputBlob.data(),
-			OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // noisy input
-		oidnSetFilter1b(filter, "hdr", true);
-		oidnCommitFilter(filter);
-
-		oidnExecuteFilter(filter);
-
-		const char* err;
-		if (oidnGetDeviceError(device, &err) != OIDN_ERROR_NONE)
+		std::string command;
+		std::cin >> command;
+		if (command == "help")
 		{
-			LOG("oidn error: %s", err);
+			std::cout << "list     : print all default scene descs" << std::endl;
+			std::cout << "select n : select a scene to render" << std::endl;
+			std::cout << "run      : render the scene currently selected" << std::endl;
+			std::cout << "exit     : exit the program" << std::endl;
 		}
-
-		oidnReleaseFilter(filter);
-		oidnReleaseDevice(device);
-
-		Image2D denoisedOutput(width, height);
-		size_t k = 0;
-		for (uint32_t y = 0; y < height; ++y)
+		else if (command == "list")
 		{
-			for (uint32_t x = 0; x < width; ++x)
+			for (size_t i = 0; i < _countof(g_sceneDescs); ++i)
 			{
-				Pixel px(denoisedOutputBlob[k], denoisedOutputBlob[k + 1], denoisedOutputBlob[k + 2]);
-				denoisedOutput.SetPixel(x, y, px);
-				k += 3;
+				std::cout << i << " - " << g_sceneDescs[i].sceneName << std::endl;
 			}
 		}
-		denoisedOutput.PostProcess();
-		WriteImageToDisk(denoisedOutput, DENOISE_FILENAME_JPG, EImageFileType::Jpg);
+		else if (command == "select")
+		{
+			std::cin >> sceneID;
+			if (sceneID >= _countof(g_sceneDescs)) sceneID = 0;
+			std::cout << "select: " << g_sceneDescs[sceneID].sceneName << std::endl;
+		}
+		else if (command == "run")
+		{
+			ExecuteRenderer(sceneID, viewportWidth, viewportHeight);
+		}
+		else if (command == "exit")
+		{
+			break;
+		}
+		else
+		{
+			std::cout << "Unknown command" << std::endl;
+			std::cout << "Type 'help' to see help message" << std::endl;
+		}
 	}
-#endif
 
 	//
 	// Cleanup
@@ -295,6 +229,135 @@ int main(int argc, char** argv) {
 
 	return 0;
 }
+
+void ExecuteRenderer(uint32 sceneID, uint32 viewportWidth, uint32 viewportHeight)
+{
+	const SceneDesc& sceneDesc = g_sceneDescs[sceneID];
+	
+	auto makeFilename = [&sceneDesc](const char* prefix) {
+		std::string name = SOLUTION_DIR "test_";
+		name += sceneDesc.sceneName;
+		name += prefix;
+		return name;
+	};
+
+	LOG("Execute renderer for: %s", sceneDesc.sceneName.c_str());
+
+	BVHNode* worldBVH = new BVHNode(
+		sceneDesc.createSceneFn(), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+
+	Camera camera(
+		sceneDesc.cameraLocation,
+		sceneDesc.cameraLookat,
+		DEFAULT_CAMERA_UP,
+		sceneDesc.fovY,
+		(float)viewportWidth/ (float)viewportHeight,
+		CAMERA_APERTURE,
+		(sceneDesc.cameraLocation - sceneDesc.cameraLookat).Length(),
+		CAMERA_BEGIN_CAPTURE,
+		CAMERA_END_CAPTURE);
+
+	RendererSettings rendererSettings;
+	{
+		rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
+		rendererSettings.maxPathLength = MAX_RECURSION;
+		rendererSettings.rayTMin = RAY_T_MIN;
+		rendererSettings.skyLightFn = FAKE_SKY_LIGHT;
+		rendererSettings.debugMode = RENDERER_DEBUG_MODE;
+	}
+
+	// Render default image
+	Image2D image(viewportWidth, viewportHeight);
+	Renderer renderer;
+	renderer.RenderScene(rendererSettings, worldBVH, &camera, &image);
+	// NOTE: I'll input HDR image to denoiser
+
+#if INTEL_DENOISER
+	// Render aux images
+	Image2D imageWorldNormal(viewportWidth, viewportHeight);
+	Image2D imageAlbedo(viewportWidth, viewportHeight);
+
+	Camera debugCamera = camera;
+	debugCamera.lens_radius = 0.0f;
+
+	rendererSettings.debugMode = EDebugMode::Reflectance;
+	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageAlbedo);
+	rendererSettings.debugMode = EDebugMode::VertexNormal;
+	renderer.RenderScene(rendererSettings, worldBVH, &debugCamera, &imageWorldNormal);
+
+	std::string albedoFilenameJPG = makeFilename("_0.jpg");
+	std::string normalFilenameJPG = makeFilename("_1.jpg");
+	WriteImageToDisk(imageAlbedo, albedoFilenameJPG.c_str(), EImageFileType::Jpg);
+	WriteImageToDisk(imageWorldNormal, normalFilenameJPG.c_str(), EImageFileType::Jpg);
+
+	// Dump as float array to pass to oidn
+	std::vector<float> noisyInputBlob, albedoBlob, worldNormalBlob;
+	image.DumpFloatRGBs(noisyInputBlob);
+	imageAlbedo.DumpFloatRGBs(albedoBlob);
+	imageWorldNormal.DumpFloatRGBs(worldNormalBlob);
+
+	LOG("Denoise the result using Intel OpenImageDenoise");
+
+	OIDNDevice device = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
+	oidnCommitDevice(device);
+
+	std::vector<float> denoisedOutputBlob(noisyInputBlob.size(), 0.0f);
+
+	OIDNFilter filter = oidnNewFilter(device, "RT");
+	oidnSetSharedFilterImage(filter, "color", noisyInputBlob.data(),
+		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+	oidnSetSharedFilterImage(filter, "albedo", albedoBlob.data(),
+		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+	oidnSetSharedFilterImage(filter, "normal", worldNormalBlob.data(),
+		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+	oidnSetSharedFilterImage(filter, "output", denoisedOutputBlob.data(),
+		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+	oidnSetFilter1b(filter, "hdr", true);
+	oidnCommitFilter(filter);
+
+	oidnExecuteFilter(filter);
+
+	const char* oidnErr;
+	if (oidnGetDeviceError(device, &oidnErr) != OIDN_ERROR_NONE)
+	{
+		LOG("oidn error: %s", oidnErr);
+	}
+
+	oidnReleaseFilter(filter);
+	oidnReleaseDevice(device);
+
+	Image2D denoisedOutput(viewportWidth, viewportHeight);
+	size_t k = 0;
+	for (uint32_t y = 0; y < viewportHeight; ++y)
+	{
+		for (uint32_t x = 0; x < viewportWidth; ++x)
+		{
+			Pixel px(denoisedOutputBlob[k], denoisedOutputBlob[k + 1], denoisedOutputBlob[k + 2]);
+			denoisedOutput.SetPixel(x, y, px);
+			k += 3;
+		}
+	}
+	denoisedOutput.PostProcess();
+
+	std::string denoiseFilenameJPG = makeFilename("_2.jpg");
+	WriteImageToDisk(denoisedOutput, denoiseFilenameJPG.c_str(), EImageFileType::Jpg);
+#endif // INTEL_DENOISER
+
+	// Apply postprocessing after denoising
+	image.PostProcess();
+	std::string resultFilenameBMP = makeFilename(".bmp");
+	std::string resultFilenameJPG = makeFilename(".jpg");
+	WriteImageToDisk(image, resultFilenameBMP.c_str(), EImageFileType::Bitmap);
+	WriteImageToDisk(image, resultFilenameJPG.c_str(), EImageFileType::Jpg);
+	LOG("image has been written to: %s", resultFilenameBMP.c_str());
+	LOG("image has been written to: %s", resultFilenameJPG.c_str());
+
+	LOG("=== Rendering has completed ===");
+	FlushLogThread();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Demo scene generator functions
 
 HitableList* CreateScene_CornellBox() {
 	SCOPED_CPU_COUNTER(CreateScene_CornellBox);
@@ -496,7 +559,6 @@ HitableList* CreateScene_DabrovicSponza()
 	return new HitableList(list);
 }
 
-
 HitableList* CreateScene_FireplaceRoom()
 {
 	SCOPED_CPU_COUNTER(CreateScene_FireplaceRoom);
@@ -519,7 +581,6 @@ HitableList* CreateScene_FireplaceRoom()
 	return new HitableList(list);
 }
 
-
 HitableList* CreateScene_LivingRoom()
 {
 	SCOPED_CPU_COUNTER(CreateScene_LivingRoom);
@@ -541,7 +602,6 @@ HitableList* CreateScene_LivingRoom()
 
 	return new HitableList(list);
 }
-
 
 HitableList* CreateScene_SibenikCathedral()
 {
@@ -591,17 +651,22 @@ HitableList* CreateScene_ObjModel()
 {
 	SCOPED_CPU_COUNTER(CreateRandomScene);
 
+// #todo-wip: Magic values only for CreateScene_ObjModel()
+#define OBJTEST_LOCAL_LIGHTS            1
+#define OBJTEST_INCLUDE_TOADTTE         1
+#define OBJTEST_INCLUDE_CUBE            1
+
 	std::vector<Hitable*> list;
 
 	// Light source
-#if LOCAL_LIGHTS
+#if OBJTEST_LOCAL_LIGHTS
 	Material* pointLight0 = new DiffuseLight(vec3(5.0f, 0.0f, 0.0f));
 	Material* pointLight1 = new DiffuseLight(vec3(0.0f, 4.0f, 5.0f));
 	list.push_back(new sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
 	list.push_back(new sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
 #endif
 
-#if INCLUDE_TOADTTE
+#if OBJTEST_INCLUDE_TOADTTE
 	OBJModel model;
 	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
 	{
@@ -617,7 +682,7 @@ HitableList* CreateScene_ObjModel()
 	}
 #endif
 
-#if INCLUDE_CUBE
+#if OBJTEST_INCLUDE_CUBE
 	Material* cube_mat = new Lambertian(vec3(0.9f, 0.1f, 0.1f));
 	Material* cube_mat2 = new Lambertian(vec3(0.1f, 0.1f, 0.9f));
 	list.push_back(new Cube(vec3(-4.0f, 0.3f, 0.0f), vec3(-3.0f, 0.5f, 1.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat));

@@ -31,6 +31,15 @@ void StartLogThread()
 	logThread.detach();
 }
 
+void FlushLogThread()
+{
+	CHECK(logThreadStarted);
+	while (logQueue.size() > 0)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+}
+
 void WaitForLogThread()
 {
 	CHECK(logThreadStarted);
@@ -60,7 +69,6 @@ void LOG(const char* format, ...)
 	logQueue.emplace_back(buffer);
 	log_mutex.unlock();
 }
-
 
 void LogMain()
 {
