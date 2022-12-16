@@ -8,6 +8,7 @@ external/
 test*.bmp
 test*.jpg
 test*.png
+test_backup/
 
 # Prerequisites
 *.d

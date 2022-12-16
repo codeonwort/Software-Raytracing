@@ -6,6 +6,7 @@
 #include "renderer.h"
 #include "util/stat.h"
 #include "util/resource_finder.h"
+#include "util/program_args.h"
 #include "geom/bvh.h"
 #include "geom/cube.h"
 #include "geom/sphere.h"
@@ -28,6 +29,8 @@
 #pragma comment(lib, "OpenImageDenoise.lib")
 //#pragma comment(lib, "tbb.lib")
 #endif
+
+static ProgramArguments g_programArgs;
 
 // #todo: Wrap these with Scene = {objects,camera,viewport}
 // 0: Cornell box
@@ -159,9 +162,10 @@ int main(int argc, char** argv) {
 	//
 	// Initialize
 	//
+	g_programArgs.init(argc, argv);
 	InitializeSubsystems();
 
-	log("raytracing study");
+	log("[Software raytracer]");
 
 	const int32 width = VIEWPORT_WIDTH;
 	const int32 height = VIEWPORT_HEIGHT;
