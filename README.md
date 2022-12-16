@@ -32,6 +32,9 @@ Dabrovic Sponza, denoised
 ![FireplaceRoom](https://user-images.githubusercontent.com/11644393/207712336-349be0a9-54d1-4ebf-8c7b-c730eede4d8b.jpg)
 Fireplace Room, denoised
 
+![LivingRoom](https://user-images.githubusercontent.com/11644393/208139547-f662edf3-52a7-420f-9c68-85c975c22fda.jpg)
+Living Room, denoised
+
 ## Random scenes
 
 ![preview3](https://user-images.githubusercontent.com/11644393/51801447-49746080-2281-11e9-9d56-2954ab4039c1.jpg)
