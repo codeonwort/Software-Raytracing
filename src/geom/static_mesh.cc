@@ -1,13 +1,20 @@
 #include "static_mesh.h"
 #include "bvh.h"
 
-// #todo-staticmesh: Still too slow for bedroom
 #define USE_BVH 1
+
+StaticMesh::~StaticMesh()
+{
+	if (bvh != nullptr)
+	{
+		delete bvh;
+	}
+}
 
 void StaticMesh::AddTriangle(const Triangle& triangle)
 {
-	CHECK(!locked);
-	if (!locked)
+	CHECK(!bLocked);
+	if (!bLocked)
 	{
 		triangles.push_back(triangle);
 	}
@@ -15,8 +22,8 @@ void StaticMesh::AddTriangle(const Triangle& triangle)
 
 void StaticMesh::SetBounds(const AABB& inBounds)
 {
-	CHECK(!locked);
-	if (!locked)
+	CHECK(!bLocked);
+	if (!bLocked)
 	{
 		bounds = inBounds;
 		boundsValid = true;
@@ -25,8 +32,8 @@ void StaticMesh::SetBounds(const AABB& inBounds)
 
 void StaticMesh::CalculateBounds()
 {
-	CHECK(!locked);
-	if (!locked)
+	CHECK(!bLocked);
+	if (!bLocked)
 	{
 		vec3 minBounds(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
 		vec3 maxBounds(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
@@ -46,8 +53,8 @@ void StaticMesh::CalculateBounds()
 
 void StaticMesh::ApplyTransform(const Transform& transform)
 {
-	CHECK(!locked);
-	if (!locked)
+	CHECK(!bLocked);
+	if (!bLocked)
 	{
 		Transform rot = transform;
 		rot.SetLocation(vec3(0.0f, 0.0f, 0.0f));
@@ -72,7 +79,7 @@ void StaticMesh::ApplyTransform(const Transform& transform)
 
 void StaticMesh::Finalize()
 {
-	if (!locked)
+	if (!bLocked)
 	{
 		CalculateBounds();
 
@@ -83,7 +90,7 @@ void StaticMesh::Finalize()
 		}
 		bvh = new BVHNode(new HitableList(triVec), 0.0f, 0.0f);
 
-		locked = true;
+		bLocked = true;
 	}
 }
 

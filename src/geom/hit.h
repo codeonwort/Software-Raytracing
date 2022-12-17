@@ -37,6 +37,8 @@ class Hitable
 {
 
 public:
+	virtual ~Hitable() = default;
+
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const = 0;
 
 	// Returns false if bounding box is not supported

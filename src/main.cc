@@ -32,7 +32,18 @@
 //#pragma comment(lib, "tbb.lib")
 #endif
 
+// -----------------------------------------------------------------------
+
 static ProgramArguments g_programArgs;
+
+// Default rendering configuration
+#define CAMERA_APERTURE            0.01f
+#define CAMERA_BEGIN_CAPTURE       0.0f
+#define CAMERA_END_CAPTURE         5.0f
+#define SAMPLES_PER_PIXEL          10
+#define MAX_RECURSION              5
+#define RAY_T_MIN                  0.0001f
+#define RENDERER_DEBUG_MODE        EDebugMode::None
 
 #define DEFAULT_VIEWPORT_WIDTH     1024
 #define DEFAULT_VIEWPORT_HEIGHT    512
@@ -40,6 +51,12 @@ static ProgramArguments g_programArgs;
 #define DEFAULT_CAMERA_LOOKAT      vec3(0.0f, 0.0f, -1.0f)
 #define DEFAULT_CAMERA_UP          vec3(0.0f, 1.0f, 0.0f)
 #define DEFAULT_FOV_Y              45.0f
+
+vec3 FAKE_SKY_LIGHT(const vec3& dir)
+{
+	float t = 0.5f * (dir.y + 1.0f);
+	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+}
 
 // Demo scenes
 HitableList* CreateScene_CornellBox();
@@ -107,8 +124,7 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, -11.5f, 0.0f),
 		60.0f
 	},
-	// #todo-wip: Render a OBJ multiple times without reloading it.
-	// Also not included in Setup.ps1 as this model is too big.
+	// Not included in Setup.ps1 as this model is too big.
 	{
 		CreateScene_SanMiguel,
 		"SanMiguel",
@@ -132,20 +148,37 @@ SceneDesc g_sceneDescs[] = {
 #endif
 };
 
-// Default rendering configuration
-#define CAMERA_APERTURE         0.01f
-#define CAMERA_BEGIN_CAPTURE    0.0f
-#define CAMERA_END_CAPTURE      5.0f
-#define SAMPLES_PER_PIXEL       10
-#define MAX_RECURSION           5
-#define RAY_T_MIN               0.0001f
-#define RENDERER_DEBUG_MODE     EDebugMode::None
-
-vec3 FAKE_SKY_LIGHT(const vec3& dir)
+// Keep loaded OBJModel instances to avoid reloading them
+// when rendering a same scene multiple times.
+struct OBJModelContainer
 {
-	float t = 0.5f * (dir.y + 1.0f);
-	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
-}
+	OBJModel* find(const std::string& filename) const
+	{
+		auto it = modelDB.find(filename);
+		if (it == modelDB.end())
+		{
+			return nullptr;
+		}
+		return it->second;
+	}
+	void insert(const std::string& filename, OBJModel* model)
+	{
+		modelDB.insert(std::make_pair(filename, model));
+	}
+	void clear()
+	{
+		for (auto& it : modelDB)
+		{
+			OBJModel* model = it.second;
+			delete model;
+		}
+		modelDB.clear();
+	}
+
+	std::map<std::string, OBJModel*> modelDB;
+};
+
+OBJModelContainer g_objContainer;
 
 void InitializeSubsystems() {
 	SCOPED_CPU_COUNTER(InitializeSubsystems);
@@ -217,12 +250,25 @@ int main(int argc, char** argv) {
 		}
 		else if (command == "select")
 		{
+			uint32 prevSceneID = currentSceneID;
+
 			std::cin >> currentSceneID;
-			if (currentSceneID >= _countof(g_sceneDescs)) currentSceneID = 0;
-			std::cout << "select: " << g_sceneDescs[currentSceneID].sceneName << std::endl;
+			if (std::cin.good())
+			{
+				if (currentSceneID >= _countof(g_sceneDescs)) currentSceneID = 0;
+				std::cout << "select: " << g_sceneDescs[currentSceneID].sceneName << std::endl;
+			}
+			else
+			{
+				std::cout << "Invalid scene number" << std::endl;
+			}
 
 			rendererSettings.cameraLocation = g_sceneDescs[currentSceneID].cameraLocation;
 			rendererSettings.cameraLookat = g_sceneDescs[currentSceneID].cameraLookat;
+			if (prevSceneID != currentSceneID)
+			{
+				g_objContainer.clear();
+			}
 		}
 		else if (command == "run")
 		{
@@ -430,6 +476,8 @@ void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 	LOG("image has been written to: %s", resultFilenameBMP.c_str());
 	LOG("image has been written to: %s", resultFilenameJPG.c_str());
 
+	delete worldBVH;
+
 	LOG("=== Rendering has completed ===");
 	FlushLogThread();
 }
@@ -437,15 +485,41 @@ void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 //////////////////////////////////////////////////////////////////////////
 // Demo scene generator functions
 
+using OBJTransformer = std::function<void(OBJModel* inModel)>;
+bool GetOrCreateOBJ(const char* filename, OBJModel*& outModel, OBJTransformer transformer = nullptr)
+{
+	OBJModel* model = g_objContainer.find(filename);
+	if (model != nullptr)
+	{
+		outModel = model;
+		return true;
+	}
+	model = new OBJModel;
+	if (OBJLoader::SyncLoad(filename, *model))
+	{
+		if (transformer)
+		{
+			transformer(model);
+		}
+		model->FinalizeAllMeshes();
+		g_objContainer.insert(filename, model);
+		outModel = model;
+		return true;
+	}
+	delete model;
+	model = outModel = nullptr;
+	return false;
+}
+
 HitableList* CreateScene_CornellBox() {
 	SCOPED_CPU_COUNTER(CreateScene_CornellBox);
 
 	std::vector<Hitable*> list;
 
-	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/cornell_box/CornellBox-Mirror.obj", objModel)) {
-		objModel.FinalizeAllMeshes();
-		list.push_back(objModel.rootObject);
+	OBJModel* objModel;
+	if (GetOrCreateOBJ("content/cornell_box/CornellBox-Mirror.obj", objModel))
+	{
+		list.push_back(objModel->rootObject);
 	}
 
 	return new HitableList(list);
@@ -599,17 +673,10 @@ HitableList* CreateScene_BreakfastRoom()
 
 	std::vector<Hitable*> list;
 
-	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/breakfast_room/breakfast_room.obj", objModel))
+	OBJModel* objModel;
+	if (GetOrCreateOBJ("content/breakfast_room/breakfast_room.obj", objModel))
 	{
-		Transform transform;
-		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
-
-		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		objModel.FinalizeAllMeshes();
-
-		list.push_back(objModel.rootObject);
+		list.push_back(objModel->rootObject);
 	}
 
 	return new HitableList(list);
@@ -621,17 +688,10 @@ HitableList* CreateScene_DabrovicSponza()
 
 	std::vector<Hitable*> list;
 
-	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/dabrovic_sponza/sponza.obj", objModel))
+	OBJModel* objModel;
+	if (GetOrCreateOBJ("content/dabrovic_sponza/sponza.obj", objModel))
 	{
-		Transform transform;
-		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
-
-		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		objModel.FinalizeAllMeshes();
-
-		list.push_back(objModel.rootObject);
+		list.push_back(objModel->rootObject);
 	}
 
 	return new HitableList(list);
@@ -643,17 +703,10 @@ HitableList* CreateScene_FireplaceRoom()
 
 	std::vector<Hitable*> list;
 
-	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/fireplace_room/fireplace_room.obj", objModel))
+	OBJModel* objModel;
+	if (GetOrCreateOBJ("content/fireplace_room/fireplace_room.obj", objModel))
 	{
-		Transform transform;
-		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
-
-		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		objModel.FinalizeAllMeshes();
-
-		list.push_back(objModel.rootObject);
+		list.push_back(objModel->rootObject);
 	}
 
 	return new HitableList(list);
@@ -665,17 +718,10 @@ HitableList* CreateScene_LivingRoom()
 
 	std::vector<Hitable*> list;
 
-	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/living_room/living_room.obj", objModel))
+	OBJModel* objModel;
+	if (GetOrCreateOBJ("content/living_room/living_room.obj", objModel))
 	{
-		Transform transform;
-		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
-
-		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		objModel.FinalizeAllMeshes();
-
-		list.push_back(objModel.rootObject);
+		list.push_back(objModel->rootObject);
 	}
 
 	return new HitableList(list);
@@ -687,17 +733,10 @@ HitableList* CreateScene_SibenikCathedral()
 
 	std::vector<Hitable*> list;
 
-	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/sibenik/sibenik.obj", objModel))
+	OBJModel* objModel;
+	if (GetOrCreateOBJ("content/sibenik/sibenik.obj", objModel))
 	{
-		Transform transform;
-		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
-
-		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		objModel.FinalizeAllMeshes();
-
-		list.push_back(objModel.rootObject);
+		list.push_back(objModel->rootObject);
 	}
 
 	return new HitableList(list);
@@ -709,17 +748,10 @@ HitableList* CreateScene_SanMiguel()
 
 	std::vector<Hitable*> list;
 
-	OBJModel objModel;
-	if (OBJLoader::SyncLoad("content/San_Miguel/san-miguel-low-poly.obj", objModel))
+	OBJModel* objModel;
+	if (GetOrCreateOBJ("content/San_Miguel/san-miguel-low-poly.obj", objModel))
 	{
-		Transform transform;
-		transform.Init(vec3(0.0f), Rotator(0.0f, 0.0f, 0.0f), vec3(1.0f));
-
-		std::for_each(objModel.staticMeshes.begin(), objModel.staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		objModel.FinalizeAllMeshes();
-
-		list.push_back(objModel.rootObject);
+		list.push_back(objModel->rootObject);
 	}
 
 	return new HitableList(list);
@@ -745,18 +777,22 @@ HitableList* CreateScene_ObjModel()
 #endif
 
 #if OBJTEST_INCLUDE_TOADTTE
-	OBJModel model;
-	if (OBJLoader::SyncLoad("content/Toadette/Toadette.obj", model))
-	{
+	OBJModel* model;
+	auto transformer = [](OBJModel* inModel) {
 		Transform transform;
 		transform.Init(
 			vec3(0.0f, 0.0f, 0.0f),
 			Rotator(-10.0f, 0.0f, 0.0f),
 			vec3(0.07f, 0.07f, 0.07f));
-		std::for_each(model.staticMeshes.begin(), model.staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); });
-		model.FinalizeAllMeshes();
-		list.push_back(model.rootObject);
+		std::for_each(
+			inModel->staticMeshes.begin(),
+			inModel->staticMeshes.end(),
+			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); }
+		);
+	};
+	if (GetOrCreateOBJ("content/Toadette/Toadette.obj", model))
+	{
+		list.push_back(model->rootObject);
 	}
 #endif
 

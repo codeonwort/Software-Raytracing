@@ -11,6 +11,7 @@ class StaticMesh : public Hitable
 
 public:
 	StaticMesh() {}
+	~StaticMesh();
 
 	void AddTriangle(const Triangle& triangle);
 
@@ -38,6 +39,6 @@ private:
 
 	BVHNode* bvh = nullptr;
 
-	bool locked = false;
+	bool bLocked = false;
 
 };
