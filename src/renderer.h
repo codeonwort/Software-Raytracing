@@ -10,14 +10,18 @@ class Image2D;
 
 using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
 
-enum class EDebugMode {
-	None,
+enum class EDebugMode : uint32 {
+	None = 0,
 	VertexNormal,
 	Texcoord,
 	Reflectance,
 	ReflectanceFromOneBounce, // To debug mirror reflection
 	Emission,
+	
+	MAX,
 };
+
+const char* GetRendererDebugModeString(int32 modeIx);
 
 struct RendererSettings {
 	uint32               viewportWidth;

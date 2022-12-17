@@ -43,7 +43,6 @@ static ProgramArguments g_programArgs;
 #define SAMPLES_PER_PIXEL          10
 #define MAX_RECURSION              5
 #define RAY_T_MIN                  0.0001f
-#define RENDERER_DEBUG_MODE        EDebugMode::None
 
 #define DEFAULT_VIEWPORT_WIDTH     1024
 #define DEFAULT_VIEWPORT_HEIGHT    512
@@ -216,7 +215,7 @@ int main(int argc, char** argv) {
 	rendererSettings.maxPathLength   = MAX_RECURSION;
 	rendererSettings.rayTMin         = RAY_T_MIN;
 	rendererSettings.skyLightFn      = FAKE_SKY_LIGHT;
-	rendererSettings.debugMode       = RENDERER_DEBUG_MODE;
+	rendererSettings.debugMode       = EDebugMode::None;
 	rendererSettings.bRunDenoiser    = INTEL_DENOISER;
 
 	FlushLogThread();
@@ -239,6 +238,7 @@ int main(int argc, char** argv) {
 			std::cout << "viewport w h : set viewport size" << std::endl;
 			std::cout << "moveto x y z : change camera location" << std::endl;
 			std::cout << "lookat x y z : change camera lookat" << std::endl;
+			std::cout << "viewmode n   : change viewmode (enter -1 to see help)" << std::endl;
 			std::cout << "exit         : exit the program" << std::endl;
 		}
 		else if (command == "list")
@@ -338,6 +338,31 @@ int main(int argc, char** argv) {
 				std::cout << "Invalid camera lookat" << std::endl;
 			}
 		}
+		else if (command == "viewmode")
+		{
+			int32 vmode;
+			std::cin >> vmode;
+			if (std::cin.good())
+			{
+				const char* vmodeStr = GetRendererDebugModeString(vmode);
+				if (0 <= vmode && vmode < (int32)EDebugMode::MAX)
+				{
+					rendererSettings.debugMode = (EDebugMode)vmode;
+					std::cout << "Set viewmode = " << vmodeStr << std::endl;
+				}
+				else
+				{
+					for (int32 i = 0; i < (int32)EDebugMode::MAX; ++i)
+					{
+						std::cout << i << " - " << GetRendererDebugModeString(i) << std::endl;
+					}
+				}
+			}
+			else
+			{
+				std::cout << "Invalid viewmode; please enter a number" << std::endl;
+			}
+		}
 		else if (command == "exit")
 		{
 			break;
@@ -392,7 +417,7 @@ void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 	renderer.RenderScene(settings, worldBVH, &camera, &image);
 	// NOTE: I'll input HDR image to denoiser
 
-	if (settings.bRunDenoiser)
+	if (settings.bRunDenoiser && settings.debugMode == EDebugMode::None)
 	{
 #if INTEL_DENOISER
 		// Render aux images

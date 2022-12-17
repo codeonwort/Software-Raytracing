@@ -39,6 +39,24 @@ struct RayPayload {
 	FakeSkyLightFunction fakeSkyLight;
 };
 
+const char* GetRendererDebugModeString(int32 modeIx)
+{
+	static const char* enumStrs[] = {
+		"Default",
+		"Normal",
+		"Texcoord",
+		"Reflectance",
+		"ReflectanceFromOneBounce",
+		"Emission",
+	};
+
+	if (0 <= modeIx && modeIx < (int32)EDebugMode::MAX)
+	{
+		return enumStrs[modeIx];
+	}
+	return nullptr;
+}
+
 vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayload& settings, EDebugMode debugMode) {
 	vec3 debugValue = vec3(0.0f);
 	HitResult hitResult;
