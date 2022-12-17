@@ -154,6 +154,20 @@ public:
 class MicrofacetMaterial : public Material {
 
 public:
+	static MicrofacetMaterial* FromConstants(
+		const vec3& inAlbedo,
+		const float inRoughness,
+		const float inMetallic,
+		const vec3& inEmissive)
+	{
+		MicrofacetMaterial* M = new MicrofacetMaterial;
+		M->albedoFallback = inAlbedo;
+		M->roughnessFallback = inRoughness;
+		M->metallicFallback = inMetallic;
+		M->emissiveFallback = inEmissive;
+		return M;
+	}
+
 	MicrofacetMaterial()
 		: albedoTexture(nullptr)
 		, normalmapTexture(nullptr)

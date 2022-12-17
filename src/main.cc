@@ -145,6 +145,12 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 1.0f, -1.0f)
 	},
 #endif
+	{
+		CreateScene_FourSpheres,
+		"FourSpheres",
+		vec3(0.0f, 0.5f, 3.0f),
+		vec3(0.0f, 0.5f, 0.0f)
+	},
 };
 
 // Keep loaded OBJModel instances to avoid reloading them
@@ -925,14 +931,20 @@ HitableList* CreateScene_RandomSpheres()
 
 HitableList* CreateScene_FourSpheres()
 {
-	//float R = cos(pi<float> / 4.0f);
+	//Material* M_ground = new Lambertian(vec3(0.8f, 0.8f, 0.0f));
+	float groundRoughness = 1.0f; // #todo-wip: Debug microfacet BRDF with roughness = 0
+	Material* M_ground = MicrofacetMaterial::FromConstants(
+		vec3(1.0f), groundRoughness, 0.0f, vec3(0.0f));
+
+	Material* M_left = new Dielectric(1.0f, vec3(1.0f, 0.5f, 0.5f));
+	Material* M_center = new Lambertian(vec3(0.8f, 0.3f, 0.3f));
+	Material* M_right = new Metal(vec3(0.8f, 0.6f, 0.2f), 0.0f);
+
 	std::vector<Hitable*> list;
-	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, new Lambertian(vec3(0.8f, 0.8f, 0.0f))));
-	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, new Lambertian(vec3(0.8f, 0.3f, 0.3f))));
-	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, new Metal(vec3(0.8f, 0.6f, 0.2f), 1.0f)));
-	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Metal(vec3(0.8f, 0.8f, 0.8f), 0.3f)));
-	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   0.5f,  new Dielectric(1.5f)                    ));
-	//list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f),   -0.45f, new Dielectric(1.5f)                    ));
+	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, M_ground));
+	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, M_left));
+	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, M_center));
+	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, M_right));
 	HitableList* world = new HitableList(list);
 	return world;
 }
