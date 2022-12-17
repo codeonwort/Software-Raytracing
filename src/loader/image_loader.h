@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../image.h"
-#include "../template/noncopyable.h"
+#include "image.h"
+#include "template/noncopyable.h"
+#include <memory>
 
 #pragma warning(push)
 #pragma warning(disable: 4819)
@@ -17,6 +18,7 @@ public:
 
 	// Simple load. Create an ImageLoader instance for advanced functionality.
 	static bool SyncLoad(const char* filepath, Image2D& outImage);
+	static bool SyncLoad(const char* filepath, std::shared_ptr<Image2D>& outImage);
 
 public:
 	explicit ImageLoader();

@@ -79,41 +79,44 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	}
 
 	const tinyobj::attrib_t& tiny_attrib = internalLoader.GetAttrib();
-	const std::vector<tinyobj::shape_t>& shapes = internalLoader.GetShapes();
-	const std::vector<tinyobj::material_t>& raw_materials = internalLoader.GetMaterials();
+	const std::vector<tinyobj::shape_t>& tiny_shapes = internalLoader.GetShapes();
+	const std::vector<tinyobj::material_t>& tiny_materials = internalLoader.GetMaterials();
 
-	if (shapes.size() == 0) {
+	if (tiny_shapes.size() == 0)
+	{
 		LOG("%s: No shapes found in: %s", __FUNCTION__, filepath);
 		return false;
 	}
 
 	LOG("%s: Load %s", __FUNCTION__, filepath);
-	LOG("\tTotal shapes: %d", (int32)shapes.size());
+	LOG("\tTotal shapes: %d", (int32)tiny_shapes.size());
 	LOG("\tTotal vertices: %d", (int32)(tiny_attrib.vertices.size() / 3));
-	LOG("\tTotal materials: %d", (int32)raw_materials.size());
+	LOG("\tTotal materials: %d", (int32)tiny_materials.size());
 
 	// Used for faces whose materials are not specified.
 	Lambertian* const fallbackMaterial = new Lambertian(vec3(0.5f, 0.5f, 0.5f));
 
-	LOG("Parsing materials...");
-	ParseMaterials(filepath, raw_materials, materials);
+	LOG("Parsing %u materials...", tiny_materials.size());
+	PreloadImages(filepath, tiny_materials);
+	ParseMaterials(filepath, tiny_materials, materials);
 
 	vec3 localMinBound(FLOAT_MAX, FLOAT_MAX, FLOAT_MAX);
 	vec3 localMaxBound(-FLOAT_MAX, -FLOAT_MAX, -FLOAT_MAX);
-	for (auto i = 0u; i < tiny_attrib.vertices.size(); i += 3) {
+	for (auto i = 0u; i < tiny_attrib.vertices.size(); i += 3)
+	{
 		vec3 v(tiny_attrib.vertices[i], tiny_attrib.vertices[i + 1], tiny_attrib.vertices[i + 2]);
 		localMinBound = min(localMinBound, v);
 		localMaxBound = max(localMaxBound, v);
 	}
 
 	// Convert each tinyobj::shape_t into a StaticMesh.
-	LOG("Parsing shapes...");
+	LOG("Parsing %u shapes...", tiny_shapes.size());
 	int32 shapeIx = 0;
 	int32 DEBUG_numInvalidTexcoords = 0;
 
-	for (const tinyobj::shape_t& shape : shapes)
+	for (const tinyobj::shape_t& shape : tiny_shapes)
 	{
-		LOG("\tParsing shape %d: %s", shapeIx++, shape.name.c_str() ? shape.name.c_str() : "<noname>");
+		//LOG("\tParsing shape %d: %s", shapeIx++, shape.name.c_str() ? shape.name.c_str() : "<noname>");
 
 		// Temp storages for current shape.
 		std::vector<Triangle> triangles;
@@ -237,7 +240,43 @@ bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 	return true;
 }
 
-void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tinyobj::material_t>& inRawMaterials, std::vector<Material*>& outMaterials)
+void OBJLoader::PreloadImages(
+	const std::string& objpath,
+	const std::vector<tinyobj::material_t>& tinyMaterials)
+{
+	auto LoadImage = [&objpath, &imageDB = this->imageDB](const std::string& inFilename)
+	{
+		if (inFilename.size() > 0 && imageDB.find(inFilename) == imageDB.end())
+		{
+			std::string basedir;
+			if (objpath.find_last_of("/\\") != std::string::npos)
+			{
+				basedir = objpath.substr(0, objpath.find_last_of("/\\") + 1);
+				std::string filepath = ResourceFinder::Get().Find(basedir + inFilename);
+
+				std::shared_ptr<Image2D> image = std::make_shared<Image2D>();
+				ImageLoader::SyncLoad(filepath.data(), *image);
+				imageDB.insert(std::make_pair(inFilename, image));
+			}
+		}
+	};
+
+	for (const tinyobj::material_t& material : tinyMaterials)
+	{
+		LoadImage(material.diffuse_texname);
+		LoadImage(material.roughness_texname);
+		LoadImage(material.metallic_texname);
+		LoadImage(material.emissive_texname);
+		LoadImage(material.normal_texname);
+	}
+
+	LOG("\t%u image files has been loaded", imageDB.size());
+}
+
+void OBJLoader::ParseMaterials(
+	const std::string& objpath,
+	const std::vector<tinyobj::material_t>& inRawMaterials,
+	std::vector<Material*>& outMaterials)
 {
 	int32 nMaterials = (int32)inRawMaterials.size();
 	outMaterials.resize(nMaterials, nullptr);
@@ -257,7 +296,7 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 	{
 		const tinyobj::material_t& rawMaterial = inRawMaterials[i];
 
-		LOG("\tParsing material %d: %s", i, rawMaterial.name.c_str() ? rawMaterial.name.c_str() : "<noname>");
+		//LOG("\tParsing material %d: %s", i, rawMaterial.name.c_str() ? rawMaterial.name.c_str() : "<noname>");
 
 		// #todo-obj: Parse every data in the material
 		// PBR extension in tiny_obj_loader.h
@@ -277,35 +316,20 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		std::string normal_texname;     // norm. For normal mapping.
 #endif
 
-		Image2D albedoImage;
-		Image2D roughnessImage;
-		Image2D metallicImage;
-		Image2D emissiveImage;
-		Image2D normalImage;
-
-		bool albedoImageValid;
-		bool roughnessImageValid;
-		bool metallicImageValid;
-		bool emissiveImageValid;
-		bool normalImageValid;
-
-		auto LoadImage = [&basedir](const std::string& inFilename, Image2D& outImage, bool& outValid)
-		{
-			if (inFilename.size() == 0)
+		auto FindImage = [&imageDB = this->imageDB](const std::string& filename) {
+			auto it = imageDB.find(filename);
+			if (it != imageDB.end())
 			{
-				outValid = false;
-				return;
+				return it->second;
 			}
-			std::string filepath = ResourceFinder::Get().Find(basedir + inFilename);
-			outValid = ImageLoader::SyncLoad(filepath.data(), outImage);
+			return std::shared_ptr<Image2D>();
 		};
 
-		// #todo-wip: Multiple materials may share same image files
-		LoadImage(rawMaterial.diffuse_texname, albedoImage, albedoImageValid);
-		LoadImage(rawMaterial.roughness_texname, roughnessImage, roughnessImageValid);
-		LoadImage(rawMaterial.metallic_texname, metallicImage, metallicImageValid);
-		LoadImage(rawMaterial.emissive_texname, emissiveImage, emissiveImageValid);
-		LoadImage(rawMaterial.normal_texname, normalImage, normalImageValid);
+		std::shared_ptr<Image2D> albedoImage = FindImage(rawMaterial.diffuse_texname);
+		std::shared_ptr<Image2D> roughnessImage = FindImage(rawMaterial.roughness_texname);
+		std::shared_ptr<Image2D> metallicImage = FindImage(rawMaterial.metallic_texname);
+		std::shared_ptr<Image2D> emissiveImage = FindImage(rawMaterial.emissive_texname);
+		std::shared_ptr<Image2D> normalImage = FindImage(rawMaterial.normal_texname);
 
 		bool bTransparentIllum = (rawMaterial.illum == 4 || rawMaterial.illum == 6);
 		bool bZeroDiffuse = rawMaterial.diffuse_texname.size() == 0
@@ -332,11 +356,11 @@ void OBJLoader::ParseMaterials(const std::string& objpath, const std::vector<tin
 		{
 			MicrofacetMaterial* M = new MicrofacetMaterial;
 
-			if (albedoImageValid) M->SetAlbedoTexture(albedoImage);
-			if (normalImageValid) M->SetNormalTexture(normalImage);
-			if (roughnessImageValid) M->SetRoughnessTexture(roughnessImage);
-			if (metallicImageValid) M->SetMetallicTexture(metallicImage);
-			if (emissiveImageValid) M->SetEmissiveTexture(emissiveImage);
+			if (albedoImage) M->SetAlbedoTexture(albedoImage);
+			if (normalImage) M->SetNormalTexture(normalImage);
+			if (roughnessImage) M->SetRoughnessTexture(roughnessImage);
+			if (metallicImage) M->SetMetallicTexture(metallicImage);
+			if (emissiveImage) M->SetEmissiveTexture(emissiveImage);
 
 			M->SetAlbedoFallback(vec3(rawMaterial.diffuse[0], rawMaterial.diffuse[1], rawMaterial.diffuse[2]));
 			// #todo-obj: tinyobjloader's roughness defaults to 0.0 if not specified, but it means every materials gonna be specular.

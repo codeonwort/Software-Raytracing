@@ -92,7 +92,6 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 1.0f, -1.5f),
 		60.0f,
 	},
-	// #todo-obj: 7602 materials?????? There's only ~40 materials in living_room.mtl...
 	{
 		CreateScene_LivingRoom,
 		"LivingRoom",
@@ -108,13 +107,13 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, -11.5f, 0.0f),
 		60.0f
 	},
-	// #todo-obj: Again bloated number of materials.
+	// #todo-wip: Render a OBJ multiple times without reloading it.
 	// Also not included in Setup.ps1 as this model is too big.
 	{
 		CreateScene_SanMiguel,
 		"SanMiguel",
-		vec3(0.0f, 0.0f, 0.0f),
-		vec3(0.0f, 0.0f, 1.0f),
+		vec3(10.0f, 3.0f, 5.0f),
+		vec3(15.0f, 3.0f, 5.0f),
 		60.0f
 	},
 #if 0
@@ -164,7 +163,6 @@ void DestroySubsystems() {
 
 void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings);
 
-// #todo-wip: Run a (input command -> execute command) loop.
 int main(int argc, char** argv) {
 	LOG("=== Software Raytracer ===");
 
@@ -204,6 +202,7 @@ int main(int argc, char** argv) {
 			std::cout << "denoiser n   : toggle denoiser (0/1)" << std::endl;
 			std::cout << "spp n        : set samplers per pixel" << std::endl;
 			std::cout << "viewport w h : set viewport size" << std::endl;
+			// #todo-wip: moveto, lookat
 			std::cout << "exit         : exit the program" << std::endl;
 		}
 		else if (command == "list")
@@ -736,7 +735,7 @@ HitableList* CreateScene_ObjModel()
 	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat2));
 #endif
 
-	Image2D img;
+	std::shared_ptr<Image2D> img;
 	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
 	{
 		MicrofacetMaterial* pbr_mat = new MicrofacetMaterial;

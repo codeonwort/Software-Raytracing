@@ -21,6 +21,12 @@ bool ImageLoader::SyncLoad(const char* filepath, Image2D& outImage)
 	return loader.LoadSynchronous(filepath, outImage);
 }
 
+bool ImageLoader::SyncLoad(const char* filepath, std::shared_ptr<Image2D>& outImage)
+{
+	outImage = std::make_shared<Image2D>();
+	return SyncLoad(filepath, *outImage.get());
+}
+
 ImageLoader::ImageLoader()
 {
 }

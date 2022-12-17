@@ -167,7 +167,7 @@ public:
 	{
 	}
 
-	void SetAlbedoTexture(const Image2D& inImage) {
+	void SetAlbedoTexture(std::shared_ptr<Image2D> inImage) {
 		if (albedoTexture) delete albedoTexture;
 		albedoTexture = Texture2D::CreateFromImage2D(inImage);
 
@@ -175,19 +175,19 @@ public:
 		sampler.bSRGB = true;
 		albedoTexture->SetSamplerState(sampler);
 	}
-	void SetNormalTexture(const Image2D& inImage) {
+	void SetNormalTexture(std::shared_ptr<Image2D> inImage) {
 		if (normalmapTexture) delete normalmapTexture;
 		normalmapTexture = Texture2D::CreateFromImage2D(inImage);
 	}
-	void SetRoughnessTexture(const Image2D& inImage) {
+	void SetRoughnessTexture(std::shared_ptr<Image2D> inImage) {
 		if (roughnessTexture) delete roughnessTexture;
 		roughnessTexture = Texture2D::CreateFromImage2D(inImage);
 	}
-	void SetMetallicTexture(const Image2D& inImage) {
+	void SetMetallicTexture(std::shared_ptr<Image2D> inImage) {
 		if (metallicTexture) delete metallicTexture;
 		metallicTexture = Texture2D::CreateFromImage2D(inImage);
 	}
-	void SetEmissiveTexture(const Image2D& inImage) {
+	void SetEmissiveTexture(std::shared_ptr<Image2D> inImage) {
 		if (emissiveTexture) delete emissiveTexture;
 		emissiveTexture = Texture2D::CreateFromImage2D(inImage);
 	}

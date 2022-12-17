@@ -5,7 +5,7 @@
 #include "template/noncopyable.h"
 
 #include <vector>
-
+#include <memory>
 
 enum class ETextureFilter : uint8
 {
@@ -39,22 +39,20 @@ class Texture2D : public Noncopyable
 
 public:
 	// Create a texture from single mipmap
-	static Texture2D* CreateFromImage2D(const Image2D& inImage);
+	static Texture2D* CreateFromImage2D(std::shared_ptr<Image2D> inImage);
 
 	static Texture2D* CreateSolidColor(const Pixel& inColor);
 	
 public:
 	Texture2D(uint32 numMipmaps);
 
-	void SetData(uint32 mipLevel, const Image2D& image);
+	void SetData(uint32 mipLevel, std::shared_ptr<Image2D> image);
 	void SetSamplerState(const SamplerState& inSampler) { sampler = inSampler; }
 
 	Pixel Sample(float u, float v);
 
 private:
-	void FixUV(float& u, float& v);
-
-	std::vector<Image2D> mipmaps;
+	std::vector<std::shared_ptr<Image2D>> mipmaps;
 	SamplerState sampler;
 
 };
