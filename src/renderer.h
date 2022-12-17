@@ -23,6 +23,9 @@ struct RendererSettings {
 	uint32               viewportWidth;
 	uint32               viewportHeight;
 
+	vec3                 cameraLocation;
+	vec3                 cameraLookat;
+
 	int32                samplesPerPixel;
 	int32                maxPathLength;
 	float                rayTMin;

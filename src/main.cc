@@ -177,6 +177,8 @@ int main(int argc, char** argv) {
 	RendererSettings rendererSettings;
 	rendererSettings.viewportWidth   = DEFAULT_VIEWPORT_WIDTH;
 	rendererSettings.viewportHeight  = DEFAULT_VIEWPORT_HEIGHT;
+	rendererSettings.cameraLocation  = g_sceneDescs[currentSceneID].cameraLocation;
+	rendererSettings.cameraLookat    = g_sceneDescs[currentSceneID].cameraLookat;
 	rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
 	rendererSettings.maxPathLength   = MAX_RECURSION;
 	rendererSettings.rayTMin         = RAY_T_MIN;
@@ -197,12 +199,13 @@ int main(int argc, char** argv) {
 		if (command == "help")
 		{
 			std::cout << "list         : print all default scene descs" << std::endl;
-			std::cout << "select n     : select a scene to render" << std::endl;
+			std::cout << "select n     : select a scene to render (also reset the camera)" << std::endl;
 			std::cout << "run          : render the scene currently selected" << std::endl;
 			std::cout << "denoiser n   : toggle denoiser (0/1)" << std::endl;
 			std::cout << "spp n        : set samplers per pixel" << std::endl;
 			std::cout << "viewport w h : set viewport size" << std::endl;
-			// #todo-wip: moveto, lookat
+			std::cout << "moveto x y z : change camera location" << std::endl;
+			std::cout << "lookat x y z : change camera lookat" << std::endl;
 			std::cout << "exit         : exit the program" << std::endl;
 		}
 		else if (command == "list")
@@ -217,6 +220,9 @@ int main(int argc, char** argv) {
 			std::cin >> currentSceneID;
 			if (currentSceneID >= _countof(g_sceneDescs)) currentSceneID = 0;
 			std::cout << "select: " << g_sceneDescs[currentSceneID].sceneName << std::endl;
+
+			rendererSettings.cameraLocation = g_sceneDescs[currentSceneID].cameraLocation;
+			rendererSettings.cameraLookat = g_sceneDescs[currentSceneID].cameraLookat;
 		}
 		else if (command == "run")
 		{
@@ -260,6 +266,32 @@ int main(int argc, char** argv) {
 				std::cout << "Invalid viewport size" << std::endl;
 			}
 		}
+		else if (command == "moveto")
+		{
+			float x, y, z;
+			std::cin >> x >> y >> z;
+			if (std::cin.good())
+			{
+				rendererSettings.cameraLocation = vec3(x, y, z);
+			}
+			else
+			{
+				std::cout << "Invalid camera location" << std::endl;
+			}
+		}
+		else if (command == "lookat")
+		{
+			float x, y, z;
+			std::cin >> x >> y >> z;
+			if (std::cin.good())
+			{
+				rendererSettings.cameraLookat = vec3(x, y, z);
+			}
+			else
+			{
+				std::cout << "Invalid camera lookat" << std::endl;
+			}
+		}
 		else if (command == "exit")
 		{
 			break;
@@ -296,13 +328,13 @@ void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 		sceneDesc.createSceneFn(), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 
 	Camera camera(
-		sceneDesc.cameraLocation,
-		sceneDesc.cameraLookat,
+		settings.cameraLocation,
+		settings.cameraLookat,
 		DEFAULT_CAMERA_UP,
 		sceneDesc.fovY,
 		settings.getViewportAspectWH(),
 		CAMERA_APERTURE,
-		(sceneDesc.cameraLocation - sceneDesc.cameraLookat).Length(),
+		(settings.cameraLocation - settings.cameraLookat).Length(),
 		CAMERA_BEGIN_CAPTURE,
 		CAMERA_END_CAPTURE);
 
