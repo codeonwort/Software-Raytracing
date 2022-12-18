@@ -51,6 +51,7 @@ static ProgramArguments g_programArgs;
 #define DEFAULT_CAMERA_UP          vec3(0.0f, 1.0f, 0.0f)
 #define DEFAULT_FOV_Y              45.0f
 
+// #todo-lighting: Merge sky atmosphere and Sun as a single 'distant light'?
 vec3 FAKE_SKY_LIGHT(const vec3& dir)
 {
 	// #todo-lighting: Should be real sky atmosphere
@@ -81,9 +82,11 @@ struct SceneDesc
 {
 	std::function<HitableList*(void)> createSceneFn;
 	std::string sceneName;
-	vec3 cameraLocation = DEFAULT_CAMERA_LOCATION;
-	vec3 cameraLookat   = DEFAULT_CAMERA_LOOKAT;
-	float fovY          = DEFAULT_FOV_Y;
+	vec3 cameraLocation             = DEFAULT_CAMERA_LOCATION;
+	vec3 cameraLookat               = DEFAULT_CAMERA_LOOKAT;
+	float fovY                      = DEFAULT_FOV_Y;
+	FakeSkyLightFunction skyLightFn = FAKE_SKY_LIGHT;
+	FakeSunLightFunction sunLightFn = FAKE_SUN_LIGHT;
 };
 
 SceneDesc g_sceneDescs[] = {
@@ -138,12 +141,21 @@ SceneDesc g_sceneDescs[] = {
 		vec3(15.0f, 3.0f, 5.0f),
 		60.0f
 	},
+	{
+		CreateScene_FourSpheres,
+		"FourSpheres",
+		vec3(0.0f, 0.5f, 3.0f),
+		vec3(0.0f, 0.5f, 0.0f)
+	},
 #if 0
 	{
 		CreateScene_ObjModel,
 		"ObjTest",
 		vec3(3.0f, 1.0f, 3.0f),
-		vec3(0.0f, 1.0f, -1.0f)
+		vec3(0.0f, 1.0f, -1.0f),
+		DEFAULT_FOV_Y,
+		nullptr, // no sky light
+		nullptr  // no sun light
 	},
 	{
 		CreateScene_CarShowRoom,
@@ -152,12 +164,6 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 1.0f, -1.0f)
 	},
 #endif
-	{
-		CreateScene_FourSpheres,
-		"FourSpheres",
-		vec3(0.0f, 0.5f, 3.0f),
-		vec3(0.0f, 0.5f, 0.0f)
-	},
 };
 
 // Keep loaded OBJModel instances to avoid reloading them
@@ -227,8 +233,8 @@ int main(int argc, char** argv) {
 	rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
 	rendererSettings.maxPathLength   = MAX_RECURSION;
 	rendererSettings.rayTMin         = RAY_T_MIN;
-	rendererSettings.skyLightFn      = FAKE_SKY_LIGHT;
-	rendererSettings.sunLightFn      = FAKE_SUN_LIGHT;
+	rendererSettings.skyLightFn      = g_sceneDescs[currentSceneID].skyLightFn;
+	rendererSettings.sunLightFn      = g_sceneDescs[currentSceneID].sunLightFn;
 	rendererSettings.debugMode       = EDebugMode::None;
 	rendererSettings.bRunDenoiser    = INTEL_DENOISER;
 
@@ -279,6 +285,8 @@ int main(int argc, char** argv) {
 
 			rendererSettings.cameraLocation = g_sceneDescs[currentSceneID].cameraLocation;
 			rendererSettings.cameraLookat = g_sceneDescs[currentSceneID].cameraLookat;
+			rendererSettings.skyLightFn = g_sceneDescs[currentSceneID].skyLightFn;
+			rendererSettings.sunLightFn = g_sceneDescs[currentSceneID].sunLightFn;
 			if (prevSceneID != currentSceneID)
 			{
 				g_objContainer.clear();
@@ -829,7 +837,7 @@ HitableList* CreateScene_ObjModel()
 			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); }
 		);
 	};
-	if (GetOrCreateOBJ("content/Toadette/Toadette.obj", model))
+	if (GetOrCreateOBJ("content/Toadette/Toadette.obj", model, transformer))
 	{
 		list.push_back(model->rootObject);
 	}
@@ -886,7 +894,7 @@ HitableList* CreateScene_ObjModel()
 		MicrofacetMaterial* mat = new MicrofacetMaterial;
 		mat->SetAlbedoFallback(color);
 		//mat->SetAlbedoFallback(vec3(0.9f));
-		mat->SetRoughnessFallback(0.05f);
+		mat->SetRoughnessFallback(0.9f);
 		//mat->SetMetallicFallback(1.0f);
 #endif
 
