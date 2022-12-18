@@ -53,8 +53,15 @@ static ProgramArguments g_programArgs;
 
 vec3 FAKE_SKY_LIGHT(const vec3& dir)
 {
+	// #todo-lighting: Should be real sky atmosphere
+	// that involves interaction with sun light.
 	float t = 0.5f * (dir.y + 1.0f);
-	return 3.0f * ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+	return ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+}
+void FAKE_SUN_LIGHT(vec3& outDir, vec3& outIlluminance)
+{
+	outDir = normalize(vec3(0.0f, -1.0f, -0.5f));
+	outIlluminance = vec3(20.0f);
 }
 
 // Demo scenes
@@ -221,6 +228,7 @@ int main(int argc, char** argv) {
 	rendererSettings.maxPathLength   = MAX_RECURSION;
 	rendererSettings.rayTMin         = RAY_T_MIN;
 	rendererSettings.skyLightFn      = FAKE_SKY_LIGHT;
+	rendererSettings.sunLightFn      = FAKE_SUN_LIGHT;
 	rendererSettings.debugMode       = EDebugMode::None;
 	rendererSettings.bRunDenoiser    = INTEL_DENOISER;
 

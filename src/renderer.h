@@ -9,6 +9,7 @@ class Camera;
 class Image2D;
 
 using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
+using FakeSunLightFunction = std::function<void(vec3& outDir, vec3& outIlluminance)>;
 
 enum class EDebugMode : uint32 {
 	None = 0,
@@ -24,19 +25,23 @@ enum class EDebugMode : uint32 {
 const char* GetRendererDebugModeString(int32 modeIx);
 
 struct RendererSettings {
+	// Camera properties
 	uint32               viewportWidth;
 	uint32               viewportHeight;
-
 	vec3                 cameraLocation;
 	vec3                 cameraLookat;
 
+	// Path tracing options
 	int32                samplesPerPixel;
 	int32                maxPathLength;
 	float                rayTMin;
 
+	// Global lighting environment
 	FakeSkyLightFunction skyLightFn      = nullptr;
-	EDebugMode           debugMode       = EDebugMode::None;
+	FakeSunLightFunction sunLightFn      = nullptr;
 
+	// System values
+	EDebugMode           debugMode       = EDebugMode::None;
 	bool                 bRunDenoiser    = false;
 
 	inline float getViewportAspectWH() const {
@@ -44,7 +49,8 @@ struct RendererSettings {
 	}
 };
 
-class Renderer {
+class Renderer
+{
 	
 public:
 	void RenderScene(
@@ -52,8 +58,5 @@ public:
 		const Hitable* world,
 		const Camera* camera,
 		Image2D* outImage);
-
-private:
-	//
 
 };

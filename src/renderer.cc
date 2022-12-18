@@ -36,7 +36,6 @@ struct WorkCell {
 struct RayPayload {
 	int32 maxRecursion;
 	float rayTMin;
-	FakeSkyLightFunction fakeSkyLight;
 };
 
 const char* GetRendererDebugModeString(int32 modeIx)
@@ -88,8 +87,16 @@ vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayl
 }
 
 // Run path tracing to find incoming radiance.
-vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPayload& settings, FakeSkyLightFunction skyLightFn) {
-	if (depth >= settings.maxRecursion) {
+vec3 TraceScene(
+	const ray& pathRay,
+	const Hitable* world,
+	int depth,
+	const RayPayload& settings,
+	FakeSkyLightFunction skyLightFn,
+	FakeSunLightFunction sunLightFn)
+{
+	if (depth >= settings.maxRecursion)
+	{
 		return vec3(0.0f);
 	}
 
@@ -97,7 +104,8 @@ vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPa
 	// #todo-pbr: Still not sure if I did importance sampling right. Verify again.
 
 	HitResult hitResult;
-	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult)) {
+	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult))
+	{
 		hitResult.BuildOrthonormalBasis();
 
 		vec3 radiance(0.0f);
@@ -106,9 +114,11 @@ vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPa
 		vec3 reflectance;
 		ray scatteredRay;
 		float pdf;
-		if (hitResult.material->Scatter(pathRay, hitResult, reflectance, scatteredRay, pdf)) {
-			if (pdf > 0.0f) {
-				vec3 Li = TraceScene(scatteredRay, world, depth + 1, settings, skyLightFn);
+		if (hitResult.material->Scatter(pathRay, hitResult, reflectance, scatteredRay, pdf))
+		{
+			if (pdf > 0.0f)
+			{
+				vec3 Li = TraceScene(scatteredRay, world, depth + 1, settings, skyLightFn, sunLightFn);
 				float scatteringPdf = hitResult.material->ScatteringPdf(hitResult, -pathRay.d, scatteredRay.d);
 				radiance += reflectance * Li * scatteringPdf / pdf;
 			}
@@ -121,16 +131,35 @@ vec3 TraceScene(const ray& pathRay, const Hitable* world, int depth, const RayPa
 		return radiance;
 	}
 
-	if (skyLightFn != nullptr) {
+	// If hit nothing, get incoming radiance from sky atmosphere and Sun.
+	vec3 missResult(0.0f);
+	if (skyLightFn != nullptr)
+	{
 		vec3 dir = pathRay.d;
 		dir.Normalize();
-		return skyLightFn(dir);
+		missResult += skyLightFn(dir);
 	}
-	return vec3(0.0f, 0.0f, 0.0f);
+	if (sunLightFn != nullptr)
+	{
+		vec3 sunDir, sunIlluminance;
+		sunLightFn(sunDir, sunIlluminance);
+		ray rayToSun(pathRay.o, -sunDir, pathRay.t);
+		if (!world->Hit(rayToSun, settings.rayTMin, FLOAT_MAX, hitResult))
+		{
+			missResult += sunIlluminance;
+		}
+	}
+	return missResult;
 }
 // Initial ray is a camera ray.
-vec3 TraceScene(const ray& cameraRay, const Hitable* world, const RayPayload& settings, FakeSkyLightFunction skyLightFn) {
-	return TraceScene(cameraRay, world, 0, settings, skyLightFn);
+vec3 TraceScene(
+	const ray& cameraRay,
+	const Hitable* world,
+	const RayPayload& settings,
+	FakeSkyLightFunction skyLightFn,
+	FakeSunLightFunction sunLightFn)
+{
+	return TraceScene(cameraRay, world, 0, settings, skyLightFn, sunLightFn);
 }
 
 void GenerateCell(const WorkItemParam* param) {
@@ -162,8 +191,13 @@ void GenerateCell(const WorkItemParam* param) {
 						u += (randomsAA.Peek() - 0.5f) * 2.0f / imageWidth;
 						v += (randomsAA.Peek() - 0.5f) * 2.0f / imageHeight;
 					}
-					ray r = cell->camera->GetRay(u, v);
-					vec3 scene = TraceScene(r, cell->world, rtSettings, cell->rendererSettings.skyLightFn);
+					ray cameraRay = cell->camera->GetRay(u, v);
+					vec3 scene = TraceScene(
+						cameraRay,
+						cell->world,
+						rtSettings,
+						cell->rendererSettings.skyLightFn,
+						cell->rendererSettings.sunLightFn);
 					accum += scene;
 				}
 				accum /= (float)SPP;
@@ -180,8 +214,12 @@ void GenerateCell(const WorkItemParam* param) {
 			for (int32 x = cell->x; x < endX; ++x) {
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
-				ray r = cell->camera->GetRay(u, v);
-				vec3 debugValue = TraceSceneDebugMode(r, cell->world, rtSettings, cell->rendererSettings.debugMode);
+				ray cameraRay = cell->camera->GetRay(u, v);
+				vec3 debugValue = TraceSceneDebugMode(
+					cameraRay,
+					cell->world,
+					rtSettings,
+					cell->rendererSettings.debugMode);
 				Pixel px(debugValue.x, debugValue.y, debugValue.z);
 				cell->image->SetPixel(x, y, px);
 			}
