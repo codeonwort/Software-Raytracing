@@ -14,11 +14,11 @@ class Material;
 
 struct HitResult
 {
-	float     t; // ray.at(t) = p
-	vec3      p; // position (world space)
-	vec3      n; // normal (world space)
+	float     t; // Ray hit time (ray.at(t) = p)
+	vec3      p; // Hit position (world space)
+	vec3      n; // Surface normal (world space)
 
-	// surface parameterization
+	// Surface parameterization
 	float     paramU;
 	float     paramV;
 
@@ -29,6 +29,7 @@ public:
 	vec3 LocalToWorld(const vec3& localDirection) const;
 	vec3 WorldToLocal(const vec3& worldDirection) const;
 private:
+	// Tangent frame around surface normal
 	vec3 tangent;
 	vec3 bitangent;
 };
@@ -52,25 +53,25 @@ class HitableList : public Hitable
 public:
 	HitableList() {}
 	HitableList(std::vector<Hitable*> inList)
-		: list(inList)
+		: hitables(inList)
 	{}
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
 
 	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override
 	{
-		if (list.size() == 0) return false;
+		if (hitables.size() == 0) return false;
 
 		AABB box;
-		bool first_true = list[0]->BoundingBox(t0, t1, box);
+		bool first_true = hitables[0]->BoundingBox(t0, t1, box);
 		if (!first_true)
 		{
 			return false;
 		}
-		for (auto i = 1; i < list.size(); ++i)
+		for (auto i = 1; i < hitables.size(); ++i)
 		{
 			AABB tempBox;
-			if (list[i]->BoundingBox(t0, t1, tempBox))
+			if (hitables[i]->BoundingBox(t0, t1, tempBox))
 			{
 				box = box + tempBox;
 			}
@@ -83,5 +84,5 @@ public:
 		return true;
 	}
 
-	std::vector<Hitable*> list;
+	std::vector<Hitable*> hitables;
 };

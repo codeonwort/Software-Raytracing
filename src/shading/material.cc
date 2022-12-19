@@ -125,10 +125,6 @@ bool MicrofacetMaterial::Scatter(
 		Pixel albedoPixel = albedoTexture->Sample(hitResult.paramU, hitResult.paramV);
 		baseColor = albedoPixel.RGBToVec3() * albedoPixel.a;
 	}
-	if (normalmapTexture) {
-		vec3 localN = normalmapTexture->Sample(hitResult.paramU, hitResult.paramV).RGBToVec3();
-		// #todo-pbr: Rotate localN around N (normal mapping)
-	}
 	if (roughnessTexture) {
 		roughness = roughnessTexture->Sample(hitResult.paramU, hitResult.paramV).r;
 	}
@@ -142,7 +138,7 @@ bool MicrofacetMaterial::Scatter(
 	metallic = 0.0f;
 #endif
 
-	vec3 N = vec3(0.0f, 0.0f, 1.0f);
+	vec3 N = GetMicrosurfaceNormal(hitResult);
 	vec3 Wo = hitResult.WorldToLocal(-pathRay.d);
 	vec3 Wi;
 	
@@ -204,7 +200,7 @@ float MicrofacetMaterial::ScatteringPdf(
 	if (wh.z < 0.0f) {
 		wh.z = -wh.z;
 	}
-	vec3 n(0.0f, 0.0f, 1.0f);
+	vec3 n = GetMicrosurfaceNormal(hitResult);
 
 	float roughness = roughnessFallback;
 	if (roughnessTexture) {
@@ -219,11 +215,22 @@ float MicrofacetMaterial::ScatteringPdf(
 	return D * absDot(wh, hitResult.n);
 }
 
-bool MicrofacetMaterial::AlphaTest(float texcoordU, float texcoordV)
+bool MicrofacetMaterial::AlphaTest(float texcoordU, float texcoordV) const
 {
 	if (albedoTexture != nullptr) {
 		Pixel albedoPixel = albedoTexture->Sample(texcoordU, texcoordV);
 		return albedoPixel.a >= CUTOUT_ALPHA;
 	}
 	return true;
+}
+
+vec3 MicrofacetMaterial::GetMicrosurfaceNormal(const HitResult& hitResult) const
+{
+	if (normalmapTexture)
+	{
+		vec3 N = normalmapTexture->Sample(hitResult.paramU, hitResult.paramV).RGBToVec3();
+		N = normalize(2.0f * N - 1.0f);
+		return N;
+	}
+	return vec3(0.0f, 0.0f, 1.0f);
 }

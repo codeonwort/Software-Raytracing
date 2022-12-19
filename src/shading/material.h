@@ -37,7 +37,9 @@ public:
 		return 1.0f / BRDF::PI;
 	}
 
-	virtual bool AlphaTest(float texcoordU, float texcoordV) { return true; }
+	virtual bool AlphaTest(float texcoordU, float texcoordV) const { return true; }
+	// In local tangent space
+	virtual vec3 GetMicrosurfaceNormal(const HitResult& hitResult) const { return vec3(0.0f, 0.0f, 1.0f); }
 };
 
 class DiffuseLight : public Material
@@ -223,7 +225,8 @@ public:
 		const vec3& Wo,
 		const vec3& Wi) const override;
 
-	virtual bool AlphaTest(float texcoordU, float texcoordV) override;
+	virtual bool AlphaTest(float texcoordU, float texcoordV) const override;
+	virtual vec3 GetMicrosurfaceNormal(const HitResult& hitResult) const override;
 
 private:
 	Texture2D* albedoTexture;

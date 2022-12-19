@@ -3,7 +3,7 @@
 #include <algorithm>
 
 BVHNode::BVHNode(HitableList* list, float t0, float t1)
-	: BVHNode(list->list.data(), (int32)list->list.size(), t0, t1)
+	: BVHNode(list->hitables.data(), (int32)list->hitables.size(), t0, t1)
 {
 }
 

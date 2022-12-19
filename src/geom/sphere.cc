@@ -1,6 +1,6 @@
 #include "sphere.h"
 
-bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& result) const
+bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 {
 	vec3 oc = r.o - center;
 	float a = dot(r.d, r.d);
@@ -10,24 +10,36 @@ bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& result) cons
 
 	if (D > 0.0f)
 	{
+		bool bHit = false;
+
 		float temp = (-b - sqrt(b * b - a * c)) / a;
 		if (t_min < temp && temp < t_max)
 		{
-			result.t = temp;
-			result.p = r.at(result.t);
-			result.n = (result.p - center) / radius;
-			result.material = material;
-			return true;
+			outResult.t = temp;
+			outResult.p = r.at(outResult.t);
+			outResult.n = (outResult.p - center) / radius;
+			outResult.material = material;
+			bHit = true;
 		}
-		temp = (-b + sqrt(b * b - a * c)) / a;
-		if (t_min < temp && temp < t_max)
+		if (!bHit)
 		{
-			result.t = temp;
-			result.p = r.at(result.t);
-			result.n = (result.p - center) / radius;
-			result.material = material;
-			return true;
+			temp = (-b + sqrt(b * b - a * c)) / a;
+			if (t_min < temp && temp < t_max)
+			{
+				outResult.t = temp;
+				outResult.p = r.at(outResult.t);
+				outResult.n = (outResult.p - center) / radius;
+				outResult.material = material;
+				bHit = true;
+			}
 		}
+		if (bHit)
+		{
+			vec3 op = outResult.p - center;
+			outResult.paramU = ::atanf(op.y / op.x);
+			outResult.paramV = ::acosf(op.z / radius);
+		}
+		return bHit;
 	}
 	return false;
 }

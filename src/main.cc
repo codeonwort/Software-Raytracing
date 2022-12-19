@@ -133,7 +133,6 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, -11.5f, 0.0f),
 		60.0f
 	},
-	// Not included in Setup.ps1 as this model is too big.
 	{
 		CreateScene_SanMiguel,
 		"SanMiguel",
@@ -145,7 +144,10 @@ SceneDesc g_sceneDescs[] = {
 		CreateScene_FourSpheres,
 		"FourSpheres",
 		vec3(0.0f, 0.5f, 3.0f),
-		vec3(0.0f, 0.5f, 0.0f)
+		vec3(0.0f, 0.5f, 0.0f),
+		DEFAULT_FOV_Y,
+		FAKE_SKY_LIGHT,
+		nullptr
 	},
 #if 0
 	{
@@ -452,7 +454,7 @@ void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 		RendererSettings debugSettings = settings;
 		debugSettings.debugMode = EDebugMode::Reflectance;
 		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageAlbedo);
-		debugSettings.debugMode = EDebugMode::VertexNormal;
+		debugSettings.debugMode = EDebugMode::MicrosurfaceNormal;
 		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageWorldNormal);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
@@ -796,7 +798,7 @@ HitableList* CreateScene_SanMiguel()
 	std::vector<Hitable*> list;
 
 	OBJModel* objModel;
-	if (GetOrCreateOBJ("content/San_Miguel/san-miguel-low-poly.obj", objModel))
+	if (GetOrCreateOBJ("content/San_Miguel/san-miguel.obj", objModel))
 	{
 		list.push_back(objModel->rootObject);
 	}

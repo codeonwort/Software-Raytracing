@@ -70,6 +70,11 @@ $contents_list = @(
 		"https://casual-effects.com/g3d/data10/research/model/sibenik/sibenik.zip",
 		"sibenik.zip",
 		"sibenik"
+	),
+	@(
+		"https://casual-effects.com/g3d/data10/research/model/San_Miguel/San_Miguel.zip",
+		"San_Miguel.zip",
+		"San_Miguel"
 	)
 )
 

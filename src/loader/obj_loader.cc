@@ -267,7 +267,10 @@ void OBJLoader::PreloadImages(
 		LoadImage(material.roughness_texname);
 		LoadImage(material.metallic_texname);
 		LoadImage(material.emissive_texname);
+
+		// #todo-obj: In tinyobjlaoder, are bump texture and normal texture same thing?
 		LoadImage(material.normal_texname);
+		LoadImage(material.bump_texname);
 	}
 
 	LOG("\t%u image files has been loaded", imageDB.size());
@@ -329,7 +332,9 @@ void OBJLoader::ParseMaterials(
 		std::shared_ptr<Image2D> roughnessImage = FindImage(rawMaterial.roughness_texname);
 		std::shared_ptr<Image2D> metallicImage = FindImage(rawMaterial.metallic_texname);
 		std::shared_ptr<Image2D> emissiveImage = FindImage(rawMaterial.emissive_texname);
+		
 		std::shared_ptr<Image2D> normalImage = FindImage(rawMaterial.normal_texname);
+		if (normalImage == nullptr) normalImage = FindImage(rawMaterial.bump_texname);
 
 		bool bTransparentIllum = (rawMaterial.illum == 4 || rawMaterial.illum == 6);
 		bool bZeroDiffuse = rawMaterial.diffuse_texname.size() == 0

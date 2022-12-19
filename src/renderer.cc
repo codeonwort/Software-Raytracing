@@ -42,7 +42,8 @@ const char* GetRendererDebugModeString(int32 modeIx)
 {
 	static const char* enumStrs[] = {
 		"Default",
-		"Normal",
+		"SurfaceNormal",
+		"MicrosurfaceNormal",
 		"Texcoord",
 		"Reflectance",
 		"ReflectanceFromOneBounce",
@@ -60,8 +61,12 @@ vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayl
 	vec3 debugValue = vec3(0.0f);
 	HitResult hitResult;
 	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult)) {
-		if (debugMode == EDebugMode::VertexNormal) {
+		if (debugMode == EDebugMode::SurfaceNormal) {
 			debugValue = vec3(0.5f) + 0.5f * hitResult.n;
+		} else if (debugMode == EDebugMode::MicrosurfaceNormal) {
+			vec3 N = hitResult.material->GetMicrosurfaceNormal(hitResult);
+			N = hitResult.LocalToWorld(N);
+			debugValue = 0.5f + 0.5f * N;
 		} else if (debugMode == EDebugMode::Texcoord) {
 			debugValue = vec3(hitResult.paramU, hitResult.paramV, 0.0f);
 		} else if (debugMode == EDebugMode::Reflectance) {
