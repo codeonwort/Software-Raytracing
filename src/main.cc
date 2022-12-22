@@ -17,6 +17,8 @@
 #include "shading/material.h"
 #include "platform/platform.h"
 
+#include "raylib/raylib.h"
+
 #include <functional>
 #include <iostream>
 #include <vector>
@@ -232,6 +234,8 @@ OBJModelContainer g_objContainer;
 void InitializeSubsystems() {
 	SCOPED_CPU_COUNTER(InitializeSubsystems);
 
+	Raylib_Initialize();
+
 	StartLogThread();
 	ResourceFinder::Get().AddDirectory("./content/");
 	ImageLoader::Initialize();
@@ -241,6 +245,8 @@ void DestroySubsystems() {
 	OBJLoader::Destroy();
 	ImageLoader::Destroy();
 	WaitForLogThread();
+
+	Raylib_Terminate();
 }
 
 void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings);

@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 # Add source to this project's executable.
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/raylib)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/source)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/tinyobjloader/source)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/include)
@@ -21,7 +22,7 @@ list(APPEND SRCFILES "../thirdparty/OpenImageDenoise/include/oidn.h")
 add_executable(RayTracer ${SRCFILES})
 
 # TODO: Add tests and install targets if needed.
-target_link_libraries(RayTracer FreeImage)
+target_link_libraries(RayTracer raylib FreeImage)
 
 add_custom_command(TARGET RayTracer POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -35,6 +36,12 @@ add_custom_command(TARGET RayTracer POST_BUILD
 add_custom_command(TARGET RayTracer POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	"${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/bin/tbb12.dll"
+	$<TARGET_FILE_DIR:RayTracer>)
+
+# TODO: Somehow copy raylib.dll to demo app, using install()?
+add_custom_command(TARGET RayTracer POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"${PROJECT_BINARY_DIR}/raylib/raylib.dll"
 	$<TARGET_FILE_DIR:RayTracer>)
 
 # TODO: This injects a hard-coded path to the executable.
