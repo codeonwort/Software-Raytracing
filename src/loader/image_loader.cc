@@ -1,7 +1,7 @@
 #include "image_loader.h"
-#include "log.h"
 #include "util/resource_finder.h"
 #include "util/assertion.h"
+#include "util/log.h"
 
 void ImageLoader::Initialize()
 {

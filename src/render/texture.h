@@ -1,8 +1,8 @@
 #pragma once
 
-#include "type.h"
 #include "image.h"
-#include "template/noncopyable.h"
+#include "core/type.h"
+#include "core/noncopyable.h"
 
 #include <vector>
 #include <memory>

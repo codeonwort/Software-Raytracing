@@ -1,6 +1,6 @@
 #include "resource_finder.h"
-#include "../platform/platform.h"
-#include "../log.h"
+#include "core/platform.h"
+#include "util/log.h"
 
 #include <assert.h>
 

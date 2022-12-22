@@ -1,7 +1,7 @@
 #include "image.h"
-#include "type.h"
-#include "log.h"
+#include "core/type.h"
 #include "core/vec.h"
+#include "util/log.h"
 
 #define TONE_MAP         1    // Still some artifact around borders that I don't quite get
 #define FORCE_MAX_WHITE  1    // Clamp the tone mapping result to white

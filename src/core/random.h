@@ -1,7 +1,7 @@
 #pragma once
 
 #include "type.h"
-#include "core/vec.h"
+#include "vec.h"
 
 #include <random>
 #include <vector>

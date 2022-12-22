@@ -1,13 +1,13 @@
 #include "renderer.h"
-#include "thread_pool.h"
-#include "log.h"
 #include "image.h"
 #include "camera.h"
-#include "random.h"
+#include "material.h"
+#include "core/random.h"
+#include "core/thread_pool.h"
 #include "geom/ray.h"
 #include "geom/hit.h"
-#include "shading/material.h"
 #include "util/stat.h"
+#include "util/log.h"
 
 #include <algorithm>
 #include <thread>

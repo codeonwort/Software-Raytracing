@@ -1,6 +1,6 @@
 #pragma once
 
-#include "template/noncopyable.h"
+#include "core/noncopyable.h"
 #include "core/vec.h"
 
 #include <vector>

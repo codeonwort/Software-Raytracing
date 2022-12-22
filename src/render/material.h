@@ -1,6 +1,6 @@
 #pragma once
 
-#include "random.h"
+#include "core/random.h"
 #include "brdf.h"
 #include "image.h"
 #include "texture.h"

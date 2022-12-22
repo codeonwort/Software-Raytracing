@@ -12,7 +12,7 @@ bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) c
 	{
 		bool bHit = false;
 
-		float temp = (-b - sqrt(b * b - a * c)) / a;
+		float temp = (-b - sqrtf(b * b - a * c)) / a;
 		if (t_min < temp && temp < t_max)
 		{
 			outResult.t = temp;
@@ -23,7 +23,7 @@ bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) c
 		}
 		if (!bHit)
 		{
-			temp = (-b + sqrt(b * b - a * c)) / a;
+			temp = (-b + sqrtf(b * b - a * c)) / a;
 			if (t_min < temp && temp < t_max)
 			{
 				outResult.t = temp;

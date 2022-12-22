@@ -1,7 +1,8 @@
 #pragma once
 
 #include "hit.h"
-#include "shading/material.h"
+
+class Material;
 
 class Cube : public Hitable
 {

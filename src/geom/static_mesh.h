@@ -2,7 +2,7 @@
 
 #include "cube.h"
 #include "triangle.h"
-#include "src/transform.h"
+#include "transform.h"
 
 class BVHNode;
 

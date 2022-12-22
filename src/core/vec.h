@@ -1,6 +1,6 @@
 #pragma once
 
-#include "type.h"
+#include "core/type.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>

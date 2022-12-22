@@ -1,4 +1,4 @@
-#include "random.h"
+#include "core/random.h"
 
 vec3 RandomInUnitSphere()
 {

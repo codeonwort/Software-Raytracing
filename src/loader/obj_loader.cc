@@ -1,14 +1,14 @@
 #include "obj_loader.h"
 #include "image_loader.h"
-#include "type.h"
-#include "log.h"
-#include "image.h"
+#include "core/type.h"
 #include "core/vec.h"
 #include "geom/static_mesh.h"
 #include "geom/triangle.h"
 #include "geom/bvh.h"
-#include "shading/material.h"
+#include "render/material.h"
+#include "render/image.h"
 #include "util/resource_finder.h"
+#include "util/log.h"
 
 /* 'illum' cheat sheet
 0. Color on and Ambient off

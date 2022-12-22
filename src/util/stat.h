@@ -1,6 +1,6 @@
 // Statistics about cpu cycle and memory usage
 
-#include "src/log.h"
+#include "util/log.h"
 
 #include <chrono>
 

@@ -1,5 +1,5 @@
 #include "log.h"
-#include "type.h"
+#include "core/type.h"
 #include "util/assertion.h"
 
 #include <list>

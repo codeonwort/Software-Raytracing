@@ -1,5 +1,5 @@
 #include "bvh.h"
-#include "src/random.h"
+#include "core/random.h"
 #include <algorithm>
 
 BVHNode::BVHNode(HitableList* list, float t0, float t1)
