@@ -38,6 +38,10 @@ namespace BRDF {
 	// #todo: Better not use tan()?
 	inline float DistributionBeckmann(const vec3& N, const vec3& H, float roughness) {
 		float cosH = dot(N, H);
+		if (roughness == 0.0f)
+		{
+			return 1.0f;
+		}
 		if (H.z < 0.0f) cosH = -cosH; // #todo-pbr: Did I mess up sign of Wi, Wo, and H?
 		float cosH2 = cosH * cosH;
 		//float thetaH = acosf(cosH);

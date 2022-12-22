@@ -24,6 +24,21 @@
 10. Casts shadows onto invisible surfaces
 */
 
+// Albedo = 1.0 is physically impossible.
+#define MAX_ALBEDO vec3(0.95f)
+
+vec3 ToVec3(const tinyobj::real_t tiny_real[3])
+{
+	return vec3(tiny_real[0], tiny_real[1], tiny_real[2]);
+}
+
+// https://learn.microsoft.com/en-us/azure/remote-rendering/reference/material-mapping
+float PhongSpecularToRoughness(const vec3& specularPower, float shininess)
+{
+	float intensity = (specularPower.x + specularPower.y + specularPower.z) / 3.0f;
+	return std::sqrt(2.0f / (shininess * intensity + 2.0f));
+}
+
 // -------------------------------
 // OBJModel
 
@@ -336,25 +351,20 @@ void OBJLoader::ParseMaterials(
 		std::shared_ptr<Image2D> normalImage = FindImage(rawMaterial.normal_texname);
 		if (normalImage == nullptr) normalImage = FindImage(rawMaterial.bump_texname);
 
+		const vec3 albedoConstant = min(MAX_ALBEDO, ToVec3(rawMaterial.diffuse));
+
 		bool bTransparentIllum = (rawMaterial.illum == 4 || rawMaterial.illum == 6);
-		bool bZeroDiffuse = rawMaterial.diffuse_texname.size() == 0
-			&& rawMaterial.diffuse[0] == 0.0f
-			&& rawMaterial.diffuse[1] == 0.0f
-			&& rawMaterial.diffuse[2] == 0.0f;
+		bool bZeroDiffuse = (rawMaterial.diffuse_texname.size() == 0) && (albedoConstant == vec3(0.0f));
 		// Ad-hoc conditions as some opaque models have illum 4
 		if (bTransparentIllum && bZeroDiffuse)
 		{
-			vec3 transmittance(
-				rawMaterial.transmittance[0],
-				rawMaterial.transmittance[1],
-				rawMaterial.transmittance[2]);
+			vec3 transmittance = ToVec3(rawMaterial.transmittance);
 			Dielectric* M = new Dielectric(rawMaterial.ior, transmittance);
 			outMaterials[i] = M;
 		}
 		else if (rawMaterial.illum == 3)
 		{
-			vec3 baseColor(rawMaterial.diffuse[0], rawMaterial.diffuse[1], rawMaterial.diffuse[2]);
-			Mirror* M = new Mirror(baseColor);
+			Mirror* M = new Mirror(albedoConstant);
 			outMaterials[i] = M;
 		}
 		else
@@ -367,28 +377,21 @@ void OBJLoader::ParseMaterials(
 			if (metallicImage) M->SetMetallicTexture(metallicImage);
 			if (emissiveImage) M->SetEmissiveTexture(emissiveImage);
 
-			M->SetAlbedoFallback(vec3(rawMaterial.diffuse[0], rawMaterial.diffuse[1], rawMaterial.diffuse[2]));
-			// #todo-obj: tinyobjloader's roughness defaults to 0.0 if not specified, but it means every materials gonna be specular.
-			// And there is no way to check if roughness was just omitted or explicitly set to zero :(
+			M->SetAlbedoFallback(albedoConstant);
+
+			// tinyobjloader's roughness defaults to 0.0 if not specified.
+			// And there is no way to check if roughness was just omitted or explicitly set to zero.
+			// -> Use roughness if non-zero. Otherwise, derive it from Phong parameters.
 			if (rawMaterial.roughness > 0.0f) {
 				M->SetRoughnessFallback(rawMaterial.roughness);
 			} else {
-				// #todo-pbr: Invalid result if roughness is too low.
-				constexpr float tempMinRoughness = 0.01f;
-#if 1
-				// Ad-hoc derivation of roughness from specular power
-				float avgSpec = (1.0f / 3.0f) * (rawMaterial.specular[0] + rawMaterial.specular[1] + rawMaterial.specular[2]);
-				float fakeRoughness = std::max(tempMinRoughness, 1.0f - avgSpec);
-#else
-				// #todo-wip: This is buggy
-				// Ad-hoc derivation of roughness from shininess
-				float fakeRoughness = std::min(1.0f, ::sqrtf(2.0f / (rawMaterial.shininess + 2.0f)));
-				fakeRoughness = std::max(tempMinRoughness, fakeRoughness);
-#endif
+				vec3 specularPower = ToVec3(rawMaterial.specular);
+				float fakeRoughness = PhongSpecularToRoughness(specularPower, rawMaterial.shininess);
 				M->SetRoughnessFallback(fakeRoughness);
 			}
+
 			M->SetMetallicFallback(rawMaterial.metallic);
-			M->SetEmissiveFallback(vec3(rawMaterial.emission[0], rawMaterial.emission[1], rawMaterial.emission[2]));
+			M->SetEmissiveFallback(ToVec3(rawMaterial.emission));
 
 			outMaterials[i] = M;
 		}

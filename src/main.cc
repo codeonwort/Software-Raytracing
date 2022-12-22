@@ -51,9 +51,26 @@ static ProgramArguments g_programArgs;
 #define DEFAULT_CAMERA_UP          vec3(0.0f, 1.0f, 0.0f)
 #define DEFAULT_FOV_Y              45.0f
 
+std::shared_ptr<Texture2D>         skyTexture;
+
 // #todo-lighting: Merge sky atmosphere and Sun as a single 'distant light'?
 vec3 FAKE_SKY_LIGHT(const vec3& dir)
 {
+	if (skyTexture)
+	{
+		Rotator rot;
+		rot.yaw = 90.0f;
+		vec3 D = rot.rotate(dir);
+		//const vec3& D = dir;
+
+		// #todo-wip: Is there a case uv goes to inf or nan?
+		float u = std::atan2(D.z, D.x), v = std::asin(D.y);
+		u *= 0.1591f; v *= 0.3183f; // inverse atan
+		u += 0.5f; v += 0.5f;
+		
+		return skyTexture->Sample(u, v).RGBToVec3();
+	}
+
 	// #todo-lighting: Should be real sky atmosphere
 	// that involves interaction with sun light.
 	float t = 0.5f * (dir.y + 1.0f);
@@ -95,6 +112,9 @@ SceneDesc g_sceneDescs[] = {
 		"CornellBox",
 		vec3(0.0f, 1.0f, 4.0f),
 		vec3(0.0f, 1.0f, -1.0f),
+		DEFAULT_FOV_Y,
+		nullptr,
+		nullptr,
 	},
 	{
 		CreateScene_BreakfastRoom,
@@ -146,6 +166,15 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 0.5f, 3.0f),
 		vec3(0.0f, 0.5f, 0.0f),
 		DEFAULT_FOV_Y,
+		FAKE_SKY_LIGHT,
+		nullptr
+	},
+	{
+		CreateScene_RandomSpheres,
+		"RandomSpheres",
+		vec3(0.0f, 1.5f, 5.0f),
+		vec3(0.0f, 0.5f, 0.0f),
+		60.0f,
 		FAKE_SKY_LIGHT,
 		nullptr
 	},
@@ -409,6 +438,15 @@ int main(int argc, char** argv) {
 void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 {
 	const SceneDesc& sceneDesc = g_sceneDescs[sceneID];
+
+	if (skyTexture == nullptr)
+	{
+		std::shared_ptr<Image2D> skyHDRI;
+		if (ImageLoader::SyncLoad("content/Ridgecrest_Road_Ref.hdr", skyHDRI))
+		{
+			skyTexture = std::shared_ptr<Texture2D>(Texture2D::CreateFromImage2D(skyHDRI));
+		}
+	}
 	
 	auto makeFilename = [&sceneDesc](const char* prefix) {
 		std::string name = SOLUTION_DIR "test_";
@@ -452,7 +490,7 @@ void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 		debugCamera.lens_radius = 0.0f;
 
 		RendererSettings debugSettings = settings;
-		debugSettings.debugMode = EDebugMode::Reflectance;
+		debugSettings.debugMode = EDebugMode::Albedo;
 		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageAlbedo);
 		debugSettings.debugMode = EDebugMode::MicrosurfaceNormal;
 		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageWorldNormal);
@@ -810,7 +848,6 @@ HitableList* CreateScene_ObjModel()
 {
 	SCOPED_CPU_COUNTER(CreateRandomScene);
 
-// #todo-wip: Magic values only for CreateScene_ObjModel()
 #define OBJTEST_LOCAL_LIGHTS            1
 #define OBJTEST_INCLUDE_TOADTTE         1
 #define OBJTEST_INCLUDE_CUBE            1
@@ -949,8 +986,7 @@ HitableList* CreateScene_RandomSpheres()
 
 HitableList* CreateScene_FourSpheres()
 {
-	//Material* M_ground = new Lambertian(vec3(0.8f, 0.8f, 0.0f));
-	float groundRoughness = 1.0f; // #todo-wip: Debug microfacet BRDF with roughness = 0
+	float groundRoughness = 0.0f;
 	Material* M_ground = MicrofacetMaterial::FromConstants(
 		vec3(1.0f), groundRoughness, 0.0f, vec3(0.0f));
 

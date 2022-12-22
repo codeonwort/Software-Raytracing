@@ -47,6 +47,7 @@ const char* GetRendererDebugModeString(int32 modeIx)
 		"Texcoord",
 		"Reflectance",
 		"ReflectanceFromOneBounce",
+		"Albedo",
 		"Emission",
 	};
 
@@ -84,6 +85,8 @@ vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayl
 					hitResult.material->Scatter(scatteredRay, hitResult, debugValue, dummy, dummyPdf);
 				}
 			}
+		} else if (debugMode == EDebugMode::Albedo) {
+			debugValue = hitResult.material->GetAlbedo(hitResult.paramU, hitResult.paramV);
 		} else if (debugMode == EDebugMode::Emission) {
 			debugValue = hitResult.material->Emitted(hitResult, pathRay.d);
 		}

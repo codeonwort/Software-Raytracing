@@ -37,7 +37,8 @@ public:
 		return 1.0f / BRDF::PI;
 	}
 
-	virtual bool AlphaTest(float texcoordU, float texcoordV) const { return true; }
+	virtual vec3 GetAlbedo(float paramU, float paramV) const { return vec3(0.0f); }
+	virtual bool AlphaTest(float paramU, float paramV) const { return true; }
 	// In local tangent space
 	virtual vec3 GetMicrosurfaceNormal(const HitResult& hitResult) const { return vec3(0.0f, 0.0f, 1.0f); }
 };
@@ -83,6 +84,8 @@ public:
 		const vec3& Wo,
 		const vec3& Wi) const override;
 
+	virtual vec3 GetAlbedo(float paramU, float paramV) const override { return albedo; }
+
 private:
 	vec3 albedo;
 };
@@ -103,9 +106,10 @@ public:
 		vec3& outReflectance, ray& outScatteredRay,
 		float& outPdf) const override;
 
+	virtual vec3 GetAlbedo(float paramU, float paramV) const { return albedo; }
+
 	vec3 albedo;
 	float fuzziness;
-
 };
 
 class Dielectric : public Material
@@ -152,7 +156,6 @@ public:
 	vec3 baseColor;
 };
 
-// Cook-Torrance BRDF
 class MicrofacetMaterial : public Material {
 
 public:
@@ -225,8 +228,13 @@ public:
 		const vec3& Wo,
 		const vec3& Wi) const override;
 
+	virtual vec3 GetAlbedo(float paramU, float paramV) const override;
 	virtual bool AlphaTest(float texcoordU, float texcoordV) const override;
 	virtual vec3 GetMicrosurfaceNormal(const HitResult& hitResult) const override;
+
+private:
+	// wi = reflect(-wo, wh)
+	vec3 Sample_wh(const vec3& wo, float alpha) const;
 
 private:
 	Texture2D* albedoTexture;

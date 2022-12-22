@@ -38,7 +38,10 @@ Pixel Texture2D::Sample(float u, float v)
 	u = fmodf(u, 1.0f); if (u < 0.0f) u += 1.0f;
 	v = fmodf(v, 1.0f); if (v < 0.0f) v += 1.0f; v = 1.0f - v;
 
-	// #todo-texture: Filtering and wrapping
+	if (isnan(u) || isinf(u)) u = 0.0f;
+	if (isnan(v) || isinf(v)) v = 0.0f;
+
+	// #todo-texture: Filtering
 	const Image2D& image = *(mipmaps[0].get());
 	int32 x = (int32)((image.GetWidth() - 1) * u);
 	int32 y = (int32)((image.GetHeight() - 1) * v);

@@ -11,7 +11,9 @@ class Image2D;
 using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
 using FakeSunLightFunction = std::function<void(vec3& outDir, vec3& outIlluminance)>;
 
-// NOTE: When members change, should modify GetRendererDebugModeString() also.
+// NOTE: When EDebugMode is changed, update following functions also:
+// - GetRendererDebugModeString()
+// - TraceSceneDebugMode()
 enum class EDebugMode : uint32 {
 	None = 0,
 	SurfaceNormal,
@@ -19,6 +21,7 @@ enum class EDebugMode : uint32 {
 	Texcoord,
 	Reflectance,
 	ReflectanceFromOneBounce, // To debug mirror reflection
+	Albedo,
 	Emission,
 	
 	MAX,
