@@ -3,6 +3,11 @@
 #include "util/assertion.h"
 #include "util/log.h"
 
+#pragma warning(push)
+#pragma warning(disable: 4819)
+#include "FreeImage.h"
+#pragma warning(pop)
+
 void ImageLoader::Initialize()
 {
 	FreeImage_Initialise();

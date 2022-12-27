@@ -31,7 +31,7 @@ public:
 
 	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 	{
-		const vec3 movement = velocity * fmax(0.0f, r.t - timeStartMove);
+		const vec3 movement = velocity * std::max(0.0f, r.t - timeStartMove);
 		vec3 minBoundsT = minBounds + movement;
 		vec3 maxBoundsT = maxBounds + movement;
 
@@ -43,8 +43,8 @@ public:
 		t[4] = (maxBoundsT.y - r.o.y) / r.d.y;
 		t[5] = (minBoundsT.z - r.o.z) / r.d.z;
 		t[6] = (maxBoundsT.z - r.o.z) / r.d.z;
-		t[7] = fmax(fmax(fmin(t[1], t[2]), fmin(t[3], t[4])), fmin(t[5], t[6]));
-		t[8] = fmin(fmin(fmax(t[1], t[2]), fmax(t[3], t[4])), fmax(t[5], t[6]));
+		t[7] = std::max(std::max(std::min(t[1], t[2]), std::min(t[3], t[4])), std::min(t[5], t[6]));
+		t[8] = std::min(std::min(std::max(t[1], t[2]), std::max(t[3], t[4])), std::max(t[5], t[6]));
 
 		if ((t[8] < 0 || t[7] > t[8]))
 		{
@@ -73,8 +73,8 @@ public:
 
 	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override
 	{
-		const vec3 movement0 = velocity * fmax(0.0f, t0 - timeStartMove);
-		const vec3 movement1 = velocity * fmax(0.0f, t1 - timeStartMove);
+		const vec3 movement0 = velocity * std::max(0.0f, t0 - timeStartMove);
+		const vec3 movement1 = velocity * std::max(0.0f, t1 - timeStartMove);
 		outBox = AABB(minBounds + movement0, maxBounds + movement0)
 			   + AABB(minBounds + movement1, maxBounds + movement1);
 		return true;
