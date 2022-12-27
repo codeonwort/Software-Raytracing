@@ -2,7 +2,7 @@
 
 #include "ray.h"
 #include "aabb.h"
-#include "src/util/assertion.h"
+#include "util/assertion.h"
 
 #include <limits>
 #include <vector>

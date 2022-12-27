@@ -1,3 +1,6 @@
+#include "program_args.h"
+
+// #todo-raylib: All belongs to raylib
 #include "core/platform.h"
 #include "core/random.h"
 #include "render/image.h"
@@ -14,7 +17,6 @@
 #include "loader/image_loader.h"
 #include "util/stat.h"
 #include "util/resource_finder.h"
-#include "util/program_args.h"
 #include "util/log.h"
 
 #include "raylib/raylib.h"
@@ -267,6 +269,9 @@ int main(int argc, char** argv) {
 	FlushLogThread();
 	std::cout << "Type 'help' to see help message" << std::endl;
 
+	//
+	// Read-Eval-Print loop
+	//
 	while (true)
 	{
 		std::cin.clear();
