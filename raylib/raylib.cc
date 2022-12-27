@@ -1,13 +1,13 @@
 #include "raylib.h"
 #include <iostream>
 
-int Raylib_Initialize()
+int32_t Raylib_Initialize()
 {
 	std::cout << "Initialize raylib" << std::endl;
 	return 0;
 }
 
-int Raylib_Terminate()
+int32_t Raylib_Terminate()
 {
 	std::cout << "Terminate raylib" << std::endl;
 	return 0;
