@@ -1,5 +1,4 @@
 #include "image_loader.h"
-#include "util/resource_finder.h"
 #include "util/assertion.h"
 #include "util/log.h"
 
@@ -48,15 +47,13 @@ ImageLoader::~ImageLoader()
 
 bool ImageLoader::LoadSynchronous(const char* filepath, Image2D& outImage)
 {
-	std::string file = ResourceFinder::Get().Find(filepath);
-
-	if (file.size() == 0)
+	if (filepath == nullptr)
 	{
 		return false;
 	}
 	
-	FREE_IMAGE_FORMAT imageFormat = FreeImage_GetFIFFromFilename(file.data());
-	FIBITMAP* dib = FreeImage_Load(imageFormat, file.data(), 0);
+	FREE_IMAGE_FORMAT imageFormat = FreeImage_GetFIFFromFilename(filepath);
+	FIBITMAP* dib = FreeImage_Load(imageFormat, filepath, 0);
 
 	if (dib == nullptr)
 	{

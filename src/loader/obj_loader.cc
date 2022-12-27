@@ -7,7 +7,6 @@
 #include "geom/bvh.h"
 #include "render/material.h"
 #include "render/image.h"
-#include "util/resource_finder.h"
 #include "util/log.h"
 
 /* 'illum' cheat sheet
@@ -79,15 +78,14 @@ OBJLoader::~OBJLoader()
 
 bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
 {
-	std::string file = ResourceFinder::Get().Find(filepath);
-	if (file.size() == 0)
+	if (filepath == nullptr)
 	{
-		LOG("%s: File not exist: %s", __FUNCTION__, filepath);
+		LOG("%s: filepath was null", __FUNCTION__);
 		return false;
 	}
 
 	// Call tiny_obj_loader.
-	if (!internalLoader.ParseFromFile(file))
+	if (!internalLoader.ParseFromFile(filepath))
 	{
 		LOG("%s: tiny_obj_loader failed: %s", __FUNCTION__, filepath);
 		return false;
@@ -267,7 +265,7 @@ void OBJLoader::PreloadImages(
 			if (objpath.find_last_of("/\\") != std::string::npos)
 			{
 				basedir = objpath.substr(0, objpath.find_last_of("/\\") + 1);
-				std::string filepath = ResourceFinder::Get().Find(basedir + inFilename);
+				std::string filepath = basedir + inFilename;
 
 				std::shared_ptr<Image2D> image = std::make_shared<Image2D>();
 				ImageLoader::SyncLoad(filepath.data(), *image);

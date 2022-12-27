@@ -1,21 +1,20 @@
 #pragma once
 
-#include "core/noncopyable.h"
-
 #include <vector>
 #include <string>
 
 // Given a path, searches for a matching full path.
-class ResourceFinder : public Noncopyable
+class ResourceFinder
 {
 
 public:
 	static ResourceFinder& Get();
 
-	// Register a directory
+	// Register a base directory.
 	void AddDirectory(const std::string& directory);
 
-	// Returns empty string if not found
+	// Find a valid path that starts from one of base directories.
+	// Returns an empty string if not found.
 	std::string Find(const std::string& subpath);
 
 private:

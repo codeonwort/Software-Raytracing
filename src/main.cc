@@ -1,4 +1,5 @@
 #include "program_args.h"
+#include "resource_finder.h"
 
 // #todo-raylib: All belongs to raylib
 #include "core/platform.h"
@@ -16,7 +17,6 @@
 #include "loader/obj_loader.h"
 #include "loader/image_loader.h"
 #include "util/stat.h"
-#include "util/resource_finder.h"
 #include "util/log.h"
 
 #include "raylib/raylib.h"
@@ -452,7 +452,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	if (skyTexture == nullptr)
 	{
 		std::shared_ptr<Image2D> skyHDRI;
-		if (ImageLoader::SyncLoad("content/Ridgecrest_Road_Ref.hdr", skyHDRI))
+		std::string filepath = ResourceFinder::Get().Find("content/Ridgecrest_Road_Ref.hdr");
+		if (ImageLoader::SyncLoad(filepath.c_str(), skyHDRI))
 		{
 			skyTexture = std::shared_ptr<Texture2D>(Texture2D::CreateFromImage2D(skyHDRI));
 		}
@@ -542,6 +543,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 using OBJTransformer = std::function<void(OBJModel* inModel)>;
 bool GetOrCreateOBJ(const char* filename, OBJModel*& outModel, OBJTransformer transformer = nullptr)
 {
+	std::string fullpath = ResourceFinder::Get().Find(filename);
+
 	OBJModel* model = g_objContainer.find(filename);
 	if (model != nullptr)
 	{
@@ -549,7 +552,7 @@ bool GetOrCreateOBJ(const char* filename, OBJModel*& outModel, OBJTransformer tr
 		return true;
 	}
 	model = new OBJModel;
-	if (OBJLoader::SyncLoad(filename, *model))
+	if (OBJLoader::SyncLoad(fullpath.c_str(), *model))
 	{
 		if (transformer)
 		{
@@ -857,7 +860,8 @@ HitableList* CreateScene_ObjModel()
 #endif
 
 	std::shared_ptr<Image2D> img;
-	if (ImageLoader::SyncLoad("content/Toadette/Toadette_body.png", img))
+	std::string imgpath = ResourceFinder::Get().Find("content/Toadette/Toadette_body.png");
+	if (ImageLoader::SyncLoad(imgpath.c_str(), img))
 	{
 		MicrofacetMaterial* pbr_mat = new MicrofacetMaterial;
 		pbr_mat->SetAlbedoTexture(img);
