@@ -23,17 +23,6 @@
 #include <iostream>
 #include <vector>
 
-// oidn is not Windows-only but I'm downloading Windows pre-built binaries.
-#if PLATFORM_WINDOWS
-	#define INTEL_DENOISER 1
-#endif
-
-#if INTEL_DENOISER
-#include <oidn.h>
-#pragma comment(lib, "OpenImageDenoise.lib")
-//#pragma comment(lib, "tbb.lib")
-#endif
-
 // -----------------------------------------------------------------------
 
 static ProgramArguments g_programArgs;
@@ -249,7 +238,7 @@ void DestroySubsystems() {
 	Raylib_Terminate();
 }
 
-void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings);
+void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& settings);
 
 int main(int argc, char** argv) {
 	LOG("=== Software Raytracer ===");
@@ -261,6 +250,7 @@ int main(int argc, char** argv) {
 	InitializeSubsystems();
 
 	uint32 currentSceneID = 0;
+	bool bRunDenoiser = true;
 
 	RendererSettings rendererSettings;
 	rendererSettings.viewportWidth   = DEFAULT_VIEWPORT_WIDTH;
@@ -273,7 +263,6 @@ int main(int argc, char** argv) {
 	rendererSettings.skyLightFn      = g_sceneDescs[currentSceneID].skyLightFn;
 	rendererSettings.sunLightFn      = g_sceneDescs[currentSceneID].sunLightFn;
 	rendererSettings.debugMode       = EDebugMode::None;
-	rendererSettings.bRunDenoiser    = INTEL_DENOISER;
 
 	FlushLogThread();
 	std::cout << "Type 'help' to see help message" << std::endl;
@@ -331,18 +320,28 @@ int main(int argc, char** argv) {
 		}
 		else if (command == "run")
 		{
-			ExecuteRenderer(currentSceneID, rendererSettings);
+			ExecuteRenderer(currentSceneID, bRunDenoiser, rendererSettings);
 		}
 		else if (command == "denoiser")
 		{
 			uint32 dmode;
 			std::cin >> dmode;
-#if INTEL_DENOISER
-			rendererSettings.bRunDenoiser = (dmode != 0);
-			std::cout << "Denoiser " << (rendererSettings.bRunDenoiser ? "on" : "off") << std::endl;
-#else
-			std::cout << "Denoiser was not integrated" << std::endl;
-#endif
+			if (std::cin.good())
+			{
+				if (IsDenoiserSupported())
+				{
+					bRunDenoiser = (dmode != 0);
+					std::cout << "Denoiser " << (bRunDenoiser ? "on" : "off") << std::endl;
+				}
+				else
+				{
+					std::cout << "Denoiser was not integrated" << std::endl;
+				}
+			}
+			else
+			{
+				std::cout << "Invalid denoiser option, current=" << (int32)bRunDenoiser << std::endl;
+			}
 		}
 		else if (command == "spp")
 		{
@@ -441,7 +440,7 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
+void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& settings)
 {
 	const SceneDesc& sceneDesc = g_sceneDescs[sceneID];
 
@@ -480,92 +479,49 @@ void ExecuteRenderer(uint32 sceneID, const RendererSettings& settings)
 	// Render default image
 	const uint32 viewportWidth = settings.viewportWidth;
 	const uint32 viewportHeight = settings.viewportHeight;
-	Image2D image(viewportWidth, viewportHeight);
+	Image2D mainImage(viewportWidth, viewportHeight);
 	Renderer renderer;
-	renderer.RenderScene(settings, worldBVH, &camera, &image);
+	renderer.RenderScene(settings, worldBVH, &camera, &mainImage);
 	// NOTE: I'll input HDR image to denoiser
 
-	if (settings.bRunDenoiser && settings.debugMode == EDebugMode::None)
+	if (IsDenoiserSupported() && bRunDenoiser && settings.debugMode == EDebugMode::None)
 	{
-#if INTEL_DENOISER
 		// Render aux images
-		Image2D imageWorldNormal(viewportWidth, viewportHeight);
-		Image2D imageAlbedo(viewportWidth, viewportHeight);
+		Image2D wNormalImage(viewportWidth, viewportHeight);
+		Image2D albedoImage(viewportWidth, viewportHeight);
 
 		Camera debugCamera = camera;
 		debugCamera.lens_radius = 0.0f;
 
 		RendererSettings debugSettings = settings;
 		debugSettings.debugMode = EDebugMode::Albedo;
-		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageAlbedo);
+		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &albedoImage);
 		debugSettings.debugMode = EDebugMode::MicrosurfaceNormal;
-		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &imageWorldNormal);
+		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &wNormalImage);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
 		std::string normalFilenameJPG = makeFilename("_1.jpg");
-		WriteImageToDisk(imageAlbedo, albedoFilenameJPG.c_str(), EImageFileType::Jpg);
-		WriteImageToDisk(imageWorldNormal, normalFilenameJPG.c_str(), EImageFileType::Jpg);
+		WriteImageToDisk(albedoImage, albedoFilenameJPG.c_str(), EImageFileType::Jpg);
+		WriteImageToDisk(wNormalImage, normalFilenameJPG.c_str(), EImageFileType::Jpg);
 
-		// Dump as float array to pass to oidn
-		std::vector<float> noisyInputBlob, albedoBlob, worldNormalBlob;
-		image.DumpFloatRGBs(noisyInputBlob);
-		imageAlbedo.DumpFloatRGBs(albedoBlob);
-		imageWorldNormal.DumpFloatRGBs(worldNormalBlob);
-
-		LOG("Denoise the result using Intel OpenImageDenoise");
-
-		OIDNDevice device = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
-		oidnCommitDevice(device);
-
-		std::vector<float> denoisedOutputBlob(noisyInputBlob.size(), 0.0f);
-
-		OIDNFilter filter = oidnNewFilter(device, "RT");
-		oidnSetSharedFilterImage(filter, "color", noisyInputBlob.data(),
-			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-		oidnSetSharedFilterImage(filter, "albedo", albedoBlob.data(),
-			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-		oidnSetSharedFilterImage(filter, "normal", worldNormalBlob.data(),
-			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-		oidnSetSharedFilterImage(filter, "output", denoisedOutputBlob.data(),
-			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
-		oidnSetFilter1b(filter, "hdr", true);
-		oidnCommitFilter(filter);
-
-		oidnExecuteFilter(filter);
-
-		const char* oidnErr;
-		if (oidnGetDeviceError(device, &oidnErr) != OIDN_ERROR_NONE)
-		{
-			LOG("oidn error: %s", oidnErr);
-		}
-
-		oidnReleaseFilter(filter);
-		oidnReleaseDevice(device);
-
-		Image2D denoisedOutput(viewportWidth, viewportHeight);
-		size_t k = 0;
-		for (uint32_t y = 0; y < viewportHeight; ++y)
-		{
-			for (uint32_t x = 0; x < viewportWidth; ++x)
-			{
-				Pixel px(denoisedOutputBlob[k], denoisedOutputBlob[k + 1], denoisedOutputBlob[k + 2]);
-				denoisedOutput.SetPixel(x, y, px);
-				k += 3;
-			}
-		}
-		denoisedOutput.PostProcess();
+		Image2D* denoisedOutput = nullptr;
+		renderer.DenoiseScene(
+			&mainImage, true, &albedoImage, &wNormalImage,
+			denoisedOutput);
+		denoisedOutput->PostProcess();
 
 		std::string denoiseFilenameJPG = makeFilename("_2.jpg");
-		WriteImageToDisk(denoisedOutput, denoiseFilenameJPG.c_str(), EImageFileType::Jpg);
+		WriteImageToDisk(*denoisedOutput, denoiseFilenameJPG.c_str(), EImageFileType::Jpg);
+
+		delete denoisedOutput;
 	}
-#endif // INTEL_DENOISER
 
 	// Apply postprocessing after denoising
-	image.PostProcess();
+	mainImage.PostProcess();
 	std::string resultFilenameBMP = makeFilename(".bmp");
 	std::string resultFilenameJPG = makeFilename(".jpg");
-	WriteImageToDisk(image, resultFilenameBMP.c_str(), EImageFileType::Bitmap);
-	WriteImageToDisk(image, resultFilenameJPG.c_str(), EImageFileType::Jpg);
+	WriteImageToDisk(mainImage, resultFilenameBMP.c_str(), EImageFileType::Bitmap);
+	WriteImageToDisk(mainImage, resultFilenameJPG.c_str(), EImageFileType::Jpg);
 	LOG("image has been written to: %s", resultFilenameBMP.c_str());
 	LOG("image has been written to: %s", resultFilenameJPG.c_str());
 

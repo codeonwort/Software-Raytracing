@@ -29,6 +29,8 @@ enum class EDebugMode : uint32 {
 
 const char* GetRendererDebugModeString(int32 modeIx);
 
+bool IsDenoiserSupported();
+
 struct RendererSettings {
 	// Camera properties
 	uint32               viewportWidth;
@@ -47,7 +49,6 @@ struct RendererSettings {
 
 	// System values
 	EDebugMode           debugMode       = EDebugMode::None;
-	bool                 bRunDenoiser    = false;
 
 	inline float getViewportAspectWH() const {
 		return (float)viewportWidth / (float)viewportHeight;
@@ -63,5 +64,12 @@ public:
 		const Hitable* world,
 		const Camera* camera,
 		Image2D* outImage);
+
+	bool DenoiseScene(
+		Image2D* mainImage,
+		bool bMainImageHDR,
+		Image2D* albedoImage,
+		Image2D* normalImage,
+		Image2D*& outDenoisedImage);
 
 };

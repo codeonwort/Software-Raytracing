@@ -3,11 +3,13 @@
 #include "camera.h"
 #include "material.h"
 #include "core/random.h"
+#include "core/platform.h"
 #include "core/thread_pool.h"
 #include "geom/ray.h"
 #include "geom/hit.h"
 #include "util/stat.h"
 #include "util/log.h"
+#include "util/assertion.h"
 
 #include <algorithm>
 #include <thread>
@@ -19,6 +21,14 @@
 
 // For easy debugging
 #define SINGLE_THREADED_RENDERING 0
+
+// oidn is not Windows-only but I'm downloading Windows pre-built binaries.
+#if PLATFORM_WINDOWS
+	#define INTEL_DENOISER_INTEGRATED 1
+	#include <oidn.h>
+	#pragma comment(lib, "OpenImageDenoise.lib")
+	//#pragma comment(lib, "tbb.lib")
+#endif
 
 struct WorkCell {
 	int32 x;
@@ -56,6 +66,15 @@ const char* GetRendererDebugModeString(int32 modeIx)
 		return enumStrs[modeIx];
 	}
 	return nullptr;
+}
+
+bool IsDenoiserSupported()
+{
+#if INTEL_DENOISER_INTEGRATED
+	return true;
+#else
+	return false;
+#endif
 }
 
 vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayload& settings, EDebugMode debugMode) {
@@ -307,4 +326,99 @@ void Renderer::RenderScene(
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
+}
+
+bool Renderer::DenoiseScene(
+	Image2D* mainImage,
+	bool bMainImageHDR,
+	Image2D* albedoImage,
+	Image2D* normalImage,
+	Image2D*& outDenoisedImage)
+{
+	CHECK(mainImage != nullptr);
+	if (!IsDenoiserSupported())
+	{
+		return false;
+	}
+
+#if INTEL_DENOISER_INTEGRATED
+	const size_t viewportWidth = mainImage->GetWidth();
+	const size_t viewportHeight = mainImage->GetHeight();
+
+	auto CHECK_EXTENT = [&](Image2D* img) { CHECK(img->GetWidth() == viewportWidth && img->GetHeight() == viewportHeight); };
+
+	// Dump as float array to pass to oidn
+	std::vector<float> noisyInputBlob, albedoBlob, worldNormalBlob;
+	mainImage->DumpFloatRGBs(noisyInputBlob);
+	if (albedoImage != nullptr)
+	{
+		CHECK_EXTENT(albedoImage);
+		albedoImage->DumpFloatRGBs(albedoBlob);
+	}
+	if (normalImage != nullptr)
+	{
+		CHECK_EXTENT(normalImage);
+		normalImage->DumpFloatRGBs(worldNormalBlob);
+	}
+
+	LOG("Denoise the result using Intel OpenImageDenoise");
+
+	OIDNDevice oidnDevice = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
+	oidnCommitDevice(oidnDevice);
+
+	std::vector<float> denoisedOutputBlob(noisyInputBlob.size(), 0.0f);
+
+	OIDNFilter oidnFilter = oidnNewFilter(oidnDevice, "RT");
+	oidnSetSharedFilterImage(oidnFilter, "color", noisyInputBlob.data(),
+		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // noisy input
+	if (albedoImage != nullptr)
+	{
+		oidnSetSharedFilterImage(oidnFilter, "albedo", albedoBlob.data(),
+			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // albedo input
+	}
+	if (normalImage != nullptr)
+	{
+		oidnSetSharedFilterImage(oidnFilter, "normal", worldNormalBlob.data(),
+			OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // normal input
+	}
+	oidnSetSharedFilterImage(oidnFilter, "output", denoisedOutputBlob.data(),
+		OIDN_FORMAT_FLOAT3, viewportWidth, viewportHeight, 0, 0, 0); // denoised output
+	if (bMainImageHDR)
+	{
+		oidnSetFilter1b(oidnFilter, "hdr", true);
+	}
+	oidnCommitFilter(oidnFilter);
+
+	oidnExecuteFilter(oidnFilter);
+
+	const char* oidnErr;
+	if (oidnGetDeviceError(oidnDevice, &oidnErr) != OIDN_ERROR_NONE)
+	{
+		LOG("oidn error: %s", oidnErr);
+	}
+
+	oidnReleaseFilter(oidnFilter);
+	oidnReleaseDevice(oidnDevice);
+
+	if (outDenoisedImage == nullptr)
+	{
+		outDenoisedImage = new Image2D(viewportWidth, viewportHeight);
+	}
+	else
+	{
+		outDenoisedImage->Reallocate(viewportWidth, viewportHeight, 0x0);
+	}
+	size_t k = 0;
+	for (uint32_t y = 0; y < viewportHeight; ++y)
+	{
+		for (uint32_t x = 0; x < viewportWidth; ++x)
+		{
+			Pixel px(denoisedOutputBlob[k], denoisedOutputBlob[k + 1], denoisedOutputBlob[k + 2]);
+			outDenoisedImage->SetPixel(x, y, px);
+			k += 3;
+		}
+	}
+#endif // INTEL_DENOISER_INTEGRATED
+
+	return true;
 }
