@@ -1,7 +1,7 @@
 #pragma once
 
 #include "image.h"
-#include "core/type.h"
+#include "core/int_types.h"
 #include "core/noncopyable.h"
 
 #include <vector>

@@ -1,6 +1,6 @@
 #include "image.h"
-#include "core/type.h"
-#include "core/vec.h"
+#include "core/int_types.h"
+#include "core/vec3.h"
 #include "util/log.h"
 
 #define TONE_MAP         1    // Still some artifact around borders that I don't quite get

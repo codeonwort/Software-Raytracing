@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/vec.h"
+#include "core/vec3.h"
 
 class ray
 {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/noncopyable.h"
-#include "core/vec.h"
+#include "core/vec3.h"
 
 #include <vector>
 #include <memory>

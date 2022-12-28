@@ -1,20 +1,27 @@
 #pragma once
 
-#include "core/type.h"
+#include "core/int_types.h"
+#include "core/assertion.h"
+#include <algorithm>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-class vec3 {
+struct vec3
+{
+	float x;
+	float y;
+	float z;
 
-public:
 	vec3() : vec3(0.0f, 0.0f, 0.0f) {}
-	vec3(float e0) {
+	vec3(float e0)
+	{
 		x = e0;
 		y = e0;
 		z = e0;
 	}
-	vec3(float e0, float e1, float e2) {
+	vec3(float e0, float e1, float e2)
+	{
 		x = e0;
 		y = e1;
 		z = e2;
@@ -37,11 +44,6 @@ public:
 	inline float Length() const { return sqrtf(x * x + y * y + z * z); }
 	inline float LengthSquared() const { return (x * x + y * y + z * z); }
 	inline void Normalize();
-
-	float x;
-	float y;
-	float z;
-
 };
 
 inline void vec3::Normalize() {

@@ -1,4 +1,4 @@
-#include "core/vec.h"
+#include "core/vec3.h"
 #include "ray.h"
 
 class AABB

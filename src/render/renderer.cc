@@ -9,7 +9,7 @@
 #include "geom/hit.h"
 #include "util/stat.h"
 #include "util/log.h"
-#include "util/assertion.h"
+#include "core/assertion.h"
 
 #include <algorithm>
 #include <thread>

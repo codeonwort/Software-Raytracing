@@ -1,6 +1,6 @@
 #include "log.h"
-#include "core/type.h"
-#include "util/assertion.h"
+#include "core/int_types.h"
+#include "core/assertion.h"
 
 #include <list>
 #include <mutex>

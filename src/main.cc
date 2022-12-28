@@ -484,25 +484,25 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	// Render default image
 	const uint32 viewportWidth = settings.viewportWidth;
 	const uint32 viewportHeight = settings.viewportHeight;
-	Image2D mainImage(viewportWidth, viewportHeight);
+	Image2D* mainImage = new Image2D(viewportWidth, viewportHeight);
 	Renderer renderer;
-	renderer.RenderScene(settings, worldBVH, &camera, &mainImage);
+	renderer.RenderScene(settings, worldBVH, &camera, mainImage);
 	// NOTE: I'll input HDR image to denoiser
 
 	if (IsDenoiserSupported() && bRunDenoiser && settings.debugMode == EDebugMode::None)
 	{
 		// Render aux images
-		Image2D wNormalImage(viewportWidth, viewportHeight);
-		Image2D albedoImage(viewportWidth, viewportHeight);
+		Image2D* wNormalImage = new Image2D(viewportWidth, viewportHeight);
+		Image2D* albedoImage = new Image2D(viewportWidth, viewportHeight);
 
 		Camera debugCamera = camera;
 		debugCamera.lens_radius = 0.0f;
 
 		RendererSettings debugSettings = settings;
 		debugSettings.debugMode = EDebugMode::Albedo;
-		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &albedoImage);
+		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, albedoImage);
 		debugSettings.debugMode = EDebugMode::MicrosurfaceNormal;
-		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, &wNormalImage);
+		renderer.RenderScene(debugSettings, worldBVH, &debugCamera, wNormalImage);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
 		std::string normalFilenameJPG = makeFilename("_1.jpg");
@@ -511,18 +511,20 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 		Image2D* denoisedOutput = nullptr;
 		renderer.DenoiseScene(
-			&mainImage, true, &albedoImage, &wNormalImage,
+			mainImage, true, albedoImage, wNormalImage,
 			denoisedOutput);
 		denoisedOutput->PostProcess();
 
 		std::string denoiseFilenameJPG = makeFilename("_2.jpg");
-		WriteImageToDisk(*denoisedOutput, denoiseFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+		WriteImageToDisk(denoisedOutput, denoiseFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 
+		delete wNormalImage;
+		delete albedoImage;
 		delete denoisedOutput;
 	}
 
 	// Apply postprocessing after denoising
-	mainImage.PostProcess();
+	mainImage->PostProcess();
 	std::string resultFilenameBMP = makeFilename(".bmp");
 	std::string resultFilenameJPG = makeFilename(".jpg");
 	WriteImageToDisk(mainImage, resultFilenameBMP.c_str(), RAYLIB_IMAGEFILETYPE_Bitmap);
@@ -531,6 +533,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	LOG("image has been written to: %s", resultFilenameJPG.c_str());
 
 	delete worldBVH;
+	delete mainImage;
 
 	LOG("=== Rendering has completed ===");
 	FlushLogThread();

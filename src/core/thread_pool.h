@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/type.h"
+#include "core/int_types.h"
 
 #include <mutex>
 #include <atomic>
@@ -78,4 +78,3 @@ public:
 	std::mutex                               queueLock;
 	int32                                    queueIx;
 };
-

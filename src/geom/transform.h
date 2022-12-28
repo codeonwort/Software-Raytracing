@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/type.h"
-#include "core/vec.h"
+#include "core/int_types.h"
+#include "core/vec3.h"
 #include <vector>
 
 struct Rotator
