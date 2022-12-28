@@ -123,39 +123,3 @@ bool ImageLoader::LoadSynchronous(const char* filepath, Image2D& outImage)
 
 	return true;
 }
-
-FREE_IMAGE_FORMAT ToFreeImageType(EImageFileType inType)
-{
-	switch (inType)
-	{
-		case RAYLIB_IMAGEFILETYPE_Bitmap: return FIF_BMP;
-		case RAYLIB_IMAGEFILETYPE_Jpg:    return FIF_JPEG;
-		case RAYLIB_IMAGEFILETYPE_Png:    return FIF_PNG;
-	}
-	CHECK(false);
-	return FIF_UNKNOWN;
-}
-
-void WriteImageToDisk(const Image2D* image, const char* filepath, EImageFileType fileType)
-{
-	std::vector<BYTE> imageBlob;
-	imageBlob.reserve(3 * image->GetWidth() * image->GetHeight());
-	for (int32 y = (int32)image->GetHeight() - 1; y >= 0; --y)
-	{
-		for (uint32 x = 0; x < image->GetWidth(); ++x)
-		{
-			uint32 rgba = image->GetPixel(x, y).ToUint32();
-			imageBlob.push_back(rgba & 0xff);
-			imageBlob.push_back((rgba >> 8) & 0xff);
-			imageBlob.push_back((rgba >> 16) & 0xff);
-		}
-	}
-	FREE_IMAGE_FORMAT fif = ToFreeImageType(fileType);
-	FIBITMAP* dib = FreeImage_ConvertFromRawBits(
-		imageBlob.data(),
-		image->GetWidth(), image->GetHeight(),
-		image->GetWidth() * 3, 3 * 8,
-		0, 0, 0);
-	FreeImage_Save(fif, dib, filepath, 0);
-	FreeImage_Unload(dib);
-}

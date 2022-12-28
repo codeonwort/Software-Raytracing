@@ -1,5 +1,6 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
 #include <vector>
@@ -88,16 +89,16 @@ class Image2D
 {
 
 public:
-	explicit Image2D();
-	Image2D(uint32 width, uint32 height, const Pixel& argb);
-	Image2D(uint32 width, uint32 height, uint32 color = 0xff000000);
+	RAYLIB_API explicit Image2D();
+	RAYLIB_API Image2D(uint32 width, uint32 height, const Pixel& argb);
+	RAYLIB_API Image2D(uint32 width, uint32 height, uint32 color = 0xff000000);
 
-	void Reallocate(uint32 width, uint32 height, const Pixel& clearColor = Pixel(0xff000000));
+	RAYLIB_API void Reallocate(uint32 width, uint32 height, const Pixel& clearColor = Pixel(0xff000000));
 
-	void SetPixel(int32 x, int32 y, const Pixel& argb);
-	void SetPixel(int32 x, int32 y, uint32 argb);
+	RAYLIB_API void SetPixel(int32 x, int32 y, const Pixel& argb);
+	RAYLIB_API void SetPixel(int32 x, int32 y, uint32 argb);
 
-	void PostProcess(); // tone mapping, gamma correction, etc.
+	RAYLIB_API void PostProcess(); // tone mapping, gamma correction, etc.
 
 	inline uint32 GetWidth() const { return width; }
 	inline uint32 GetHeight() const { return height; }
@@ -105,14 +106,13 @@ public:
 	inline const std::vector<Pixel>& GetPixelArray() const { return image; }
 
 	Image2D Clone() const;
-	void DumpFloatRGBs(std::vector<float>& outArray);
+	RAYLIB_API void DumpFloatRGBs(std::vector<float>& outArray);
 
-//private:
-public:
+private:
 	inline int32 ix(int32 x, int32 y) const { return y * width + x; }
 
 	uint32 width;
 	uint32 height;
-	std::vector<Pixel> image;
+	std::vector<Pixel> image; // row-major
 
 };

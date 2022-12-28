@@ -35,9 +35,6 @@ extern "C" {
 	// To create an image on-the-fly, use Raylib_CreateImage().
 	RAYLIB_API ImageHandle Raylib_LoadImage(const char* imagePath);
 
-	// Create an image.
-	RAYLIB_API ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height);
-
 	// -----------------------------------------------------------------------
 	// Construct scenes
 
@@ -57,10 +54,12 @@ extern "C" {
 	RAYLIB_API CameraHandle Raylib_CreateCamera();
 	RAYLIB_API bool Raylib_DestroyCamera(CameraHandle cameraHandle);
 
+	// Create an image.
+	RAYLIB_API ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height);
+	RAYLIB_API bool Raylib_DestroyImage(ImageHandle imageHandle);
+
 	// -----------------------------------------------------------------------
 	// Rendering
-
-	RAYLIB_API bool Raylib_DestroyImage(ImageHandle imageHandle);
 
 	// Generate a noisy path traced image.
 	// @param scene        [in] The scene to render.
@@ -103,6 +102,7 @@ extern "C" {
 	RAYLIB_API const char* Raylib_GetAuxRenderModeString(uint32_t auxMode);
 
 	// Save an image data as a image file to disk.
+	// #todo-lib: Support HDR formats.
 	// @param image    The image to write.
 	// @param filepath Target filepath.
 	// @param fileType See EImageFileType. (bmp, jpg, png, ...)

@@ -2,7 +2,7 @@
 
 #include "core/random.h"
 #include "brdf.h"
-#include "image.h"
+#include "render/image.h"
 #include "texture.h"
 #include "geom/ray.h"
 #include "geom/hit.h"

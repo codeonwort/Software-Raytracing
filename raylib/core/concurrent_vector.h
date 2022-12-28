@@ -19,7 +19,7 @@ public:
 		std_vector.push_back(item);
 	}
 
-	bool contains(const T& item) const
+	bool contains(const T& item)
 	{
 		std::lock_guard<std::mutex> lockGuard(cs);
 		for (const T& x : std_vector)

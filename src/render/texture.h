@@ -1,6 +1,6 @@
 #pragma once
 
-#include "image.h"
+#include "render/image.h"
 #include "core/int_types.h"
 #include "core/noncopyable.h"
 

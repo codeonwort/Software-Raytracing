@@ -31,5 +31,3 @@ public:
 	 */
 	
 };
-
-void WriteImageToDisk(const Image2D* image, const char* filepath, EImageFileType fileType);

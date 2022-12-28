@@ -1,7 +1,8 @@
 #include "image.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
-#include "util/log.h"
+// #todo-raylib
+//#include "util/log.h"
 
 #define TONE_MAP         1    // Still some artifact around borders that I don't quite get
 #define FORCE_MAX_WHITE  1    // Clamp the tone mapping result to white
@@ -73,7 +74,8 @@ void Image2D::PostProcess()
 		}
 	}
 
-	LOG("Max white luminance: %f", maxWhiteLuminance);
+	// #todo-raylib
+	//LOG("Max white luminance: %f", maxWhiteLuminance);
 
 	for (size_t i = 0; i < len; ++i)
 	{
