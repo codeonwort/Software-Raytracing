@@ -12,6 +12,15 @@ class Camera
 {
 
 public:
+	Camera()
+	{
+		Camera(
+			vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f),
+			60.0f, 16.0f / 9.0f,
+			0.0f, 1.0f,
+			0.0f, 0.0f);
+	}
+
 	// fov_y in degrees
 	// aspect = screen_width / screen_height
 	Camera(

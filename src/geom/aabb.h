@@ -1,5 +1,5 @@
 #include "core/vec3.h"
-#include "ray.h"
+#include "geom/ray.h"
 
 class AABB
 {

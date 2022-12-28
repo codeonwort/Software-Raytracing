@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ray.h"
+#include "geom/ray.h"
 #include "aabb.h"
 #include "core/assertion.h"
 

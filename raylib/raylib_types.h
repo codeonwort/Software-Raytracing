@@ -2,6 +2,14 @@
 
 // Separated from raylib.h for typedefs
 
+#include <stdint.h>
+
+#ifdef RAYLIB_EXPORTS
+	#define RAYLIB_API __declspec(dllexport)
+#else
+	#define RAYLIB_API __declspec(dllimport)
+#endif
+
 typedef uintptr_t OBJModelHandle;
 typedef uintptr_t ImageHandle;
 typedef uintptr_t SceneHandle;

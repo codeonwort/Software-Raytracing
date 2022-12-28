@@ -1,5 +1,6 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
 
@@ -63,13 +64,14 @@ private:
 
 };
 
-vec3 RandomInUnitSphere();
+// #todo-raylib: Temp RAYLIB_API
+RAYLIB_API vec3 RandomInUnitSphere();
 
-vec3 RandomInHemisphere(const vec3& axis);
+RAYLIB_API vec3 RandomInHemisphere(const vec3& axis);
 
-float Random();
+RAYLIB_API float Random();
 
-vec3 RandomInUnitDisk();
+RAYLIB_API vec3 RandomInUnitDisk();
 
 // Cosine-weighted samples on a hemisphere around (0,0,1)
-vec3 RandomInCosineHemisphere();
+RAYLIB_API vec3 RandomInCosineHemisphere();

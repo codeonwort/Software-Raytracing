@@ -1,15 +1,15 @@
 #include "renderer.h"
-#include "image.h"
-#include "camera.h"
-#include "material.h"
+#include "render/image.h"
+#include "render/camera.h"
+#include "render/material.h"
 #include "core/random.h"
 #include "core/platform.h"
 #include "core/thread_pool.h"
+#include "core/assertion.h"
 #include "geom/ray.h"
 #include "geom/hit.h"
 #include "util/stat.h"
 #include "util/log.h"
-#include "core/assertion.h"
 
 #include <algorithm>
 #include <thread>

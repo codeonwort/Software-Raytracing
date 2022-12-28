@@ -1,5 +1,6 @@
 #pragma once
 
+#include "raylib_types.h"
 #include <stdint.h>
 
 // Main header for raytracing library.
@@ -9,16 +10,8 @@
 // 1. Move all raytracing logic to this project.
 // 2. Rename 'src' as something like 'demoapp'
 
-#ifdef RAYLIB_EXPORTS
-	#define RAYLIB_API __declspec(dllexport)
-#else
-	#define RAYLIB_API __declspec(dllimport)
-#endif
-
 // -----------------------------------------------------------------------
 // Public API
-
-#include "raylib_types.h"
 
 extern "C" {
 
