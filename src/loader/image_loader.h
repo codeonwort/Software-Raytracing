@@ -2,6 +2,9 @@
 
 #include "core/noncopyable.h"
 #include "render/image.h"
+
+#include "raylib_types.h"
+
 #include <memory>
 
 class ImageLoader : public Noncopyable
@@ -27,13 +30,6 @@ public:
 	 * AsyncLoadProgress GetProgress();
 	 */
 	
-};
-
-enum class EImageFileType
-{
-	Bitmap,
-	Jpg,
-	Png
 };
 
 void WriteImageToDisk(const Image2D& image, const char* filepath, EImageFileType fileType);

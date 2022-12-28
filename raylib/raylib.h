@@ -18,106 +18,101 @@
 // -----------------------------------------------------------------------
 // Public API
 
-typedef uintptr_t OBJModelHandle;
-typedef uintptr_t ImageHandle;
-typedef uintptr_t SceneHandle;
-typedef uintptr_t CameraHandle;
+#include "raylib_types.h"
 
-enum EAuxRenderMode : uint32_t
-{
-	Albedo             = 0,
-	SurfaceNormal      = 1, // In world space.
-	MicrosurfaceNormal = 2, // In local space.
-	Texcoord           = 3, // Surface parameterization.
-	Emission           = 4,
-	Reflectance        = 5, // Can be very noisy for surfaces with diffuse materials.
+extern "C" {
 
-	MAX
-};
+	// -----------------------------------------------------------------------
+	// Library initialization & termination
 
-extern "C" RAYLIB_API const char* GetAuxRenderModeString(uint32_t auxMode);
+	RAYLIB_API int32_t Raylib_Initialize();
+	RAYLIB_API int32_t Raylib_Terminate();
 
-// -----------------------------------------------------------------------
-// Library initialization & termination
+	// -----------------------------------------------------------------------
+	// Manage media files
 
-extern "C" RAYLIB_API int32_t Raylib_Initialize();
-extern "C" RAYLIB_API int32_t Raylib_Terminate();
+	// Load Wavefront OBJ model.
+	RAYLIB_API OBJModelHandle Raylib_LoadOBJModel(const char* objPath, const char* mtldir);
 
-// -----------------------------------------------------------------------
-// Manage media files
+	// Unload Wavefront OBJ model.
+	// @return true if successful, false otherwise.
+	RAYLIB_API bool Raylib_UnloadOBJModel(OBJModelHandle objHandle);
 
-// Load Wavefront OBJ model.
-extern "C" RAYLIB_API OBJModelHandle Raylib_LoadOBJModel(const char* objPath, const char* mtldir);
+	// Load an image from an external image file.
+	// To create an image on-the-fly, use Raylib_CreateImage().
+	RAYLIB_API ImageHandle Raylib_LoadImage(const char* imagePath);
 
-// Unload Wavefront OBJ model.
-// @return true if successful, false otherwise.
-extern "C" RAYLIB_API bool Raylib_UnloadOBJModel(OBJModelHandle objHandle);
+	// Create an image.
+	RAYLIB_API ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height);
 
-// Load an image from an external image file.
-// To create an image on-the-fly, use Raylib_CreateImage().
-extern "C" RAYLIB_API ImageHandle Raylib_LoadImage(const char* imagePath);
+	// -----------------------------------------------------------------------
+	// Construct scenes
 
-// Create an image.
-extern "C" RAYLIB_API ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height);
+	// Create an empty scene.
+	RAYLIB_API SceneHandle Raylib_CreateScene();
 
-// -----------------------------------------------------------------------
-// Construct scenes
+	// Add OBJ model to scene.
+	RAYLIB_API void Raylib_AddOBJModelToScene(SceneHandle scene, OBJModelHandle objModel);
 
-// Create an empty scene.
-extern "C" RAYLIB_API SceneHandle Raylib_CreateScene();
+	// Finalize scene construction and prepare for rendering.
+	// A scene must be finalized before rendering.
+	RAYLIB_API void Raylib_FinalizeScene(SceneHandle scene);
 
-// Add OBJ model to scene.
-extern "C" RAYLIB_API void Raylib_AddOBJModelToScene(SceneHandle scene, OBJModelHandle objModel);
+	// Release the memory for a scene.
+	RAYLIB_API bool Raylib_DestroyScene(SceneHandle sceneHandle);
 
-// Finalize scene construction and prepare for rendering.
-// A scene must be finalized before rendering.
-extern "C" RAYLIB_API void Raylib_FinalizeScene(SceneHandle scene);
+	RAYLIB_API CameraHandle Raylib_CreateCamera();
+	RAYLIB_API bool Raylib_DestroyCamera(CameraHandle cameraHandle);
 
-// Release the memory for a scene.
-extern "C" RAYLIB_API bool Raylib_DestroyScene(SceneHandle sceneHandle);
+	// -----------------------------------------------------------------------
+	// Rendering
 
-extern "C" RAYLIB_API CameraHandle Raylib_CreateCamera();
-extern "C" RAYLIB_API bool Raylib_DestroyCamera(CameraHandle cameraHandle);
+	RAYLIB_API bool Raylib_DestroyImage(ImageHandle imageHandle);
 
-// -----------------------------------------------------------------------
-// Rendering
+	// Generate a noisy path traced image.
+	// @param scene        [in] The scene to render.
+	// @param camera       [in] Camera from which to look at the scene.
+	// @param outMainImage [out] Rendered image.
+	// @return Returns 0 if successful, -1 otherwise.
+	RAYLIB_API int32_t Raylib_Render(
+		SceneHandle  scene,
+		CameraHandle camera,
+		ImageHandle  outMainImage);
 
-extern "C" RAYLIB_API bool Raylib_DestroyImage(ImageHandle imageHandle);
+	// Render an aux image.
+	// @param scene       [in] The scene to render.
+	// @param camera      [in] Camera from which to look at the scene.
+	// @param auxMode     [in] See EAuxRenderMode enum.
+	// @param outAuxImage [out] Rendered aux image.
+	// @return Returns 0 if successful, -1 otherwise.
+	RAYLIB_API int32_t Raylib_RenderAux(
+		SceneHandle  scene,
+		CameraHandle camera,
+		uint32_t     auxMode,
+		ImageHandle  outAuxImage);
 
-// Generate a noisy path traced image.
-// @param scene        [in] The scene to render.
-// @param camera       [in] Camera from which to look at the scene.
-// @param outMainImage [out] Rendered image.
-// @return Returns 0 if successful, -1 otherwise.
-extern "C" RAYLIB_API int32_t Raylib_Render(
-	SceneHandle  scene,
-	CameraHandle camera,
-	ImageHandle  outMainImage);
+	// Denoise a noisy path traced image using Intel OpenImageDenoise.
+	// You can provide optional aux images (albedo and normal) for better quality.
+	// @param inMainImage      [in] noisy path traced image.
+	// @param inAlbedoImage    [in] (optional) albedo image.
+	// @param inNormalImage    [in] (optional) world normal image.
+	// @param outDenoisedImage [out] denoised image.
+	// @return Returns 0 if successful, -1 otherwise.
+	RAYLIB_API int32_t Raylib_Denoise(
+		ImageHandle inMainImage,
+		ImageHandle inAlbedoImage,
+		ImageHandle inNormalImage,
+		ImageHandle outDenoisedImage);
 
-// Render an aux image.
-// @param scene       [in] The scene to render.
-// @param camera      [in] Camera from which to look at the scene.
-// @param auxMode     [in] See EAuxRenderMode enum.
-// @param outAuxImage [out] Rendered aux image.
-// @return Returns 0 if successful, -1 otherwise.
-extern "C" RAYLIB_API int32_t Raylib_RenderAux(
-	SceneHandle  scene,
-	CameraHandle camera,
-	uint32_t     auxMode,
-	ImageHandle  outAuxImage);
+	// -----------------------------------------------------------------------
+	// Utils
 
-// Denoise a noisy path traced image using Intel OpenImageDenoise.
-// You can provide optional aux images (albedo and normal) for better quality.
-// @param inMainImage      [in] noisy path traced image.
-// @param inAlbedoImage    [in] (optional) albedo image.
-// @param inNormalImage    [in] (optional) world normal image.
-// @param outDenoisedImage [out] denoised image.
-// @return Returns 0 if successful, -1 otherwise.
-extern "C" RAYLIB_API int32_t Raylib_Denoise(
-	ImageHandle inMainImage,
-	ImageHandle inAlbedoImage,
-	ImageHandle inNormalImage,
-	ImageHandle outDenoisedImage);
+	RAYLIB_API const char* Raylib_GetAuxRenderModeString(uint32_t auxMode);
 
-// -----------------------------------------------------------------------
-// Utils
+	// Save an image data as a image file to disk.
+	// @param image    The image to write.
+	// @param filepath Target filepath.
+	// @param fileType See EImageFileType. (bmp, jpg, png, ...)
+	RAYLIB_API void Raylib_WriteImageToDisk(ImageHandle image, const char* filepath, uint32_t fileType);
+
+} // extern "C"

@@ -128,9 +128,9 @@ FREE_IMAGE_FORMAT ToFreeImageType(EImageFileType inType)
 {
 	switch (inType)
 	{
-		case EImageFileType::Bitmap: return FIF_BMP;
-		case EImageFileType::Jpg:    return FIF_JPEG;
-		case EImageFileType::Png:    return FIF_PNG;
+		case RAYLIB_IMAGEFILETYPE_Bitmap: return FIF_BMP;
+		case RAYLIB_IMAGEFILETYPE_Jpg:    return FIF_JPEG;
+		case RAYLIB_IMAGEFILETYPE_Png:    return FIF_PNG;
 	}
 	CHECK(false);
 	return FIF_UNKNOWN;

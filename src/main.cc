@@ -2,7 +2,6 @@
 #include "resource_finder.h"
 
 // #todo-raylib: All belongs to raylib
-#include "core/platform.h"
 #include "core/random.h"
 #include "render/image.h"
 #include "render/camera.h"
@@ -507,8 +506,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
 		std::string normalFilenameJPG = makeFilename("_1.jpg");
-		WriteImageToDisk(albedoImage, albedoFilenameJPG.c_str(), EImageFileType::Jpg);
-		WriteImageToDisk(wNormalImage, normalFilenameJPG.c_str(), EImageFileType::Jpg);
+		WriteImageToDisk(albedoImage, albedoFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+		WriteImageToDisk(wNormalImage, normalFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 
 		Image2D* denoisedOutput = nullptr;
 		renderer.DenoiseScene(
@@ -517,7 +516,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 		denoisedOutput->PostProcess();
 
 		std::string denoiseFilenameJPG = makeFilename("_2.jpg");
-		WriteImageToDisk(*denoisedOutput, denoiseFilenameJPG.c_str(), EImageFileType::Jpg);
+		WriteImageToDisk(*denoisedOutput, denoiseFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 
 		delete denoisedOutput;
 	}
@@ -526,8 +525,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	mainImage.PostProcess();
 	std::string resultFilenameBMP = makeFilename(".bmp");
 	std::string resultFilenameJPG = makeFilename(".jpg");
-	WriteImageToDisk(mainImage, resultFilenameBMP.c_str(), EImageFileType::Bitmap);
-	WriteImageToDisk(mainImage, resultFilenameJPG.c_str(), EImageFileType::Jpg);
+	WriteImageToDisk(mainImage, resultFilenameBMP.c_str(), RAYLIB_IMAGEFILETYPE_Bitmap);
+	WriteImageToDisk(mainImage, resultFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 	LOG("image has been written to: %s", resultFilenameBMP.c_str());
 	LOG("image has been written to: %s", resultFilenameJPG.c_str());
 
