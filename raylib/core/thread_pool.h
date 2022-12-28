@@ -1,6 +1,8 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "core/int_types.h"
+#include "core/noncopyable.h"
 
 #include <mutex>
 #include <atomic>
@@ -44,28 +46,25 @@ struct WorkItemParam
 };
 
 // Not intended for use across several frames.
-class ThreadPool
+class ThreadPool : public Noncopyable
 {
 
 public:
-	ThreadPool();
-	~ThreadPool();
+	RAYLIB_API ThreadPool();
+	RAYLIB_API ~ThreadPool();
 
-	ThreadPool(const ThreadPool&) = delete;
-	ThreadPool& operator=(const ThreadPool&) = delete;
-
-	void Initialize(int32 numWorkerThreads);
+	RAYLIB_API void Initialize(int32 numWorkerThreads);
 
 	// Do not add any work after Start()
-	void AddWork(const ThreadPoolWork& workItem);
+	RAYLIB_API void AddWork(const ThreadPoolWork& workItem);
 
-	void Start(bool blocking);
-	bool IsDone() const;
+	RAYLIB_API void Start(bool blocking);
+	RAYLIB_API bool IsDone() const;
 
 	// Returns false if no work
-	bool PopWork(ThreadPoolWork& work);
+	RAYLIB_API bool PopWork(ThreadPoolWork& work);
 
-	inline float GetProgress() const
+	RAYLIB_API inline float GetProgress() const
 	{
 		return 1.0f - (float)(queueIx + 1) / (float)queue.size();
 	}

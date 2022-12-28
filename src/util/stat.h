@@ -1,7 +1,8 @@
 // Statistics about cpu cycle and memory usage
 
-#include "util/log.h"
+#pragma once
 
+#include "util/log.h"
 #include <chrono>
 
 struct ScopedCycleCounter

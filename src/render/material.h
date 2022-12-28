@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/random.h"
-#include "brdf.h"
+#include "render/brdf.h"
 #include "render/image.h"
 #include "texture.h"
 #include "geom/ray.h"

@@ -1,7 +1,5 @@
 #include "thread_pool.h"
-#include "util/log.h"
 #include <assert.h>
-
 
 static void* pooledThreadMain(void* _param)
 {
