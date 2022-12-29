@@ -8,27 +8,23 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/raylib)
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/source)
+
+# TODO: Why do I need them here
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/tinyobjloader/source)
-include_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/include)
-
-# Link libraries
 link_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries)
-link_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/lib)
 
-file(GLOB_RECURSE SRCFILES "*.cc" "*.cpp")
-list(APPEND SRCFILES "../thirdparty/tinyobjloader/source/tiny_obj_loader.cc")
-list(APPEND SRCFILES "../thirdparty/OpenImageDenoise/include/oidn.h")
+file(GLOB_RECURSE SRCFILES "*.cc")
 add_executable(RayTracer ${SRCFILES})
 
 # TODO: Add tests and install targets if needed.
-target_link_libraries(RayTracer raylib FreeImage)
+target_link_libraries(RayTracer raylib)
 
+# TODO: These thirdparty libs are not built here, but their DLLs are required.
+# Somehow let raylib's CMakeLists.txt copy them to this project's target dir?
 add_custom_command(TARGET RayTracer POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	"${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries/FreeImage.dll"
 	$<TARGET_FILE_DIR:RayTracer>)
-	
 add_custom_command(TARGET RayTracer POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	"${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/bin/OpenImageDenoise.dll"
