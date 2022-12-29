@@ -4,19 +4,13 @@
 // #todo-raylib: All belongs to raylib
 #include "core/random.h"
 #include "render/image.h"
-#include "render/camera.h"
 #include "render/material.h"
-#include "render/renderer.h"
-#include "geom/bvh.h"
 #include "geom/cube.h"
 #include "geom/sphere.h"
 #include "geom/triangle.h"
 #include "geom/static_mesh.h"
-#include "geom/transform.h"
-#include "geom/scene.h"
 
 #include "raylib/raylib.h"
-#include "raylib/raylib_types.h"
 
 #include <functional>
 #include <iostream>
@@ -882,8 +876,8 @@ SceneHandle CreateScene_ObjModel()
 	const float fanAngle = 1.0f / (float)(numFans + 1);
 	for (int32 i = 0; i <= numFans; ++i)
 	{
-		float fanBegin = pi<float>* fanAngle* i;
-		float fanEnd = pi<float> * fanAngle * (i + 1);
+		float fanBegin = (float)M_PI * fanAngle * i;
+		float fanEnd = (float)M_PI * fanAngle * (i + 1);
 		float fanRadius = 3.0f + 1.0f * (float)i / numFans;
 		float z = -2.0f;
 		vec3 v0(fanRadius * std::cos(fanBegin), fanRadius * std::sin(fanBegin), z);
