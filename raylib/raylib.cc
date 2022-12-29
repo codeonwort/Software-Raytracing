@@ -226,6 +226,21 @@ void Raylib_AddOBJModelToScene(SceneHandle scene, OBJModelHandle objModel)
 	((Scene*)scene)->AddSceneElement(objModelRoot);
 }
 
+void Raylib_SetSkyPanorama(SceneHandle scene, ImageHandle skyImage)
+{
+	((Scene*)scene)->SetSkyPanorama(skyImage);
+}
+
+void Raylib_SetSunIlluminance(SceneHandle scene, float r, float g, float b)
+{
+	((Scene*)scene)->SetSunIlluminance(vec3(r, g, b));
+}
+
+void Raylib_SetSunDirection(SceneHandle scene, float x, float y, float z)
+{
+	((Scene*)scene)->SetSunDirection(vec3(x, y, z));
+}
+
 void Raylib_PostProcess(ImageHandle image)
 {
 	((Image2D*)image)->PostProcess();

@@ -51,6 +51,10 @@ extern "C" {
 	// Add OBJ model to scene.
 	RAYLIB_API void Raylib_AddOBJModelToScene(SceneHandle scene, OBJModelHandle objModel);
 
+	RAYLIB_API void Raylib_SetSkyPanorama(SceneHandle scene, ImageHandle skyImage);
+	RAYLIB_API void Raylib_SetSunIlluminance(SceneHandle scene, float r, float g, float b);
+	RAYLIB_API void Raylib_SetSunDirection(SceneHandle scene, float x, float y, float z);
+
 	// Finalize scene construction and prepare for rendering.
 	// A scene must be finalized before rendering.
 	RAYLIB_API void Raylib_FinalizeScene(SceneHandle scene);

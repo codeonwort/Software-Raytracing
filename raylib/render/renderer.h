@@ -10,24 +10,15 @@ class Camera;
 class Scene;
 class Image2D;
 
-using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
-using FakeSunLightFunction = std::function<void(vec3& outDir, vec3& outIlluminance)>;
-
 struct RendererSettings {
 	// Camera properties
 	uint32               viewportWidth;
 	uint32               viewportHeight;
-	vec3                 cameraLocation;
-	vec3                 cameraLookat;
 
 	// Path tracing options
 	int32                samplesPerPixel;
 	int32                maxPathLength;
 	float                rayTMin;
-
-	// Global lighting environment
-	FakeSkyLightFunction skyLightFn      = nullptr;
-	FakeSunLightFunction sunLightFn      = nullptr;
 
 	// System values
 	ERenderMode          renderMode      = ERenderMode::RAYLIB_RENDERMODE_Default;

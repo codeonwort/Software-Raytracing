@@ -1,6 +1,12 @@
 #include "scene.h"
 #include "bvh.h"
 
+Scene::Scene()
+{
+	sunIlluminance = vec3(0.0f);
+	sunDirection = normalize(vec3(0.0f, -1.0f, -0.5f));
+}
+
 Scene::~Scene()
 {
 	if (accelStruct) delete accelStruct;

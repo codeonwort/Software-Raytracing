@@ -11,6 +11,7 @@
 #include "geom/ray.h"
 #include "geom/hit.h"
 #include "geom/scene.h"
+#include "geom/transform.h"
 
 #include <algorithm>
 #include <thread>
@@ -39,7 +40,7 @@ struct WorkCell {
 
 	Image2D* image;
 	const Camera* camera;
-	const Hitable* world;
+	const Scene* world;
 	RendererSettings rendererSettings;
 };
 
@@ -60,13 +61,13 @@ bool Renderer::IsDenoiserSupported()
 
 vec3 TraceSceneDebugMode(
 	const ray& pathRay,
-	const Hitable* world,
+	const Scene* world,
 	const RayPayload& settings,
 	ERenderMode debugMode)
 {
 	vec3 debugValue = vec3(0.0f);
 	HitResult hitResult;
-	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult))
+	if (world->GetAccelStruct()->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult))
 	{
 		if (debugMode == ERenderMode::RAYLIB_RENDERMODE_Albedo)
 		{
@@ -103,11 +104,9 @@ vec3 TraceSceneDebugMode(
 // Run path tracing to find incoming radiance.
 vec3 TraceScene(
 	const ray& pathRay,
-	const Hitable* world,
+	const Scene* world,
 	int depth,
-	const RayPayload& settings,
-	FakeSkyLightFunction skyLightFn,
-	FakeSunLightFunction sunLightFn)
+	const RayPayload& settings)
 {
 	if (depth >= settings.maxRecursion)
 	{
@@ -118,7 +117,7 @@ vec3 TraceScene(
 	// #todo-pbr: Still not sure if I did importance sampling right. Verify again.
 
 	HitResult hitResult;
-	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult))
+	if (world->GetAccelStruct()->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult))
 	{
 		hitResult.BuildOrthonormalBasis();
 
@@ -132,7 +131,7 @@ vec3 TraceScene(
 		{
 			if (pdf > 0.0f)
 			{
-				vec3 Li = TraceScene(scatteredRay, world, depth + 1, settings, skyLightFn, sunLightFn);
+				vec3 Li = TraceScene(scatteredRay, world, depth + 1, settings);
 				float scatteringPdf = hitResult.material->ScatteringPdf(hitResult, -pathRay.d, scatteredRay.d);
 				radiance += reflectance * Li * scatteringPdf / pdf;
 			}
@@ -145,20 +144,45 @@ vec3 TraceScene(
 		return radiance;
 	}
 
-	// If hit nothing, get incoming radiance from sky atmosphere and Sun.
+	// If nothing hit, get incoming radiance from sky atmosphere and Sun.
 	vec3 missResult(0.0f);
-	if (skyLightFn != nullptr)
+	// Distant lighting: Sky
+	ImageHandle skyLightHandle = world->GetSkyPanorama();
+	if (skyLightHandle != NULL)
 	{
 		vec3 dir = pathRay.d;
 		dir.Normalize();
-		missResult += skyLightFn(dir);
+
+		// #todo-wip: Control sky image rotation in Scene.
+		Rotator rot;
+		rot.yaw = 90.0f;
+		vec3 D = rot.rotate(dir);
+		//const vec3& D = dir;
+
+		// #todo-wip: Is there a case uv goes to inf or nan?
+		float u = std::atan2(D.z, D.x), v = std::asin(D.y);
+		u *= 0.1591f; v *= 0.3183f; // inverse atan
+		u += 0.5f; v += 0.5f;
+
+		Image2D* skyLight = (Image2D*)skyLightHandle;
+		int32 x = (int32)(u * (skyLight->GetWidth() - 1));
+		int32 y = (int32)(v * (skyLight->GetHeight() - 1));
+
+		missResult += skyLight->GetPixel(x, y).RGBToVec3();
 	}
-	if (sunLightFn != nullptr)
+	else
 	{
-		vec3 sunDir, sunIlluminance;
-		sunLightFn(sunDir, sunIlluminance);
+		// #todo-wip: Fallback sky
+		//float t = 0.5f * (dir.y + 1.0f);
+		//return ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
+	}
+	// Distant lighting: Sun
+	vec3 sunDir, sunIlluminance;
+	world->GetSun(sunIlluminance, sunDir);
+	if (sunIlluminance != vec3(0.0f))
+	{
 		ray rayToSun(pathRay.o, -sunDir, pathRay.t);
-		if (!world->Hit(rayToSun, settings.rayTMin, FLOAT_MAX, hitResult))
+		if (!world->GetAccelStruct()->Hit(rayToSun, settings.rayTMin, FLOAT_MAX, hitResult))
 		{
 			missResult += sunIlluminance;
 		}
@@ -168,12 +192,10 @@ vec3 TraceScene(
 // Initial ray is a camera ray.
 vec3 TraceScene(
 	const ray& cameraRay,
-	const Hitable* world,
-	const RayPayload& settings,
-	FakeSkyLightFunction skyLightFn,
-	FakeSunLightFunction sunLightFn)
+	const Scene* world,
+	const RayPayload& settings)
 {
-	return TraceScene(cameraRay, world, 0, settings, skyLightFn, sunLightFn);
+	return TraceScene(cameraRay, world, 0, settings);
 }
 
 void GenerateCell(const WorkItemParam* param) {
@@ -206,13 +228,11 @@ void GenerateCell(const WorkItemParam* param) {
 						v += (randomsAA.Peek() - 0.5f) * 2.0f / imageHeight;
 					}
 					ray cameraRay = cell->camera->GetCameraRay(u, v);
-					vec3 scene = TraceScene(
+					vec3 Li = TraceScene(
 						cameraRay,
 						cell->world,
-						rtSettings,
-						cell->rendererSettings.skyLightFn,
-						cell->rendererSettings.sunLightFn);
-					accum += scene;
+						rtSettings);
+					accum += Li;
 				}
 				accum /= (float)SPP;
 				Pixel px(accum.x, accum.y, accum.z);
@@ -248,6 +268,7 @@ void Renderer::RenderScene(
 	Image2D* outImage)
 {
 	CHECK(settingsPtr != nullptr && world != nullptr && camera != nullptr && outImage != nullptr);
+	CHECK(world->GetAccelStruct() != nullptr);
 
 #if SINGLE_THREADED_RENDERING
 	const uint32 numCores = 1;
@@ -258,6 +279,12 @@ void Renderer::RenderScene(
 #endif
 
 	const RendererSettings& settings = *settingsPtr;
+
+	if (settings.viewportWidth != outImage->GetWidth()
+		|| settings.viewportHeight != outImage->GetHeight())
+	{
+		outImage->Reallocate(settings.viewportWidth, settings.viewportHeight);
+	}
 
 	const int32 imageWidth = outImage->GetWidth();
 	const int32 imageHeight = outImage->GetHeight();
@@ -276,7 +303,7 @@ void Renderer::RenderScene(
 			cell.height = std::min(WORKGROUP_SIZE_Y, imageHeight - y);
 			cell.image = outImage;
 			cell.camera = camera;
-			cell.world = world->GetAccelStruct();
+			cell.world = world;
 			cell.rendererSettings = settings;
 			workCells.emplace_back(cell);
 		}
@@ -390,7 +417,7 @@ bool Renderer::DenoiseScene(
 	oidnReleaseFilter(oidnFilter);
 	oidnReleaseDevice(oidnDevice);
 
-	outDenoisedImage->Reallocate(viewportWidth, viewportHeight, 0x0);
+	outDenoisedImage->Reallocate((uint32)viewportWidth, (uint32)viewportHeight, 0x0);
 	size_t k = 0;
 	for (uint32_t y = 0; y < viewportHeight; ++y)
 	{

@@ -40,36 +40,7 @@ static ProgramArguments g_programArgs;
 #define DEFAULT_CAMERA_LOOKAT      vec3(0.0f, 0.0f, -1.0f)
 #define DEFAULT_FOV_Y              45.0f
 
-std::shared_ptr<Texture2D>         skyTexture;
-
-// #todo-lighting: Merge sky atmosphere and Sun as a single 'distant light'?
-vec3 FAKE_SKY_LIGHT(const vec3& dir)
-{
-	if (skyTexture)
-	{
-		Rotator rot;
-		rot.yaw = 90.0f;
-		vec3 D = rot.rotate(dir);
-		//const vec3& D = dir;
-
-		// #todo-wip: Is there a case uv goes to inf or nan?
-		float u = std::atan2(D.z, D.x), v = std::asin(D.y);
-		u *= 0.1591f; v *= 0.3183f; // inverse atan
-		u += 0.5f; v += 0.5f;
-		
-		return skyTexture->Sample(u, v).RGBToVec3();
-	}
-
-	// #todo-lighting: Should be real sky atmosphere
-	// that involves interaction with sun light.
-	float t = 0.5f * (dir.y + 1.0f);
-	return ((1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f));
-}
-void FAKE_SUN_LIGHT(vec3& outDir, vec3& outIlluminance)
-{
-	outDir = normalize(vec3(0.0f, -1.0f, -0.5f));
-	outIlluminance = vec3(20.0f);
-}
+ImageHandle skyPanorama = NULL;
 
 // Demo scenes
 SceneHandle CreateScene_CornellBox();
@@ -91,8 +62,9 @@ struct SceneDesc
 	vec3 cameraLocation             = DEFAULT_CAMERA_LOCATION;
 	vec3 cameraLookat               = DEFAULT_CAMERA_LOOKAT;
 	float fovY                      = DEFAULT_FOV_Y;
-	FakeSkyLightFunction skyLightFn = FAKE_SKY_LIGHT;
-	FakeSunLightFunction sunLightFn = FAKE_SUN_LIGHT;
+	bool bUseSkyImage               = false;
+	vec3 sunIlluminance             = vec3(20.0f);
+	vec3 sunDirection               = normalize(vec3(0.0f, -1.0f, -0.5f));
 };
 
 SceneDesc g_sceneDescs[] = {
@@ -102,8 +74,8 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 1.0f, 4.0f),
 		vec3(0.0f, 1.0f, -1.0f),
 		DEFAULT_FOV_Y,
-		nullptr,
-		nullptr,
+		false,
+		vec3(0.0f) // Sun
 	},
 	{
 		CreateScene_BreakfastRoom,
@@ -155,8 +127,8 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 0.5f, 3.0f),
 		vec3(0.0f, 0.5f, 0.0f),
 		DEFAULT_FOV_Y,
-		FAKE_SKY_LIGHT,
-		nullptr
+		true,
+		vec3(0.0f)
 	},
 	{
 		CreateScene_RandomSpheres,
@@ -164,8 +136,8 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 1.5f, 5.0f),
 		vec3(0.0f, 0.5f, 0.0f),
 		60.0f,
-		FAKE_SKY_LIGHT,
-		nullptr
+		true,
+		vec3(0.0f)
 	},
 #if 0
 	{
@@ -218,7 +190,12 @@ struct OBJModelContainer
 
 OBJModelContainer g_objContainer;
 
-void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& settings);
+void ExecuteRenderer(
+	uint32 sceneID,
+	bool bRunDenoiser,
+	const vec3& cameraLocation,
+	const vec3& cameraLookAt,
+	const RendererSettings& settings);
 
 int main(int argc, char** argv) {
 	LOG("=== Software Raytracer ===");
@@ -233,16 +210,15 @@ int main(int argc, char** argv) {
 	uint32 currentSceneID = 0;
 	bool bRunDenoiser = true;
 
+	vec3 cameraLocation = g_sceneDescs[currentSceneID].cameraLocation;
+	vec3 cameraLookAt = g_sceneDescs[currentSceneID].cameraLookat;
+
 	RendererSettings rendererSettings;
 	rendererSettings.viewportWidth   = DEFAULT_VIEWPORT_WIDTH;
 	rendererSettings.viewportHeight  = DEFAULT_VIEWPORT_HEIGHT;
-	rendererSettings.cameraLocation  = g_sceneDescs[currentSceneID].cameraLocation;
-	rendererSettings.cameraLookat    = g_sceneDescs[currentSceneID].cameraLookat;
 	rendererSettings.samplesPerPixel = SAMPLES_PER_PIXEL;
 	rendererSettings.maxPathLength   = MAX_RECURSION;
 	rendererSettings.rayTMin         = RAY_T_MIN;
-	rendererSettings.skyLightFn      = g_sceneDescs[currentSceneID].skyLightFn;
-	rendererSettings.sunLightFn      = g_sceneDescs[currentSceneID].sunLightFn;
 	rendererSettings.renderMode      = ERenderMode::RAYLIB_RENDERMODE_Default;
 
 	Raylib_FlushLogThread();
@@ -293,10 +269,8 @@ int main(int argc, char** argv) {
 				std::cout << "Invalid scene number" << std::endl;
 			}
 
-			rendererSettings.cameraLocation = g_sceneDescs[currentSceneID].cameraLocation;
-			rendererSettings.cameraLookat = g_sceneDescs[currentSceneID].cameraLookat;
-			rendererSettings.skyLightFn = g_sceneDescs[currentSceneID].skyLightFn;
-			rendererSettings.sunLightFn = g_sceneDescs[currentSceneID].sunLightFn;
+			cameraLocation = g_sceneDescs[currentSceneID].cameraLocation;
+			cameraLookAt = g_sceneDescs[currentSceneID].cameraLookat;
 			if (prevSceneID != currentSceneID)
 			{
 				g_objContainer.clear();
@@ -304,7 +278,12 @@ int main(int argc, char** argv) {
 		}
 		else if (command == "run")
 		{
-			ExecuteRenderer(currentSceneID, bRunDenoiser, rendererSettings);
+			ExecuteRenderer(
+				currentSceneID,
+				bRunDenoiser,
+				cameraLocation,
+				cameraLookAt,
+				rendererSettings);
 		}
 		else if (command == "denoiser")
 		{
@@ -360,7 +339,7 @@ int main(int argc, char** argv) {
 			std::cin >> x >> y >> z;
 			if (std::cin.good())
 			{
-				rendererSettings.cameraLocation = vec3(x, y, z);
+				cameraLocation = vec3(x, y, z);
 			}
 			else
 			{
@@ -373,7 +352,7 @@ int main(int argc, char** argv) {
 			std::cin >> x >> y >> z;
 			if (std::cin.good())
 			{
-				rendererSettings.cameraLookat = vec3(x, y, z);
+				cameraLookAt = vec3(x, y, z);
 			}
 			else
 			{
@@ -420,27 +399,30 @@ int main(int argc, char** argv) {
 	//
 	// Cleanup
 	//
+	if (skyPanorama != NULL)
+	{
+		Raylib_DestroyImage(skyPanorama);
+		skyPanorama = NULL;
+	}
 	Raylib_Terminate();
 
 	return 0;
 }
 
-void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& settings)
+void ExecuteRenderer(
+	uint32 sceneID,
+	bool bRunDenoiser,
+	const vec3& cameraLocation,
+	const vec3& cameraLookAt,
+	const RendererSettings& settings)
 {
 	const SceneDesc& sceneDesc = g_sceneDescs[sceneID];
 
-	// #todo-raylib: How to deal with ImageHandle and shared_ptr<Image2D>
-#if 0
-	if (skyTexture == nullptr)
+	if (skyPanorama == NULL)
 	{
 		std::string filepath = ResourceFinder::Get().Find("content/Ridgecrest_Road_Ref.hdr");
-		ImageHandle skyImage = Raylib_LoadImage(filepath.c_str());
-		if (skyImage != NULL)
-		{
-			skyTexture = std::shared_ptr<Texture2D>(Texture2D::CreateFromImage2D(skyImage));
-		}
+		skyPanorama = Raylib_LoadImage(filepath.c_str());
 	}
-#endif
 	
 	auto makeFilename = [&sceneDesc](const char* prefix) {
 		std::string name = SOLUTION_DIR "test_";
@@ -453,14 +435,17 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 	const uint32 viewportWidth = settings.viewportWidth;
 	const uint32 viewportHeight = settings.viewportHeight;
-	const float focalDistance = (settings.cameraLocation - settings.cameraLookat).Length();
+	const float focalDistance = (cameraLocation - cameraLookAt).Length();
 
 	SceneHandle scene = sceneDesc.createSceneFn();
+	Raylib_SetSkyPanorama(scene, sceneDesc.bUseSkyImage ? skyPanorama : NULL);
+	Raylib_SetSunIlluminance(scene, sceneDesc.sunIlluminance.x, sceneDesc.sunIlluminance.y, sceneDesc.sunIlluminance.z);
+	Raylib_SetSunDirection(scene, sceneDesc.sunDirection.x, sceneDesc.sunDirection.y, sceneDesc.sunDirection.z);
 	Raylib_FinalizeScene(scene);
 
 	CameraHandle camera = Raylib_CreateCamera();
-	Raylib_CameraSetPosition(camera, settings.cameraLocation.x, settings.cameraLocation.y, settings.cameraLocation.z);
-	Raylib_CameraSetLookAt(camera, settings.cameraLookat.x, settings.cameraLookat.y, settings.cameraLookat.z);
+	Raylib_CameraSetPosition(camera, cameraLocation.x, cameraLocation.y, cameraLocation.z);
+	Raylib_CameraSetLookAt(camera, cameraLookAt.x, cameraLookAt.y, cameraLookAt.z);
 	Raylib_CameraSetPerspective(camera, sceneDesc.fovY, settings.getViewportAspectWH());
 	Raylib_CameraSetLens(camera, CAMERA_APERTURE, focalDistance);
 	Raylib_CameraSetMotion(camera, CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
