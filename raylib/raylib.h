@@ -56,7 +56,7 @@ extern "C" {
 	RAYLIB_API void Raylib_FinalizeScene(SceneHandle scene);
 
 	// Release the memory for a scene.
-	RAYLIB_API bool Raylib_DestroyScene(SceneHandle sceneHandle);
+	RAYLIB_API int32_t Raylib_DestroyScene(SceneHandle sceneHandle);
 
 	RAYLIB_API CameraHandle Raylib_CreateCamera();
 	RAYLIB_API void Raylib_CameraSetPosition(CameraHandle camera, float x, float y, float z);
@@ -66,11 +66,11 @@ extern "C" {
 	RAYLIB_API void Raylib_CameraSetMotion(CameraHandle camera, float beginTime, float endTime);
 	// Copy all camera properties from src to dst.
 	RAYLIB_API void Raylib_CameraCopy(CameraHandle srcCamera, CameraHandle dstCamera);
-	RAYLIB_API bool Raylib_DestroyCamera(CameraHandle cameraHandle);
+	RAYLIB_API int32_t Raylib_DestroyCamera(CameraHandle cameraHandle);
 
 	// Create an image.
 	RAYLIB_API ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height);
-	RAYLIB_API bool Raylib_DestroyImage(ImageHandle imageHandle);
+	RAYLIB_API int32_t Raylib_DestroyImage(ImageHandle imageHandle);
 
 	// -----------------------------------------------------------------------
 	// Rendering
@@ -80,7 +80,7 @@ extern "C" {
 	// @param scene        [in] The scene to render.
 	// @param camera       [in] Camera from which to look at the scene.
 	// @param outMainImage [out] Rendered image.
-	// @return 0 if successful, -1 otherwise.
+	// @return 1 if successful, 0 otherwise.
 	RAYLIB_API int32_t Raylib_Render(
 		//const RendererSettings* settings,
 		SceneHandle  scene,
@@ -90,14 +90,14 @@ extern "C" {
 	// Denoise a noisy path traced image using Intel OpenImageDenoise.
 	// You can provide optional aux images (albedo and normal) for better quality.
 	// @param inMainImage      [in] Noisy path traced image.
-	// @param bMainImageHDR    [in] True if the main image has HDR values.
+	// @param bMainImageHDR    [in] 1 if the main image has HDR values, 0 otherwise.
 	// @param inAlbedoImage    [in] (optional) Albedo image.
 	// @param inNormalImage    [in] (optional) World normal image.
 	// @param outDenoisedImage [out] denoised image.
-	// @return 0 if successful, -1 otherwise.
+	// @return 1 if successful, 0 otherwise.
 	RAYLIB_API int32_t Raylib_Denoise(
 		ImageHandle inMainImage,
-		bool bMainImageHDR,
+		int32_t bMainImageHDR,
 		ImageHandle inAlbedoImage,
 		ImageHandle inNormalImage,
 		ImageHandle outDenoisedImage);
@@ -120,8 +120,8 @@ extern "C" {
 	// @param image    The image to write.
 	// @param filepath Target filepath.
 	// @param fileType See EImageFileType. (bmp, jpg, png, ...)
-	// @return true if successful, false otherwise.
-	RAYLIB_API bool Raylib_WriteImageToDisk(ImageHandle image, const char* filepath, uint32_t fileType);
+	// @return 1 if successful, 0 otherwise.
+	RAYLIB_API int32_t Raylib_WriteImageToDisk(ImageHandle image, const char* filepath, uint32_t fileType);
 
 	// Block current thread and wait for the log thread to emit all remaining logs.
 	RAYLIB_API void Raylib_FlushLogThread();

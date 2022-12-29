@@ -132,7 +132,7 @@ void Raylib_CameraCopy(CameraHandle srcCamera, CameraHandle dstCamera)
 	*dst = *src;
 }
 
-bool Raylib_DestroyCamera(CameraHandle cameraHandle)
+int32_t Raylib_DestroyCamera(CameraHandle cameraHandle)
 {
 	Camera* camera = (Camera*)cameraHandle;
 	if (g_cameras.erase_first(camera))
@@ -150,7 +150,7 @@ ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height)
 	return (ImageHandle)image;
 }
 
-bool Raylib_DestroyImage(ImageHandle imageHandle)
+int32_t Raylib_DestroyImage(ImageHandle imageHandle)
 {
 	Image2D* image = (Image2D*)imageHandle;
 	if (g_images.erase_first(image))
@@ -173,7 +173,7 @@ void Raylib_FinalizeScene(SceneHandle scene)
 	((Scene*)scene)->Finalize();
 }
 
-bool Raylib_DestroyScene(SceneHandle sceneHandle)
+int32_t Raylib_DestroyScene(SceneHandle sceneHandle)
 {
 	Scene* scene = (Scene*)sceneHandle;
 	if (g_scenes.erase_first(scene))
@@ -194,12 +194,12 @@ int32_t Raylib_Render(
 	ImageHandle outMainImage)
 {
 	// #todo-raylib
-	return 0;
+	return true;
 }
 
 int32_t Raylib_Denoise(
 	ImageHandle inMainImage,
-	bool bMainImageHDR,
+	int32_t bMainImageHDR,
 	ImageHandle inAlbedoImage,
 	ImageHandle inNormalImage,
 	ImageHandle outDenoisedImage)
@@ -207,11 +207,11 @@ int32_t Raylib_Denoise(
 	Renderer renderer;
 	bool bRet = renderer.DenoiseScene(
 		(Image2D*)inMainImage,
-		bMainImageHDR,
+		(bool)bMainImageHDR,
 		(Image2D*)inAlbedoImage,
 		(Image2D*)inNormalImage,
 		(Image2D*)outDenoisedImage);
-	return (bRet ? 0 : -1);
+	return (bRet ? 1 : 0);
 }
 
 void Raylib_AddSceneElement(SceneHandle scene, SceneElementHandle element)
@@ -255,11 +255,11 @@ RAYLIB_API const char* Raylib_GetRenderModeString(uint32_t auxMode)
 	return bValid ? enumStrs[auxMode] : nullptr;
 }
 
-bool Raylib_WriteImageToDisk(ImageHandle imageHandle, const char* filepath, uint32_t fileTypeRaw)
+int32_t Raylib_WriteImageToDisk(ImageHandle imageHandle, const char* filepath, uint32_t fileTypeRaw)
 {
 	if (imageHandle == NULL || filepath == nullptr || fileTypeRaw >= EImageFileType::RAYLIB_IMAGEFILETYPE_MAX)
 	{
-		return false;
+		return 0;
 	}
 
 	Image2D* image = (Image2D*)imageHandle;
@@ -270,11 +270,12 @@ bool Raylib_WriteImageToDisk(ImageHandle imageHandle, const char* filepath, uint
 	if (!g_images.contains(image))
 	{
 		// LOG("Invalid image handle")
-		return false;
+		return 0;
 	}
 #endif
 
-	return ImageIO::WriteImage2DToDisk(image, filepath, fileType);
+	bool bRet = ImageIO::WriteImage2DToDisk(image, filepath, fileType);
+	return bRet ? 1 : 0;
 }
 
 void Raylib_FlushLogThread()
