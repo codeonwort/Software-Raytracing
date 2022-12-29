@@ -50,15 +50,15 @@ public:
 
 	bool LoadSynchronous(const char* filepath, OBJModel& outModel);
 
-	/*
-	 * #todo-obj: async load
-	 * ThreadHandle LoadAsync(std::vector<const char*> filepathArray);
-	 * AsyncLoadProgress GetProgress();
-	 */
-
 private:
-	void PreloadImages(const std::string& objpath, const std::vector<tinyobj::material_t>& tinyMaterials);
-	void ParseMaterials(const std::string& objpath, const std::vector<tinyobj::material_t>& inRawMaterials, std::vector<Material*>& outMaterials);
+	void PreloadImages(
+		const std::string& objpath,
+		const std::vector<tinyobj::material_t>& tinyMaterials);
+
+	void ParseMaterials(
+		const std::string& objpath,
+		const std::vector<tinyobj::material_t>& inRawMaterials,
+		std::vector<Material*>& outMaterials);
 
 	std::map<std::string, std::shared_ptr<Image2D>> imageDB;
 	std::vector<Material*> materials;

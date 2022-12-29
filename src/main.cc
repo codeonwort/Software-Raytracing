@@ -3,7 +3,6 @@
 
 // #todo-raylib: All belongs to raylib
 #include "core/random.h"
-#include "core/logger.h"
 #include "render/image.h"
 #include "render/camera.h"
 #include "render/material.h"
@@ -15,7 +14,6 @@
 #include "geom/static_mesh.h"
 #include "geom/transform.h"
 #include "loader/obj_loader.h"
-#include "util/stat.h"
 
 #include "raylib/raylib.h"
 
@@ -489,6 +487,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 	if (IsDenoiserSupported() && bRunDenoiser && settings.debugMode == EDebugMode::None)
 	{
+		LOG("Run denoiser");
+
 		// Render aux images
 		Image2D* wNormalImage = new Image2D(viewportWidth, viewportHeight);
 		Image2D* albedoImage = new Image2D(viewportWidth, viewportHeight);
@@ -507,6 +507,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 		std::string normalFilenameJPG = makeFilename("_1.jpg");
 		Raylib_WriteImageToDisk((ImageHandle)albedoImage, albedoFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 		Raylib_WriteImageToDisk((ImageHandle)wNormalImage, normalFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+		LOG("Write aux albedo image to: %s", albedoFilenameJPG.c_str());
+		LOG("Write aux normal image to: %s", normalFilenameJPG.c_str());
 
 		Image2D* denoisedOutput = nullptr;
 		renderer.DenoiseScene(
@@ -516,6 +518,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 		std::string denoiseFilenameJPG = makeFilename("_2.jpg");
 		Raylib_WriteImageToDisk((ImageHandle)denoisedOutput, denoiseFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+		LOG("Write denoised image to: %s", denoiseFilenameJPG.c_str());
 
 		delete wNormalImage;
 		delete albedoImage;
@@ -529,8 +532,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	std::string resultFilenameJPG = makeFilename(".jpg");
 	Raylib_WriteImageToDisk((ImageHandle)mainImage, resultFilenameBMP.c_str(), RAYLIB_IMAGEFILETYPE_Bitmap);
 	Raylib_WriteImageToDisk((ImageHandle)mainImage, resultFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
-	LOG("image has been written to: %s", resultFilenameBMP.c_str());
-	LOG("image has been written to: %s", resultFilenameJPG.c_str());
+	LOG("Write main image to: %s", resultFilenameBMP.c_str());
+	LOG("Write main image to: %s", resultFilenameJPG.c_str());
 
 	delete worldBVH;
 	delete mainImage;

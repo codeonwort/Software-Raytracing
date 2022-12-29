@@ -1,6 +1,8 @@
 #pragma once
 
 #include "raylib_types.h"
+#include "core/stat.h"
+#include "core/logger.h"
 #include <stdint.h>
 
 // Main header for raytracing library.

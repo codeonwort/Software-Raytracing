@@ -5,11 +5,11 @@
 #include "core/random.h"
 #include "core/platform.h"
 #include "core/thread_pool.h"
+#include "core/stat.h"
+#include "core/logger.h"
 #include "core/assertion.h"
 #include "geom/ray.h"
 #include "geom/hit.h"
-#include "util/stat.h"
-#include "core/logger.h"
 
 #include <algorithm>
 #include <thread>
@@ -265,7 +265,7 @@ void Renderer::RenderScene(
 	LOG("CAUTION: Rendering is forced to be single threaded - search for 'SINGLE_THREADED_RENDERING'");
 #else
 	const uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
-	LOG("Number of logical cores: %u", numCores);
+	//LOG("Number of logical cores: %u", numCores);
 #endif
 
 	const int32 imageWidth = outImage->GetWidth();
@@ -298,7 +298,7 @@ void Renderer::RenderScene(
 		tp.AddWork(work);
 	}
 
-	LOG("number of work items: %d", (int32)workCells.size());
+	//LOG("number of work items: %d", (int32)workCells.size());
 
 	{
 		SCOPED_CPU_COUNTER(ThreadPoolWorkTime);
@@ -360,8 +360,6 @@ bool Renderer::DenoiseScene(
 		CHECK_EXTENT(normalImage);
 		normalImage->DumpFloatRGBs(worldNormalBlob);
 	}
-
-	LOG("Denoise the result using Intel OpenImageDenoise");
 
 	OIDNDevice oidnDevice = oidnNewDevice(OIDN_DEVICE_TYPE_DEFAULT);
 	oidnCommitDevice(oidnDevice);

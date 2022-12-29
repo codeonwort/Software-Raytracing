@@ -1,4 +1,4 @@
-// Statistics about cpu cycle and memory usage
+// Statistics about cpu cycle and memory usage.
 
 #pragma once
 
@@ -15,10 +15,11 @@ struct ScopedCycleCounter
 
 	~ScopedCycleCounter()
 	{
-		std::chrono::duration<double> diff = std::chrono::system_clock::now() - startTime;
-		double seconds = diff.count();
+		auto diff = std::chrono::system_clock::now() - startTime;
+		auto elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+		float seconds = (float)elapsedMS * 0.001f;
 
-		LOG("[STAT] %s: %lf seconds", label, seconds);
+		LOG("[STAT] %s: %u ms (%.3f s)", label, elapsedMS, seconds);
 	}
 
 private:
