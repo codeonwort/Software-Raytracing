@@ -9,7 +9,6 @@
 // All symbols are exported in C style for Foreign Function Interface.
 
 // #todo-raylib:
-// 1. Move all raytracing logic to this project.
 // 2. Rename 'src' as something like 'demoapp'
 
 // -----------------------------------------------------------------------

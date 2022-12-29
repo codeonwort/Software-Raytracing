@@ -3,7 +3,6 @@
 
 // #todo-raylib: All belongs to raylib
 #include "core/random.h"
-#include "render/image.h"
 #include "render/material.h"
 #include "geom/cube.h"
 #include "geom/sphere.h"
