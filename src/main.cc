@@ -484,7 +484,6 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	Image2D* mainImage = new Image2D(viewportWidth, viewportHeight);
 	Renderer renderer;
 	renderer.RenderScene(settings, worldBVH, camera, mainImage);
-	// NOTE: I'll input HDR image to denoiser
 
 	if (IsDenoiserSupported() && bRunDenoiser && settings.renderMode == RAYLIB_RENDERMODE_Default)
 	{

@@ -1,6 +1,19 @@
 #include "triangle.h"
 #include "render/material.h"
 
+Triangle::Triangle(
+	const vec3& inV0, const vec3& inV1, const vec3& inV2,
+	const vec3& inN0, const vec3& inN1, const vec3& inN2,
+	Material* inMaterial)
+	: v0(inV0), v1(inV1), v2(inV2)
+	, n0(inN0), n1(inN1), n2(inN2)
+	, s0(0.0f), t0(0.0f), s1(0.0f), t1(0.0f), s2(0.0f), t2(0.0f)
+	, material(inMaterial)
+{
+	UpdateNormal();
+	bounds = AABB(min(min(v0, v1), v2), max(max(v0, v1), v2));
+}
+
 // http://geomalgorithms.com/a06-_intersect-2.html
 bool Triangle::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 {

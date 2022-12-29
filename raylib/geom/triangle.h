@@ -1,5 +1,6 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "geom/hit.h"
 
 class Material;
@@ -8,23 +9,14 @@ class Triangle : public Hitable
 {
 
 public:
-	Triangle(const vec3& inV0, const vec3& inV1, const vec3& inV2, const vec3& inN0, const vec3& inN1, const vec3& inN2, Material* inMaterial)
-		: v0(inV0)
-		, v1(inV1)
-		, v2(inV2)
-		, n0(inN0)
-		, n1(inN1)
-		, n2(inN2)
-		, s0(0.0f), t0(0.0f), s1(0.0f), t1(0.0f), s2(0.0f), t2(0.0f)
-		, material(inMaterial)
-	{
-		UpdateNormal();
-		bounds = AABB(min(min(v0, v1), v2), max(max(v0, v1), v2));
-	}
+	RAYLIB_API Triangle(
+		const vec3& inV0, const vec3& inV1, const vec3& inV2,
+		const vec3& inN0, const vec3& inN1, const vec3& inN2,
+		Material* inMaterial);
 
-	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
+	RAYLIB_API virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
 
-	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override;
+	RAYLIB_API virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override;
 
 	inline void SetParameterization(float inS0, float inT0, float inS1, float inT1, float inS2, float inT2)
 	{
@@ -39,11 +31,11 @@ public:
 		outS2 = s2; outT2 = t2;
 	}
 
-	void GetVertices(vec3& outV0, vec3& outV1, vec3& outV2) const;
-	void SetVertices(const vec3& inV0, const vec3& inV1, const vec3& inV2);
+	RAYLIB_API void GetVertices(vec3& outV0, vec3& outV1, vec3& outV2) const;
+	RAYLIB_API void SetVertices(const vec3& inV0, const vec3& inV1, const vec3& inV2);
 
-	void GetNormals(vec3& outN0, vec3& outN1, vec3& outN2) const;
-	void SetNormals(const vec3& inN0, const vec3& inN1, const vec3& inN2);
+	RAYLIB_API void GetNormals(vec3& outN0, vec3& outN1, vec3& outN2) const;
+	RAYLIB_API void SetNormals(const vec3& inN0, const vec3& inN1, const vec3& inN2);
 
 private:
 	inline void UpdateNormal()

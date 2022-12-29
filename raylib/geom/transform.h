@@ -1,5 +1,6 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
 #include <vector>
@@ -8,7 +9,7 @@ struct Rotator
 {
 	static Rotator directionToYawPitch(const vec3& dir);
 	vec3 toDirection() const;
-	vec3 rotate(const vec3& position) const;
+	RAYLIB_API vec3 rotate(const vec3& position) const;
 
 	Rotator()
 		: yaw(0.0f)
@@ -38,7 +39,7 @@ public:
 		Init(vec3(0.0f, 0.0f, 0.0f), Rotator(), vec3(1.0f, 1.0f, 1.0f));
 	}
 
-	void Init(const vec3& inLocation, const Rotator& inRotation, const vec3& inScale);
+	RAYLIB_API void Init(const vec3& inLocation, const Rotator& inRotation, const vec3& inScale);
 
 	inline void SetLocation(const vec3& inLocation)
 	{
@@ -49,7 +50,7 @@ public:
 		Init(location, rotation, inScale);
 	}
 
-	void TransformVectors(std::vector<vec3>& vectors) const;
+	RAYLIB_API void TransformVectors(std::vector<vec3>& inoutVectors) const;
 	void TransformVectors(const std::vector<vec3>& inVectors, std::vector<vec3>& outVectors) const;
 
 private:

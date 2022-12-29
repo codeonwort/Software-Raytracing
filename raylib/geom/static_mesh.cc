@@ -1,5 +1,5 @@
 #include "static_mesh.h"
-#include "bvh.h"
+#include "geom/bvh.h"
 
 #define USE_BVH 1
 
