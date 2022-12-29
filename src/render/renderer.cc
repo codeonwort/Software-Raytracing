@@ -48,26 +48,6 @@ struct RayPayload {
 	float rayTMin;
 };
 
-const char* GetRendererDebugModeString(int32 modeIx)
-{
-	static const char* enumStrs[] = {
-		"Default",
-		"SurfaceNormal",
-		"MicrosurfaceNormal",
-		"Texcoord",
-		"Reflectance",
-		"ReflectanceFromOneBounce",
-		"Albedo",
-		"Emission",
-	};
-
-	if (0 <= modeIx && modeIx < (int32)EDebugMode::MAX)
-	{
-		return enumStrs[modeIx];
-	}
-	return nullptr;
-}
-
 bool IsDenoiserSupported()
 {
 #if INTEL_DENOISER_INTEGRATED
@@ -77,37 +57,43 @@ bool IsDenoiserSupported()
 #endif
 }
 
-vec3 TraceSceneDebugMode(const ray& pathRay, const Hitable* world, const RayPayload& settings, EDebugMode debugMode) {
+vec3 TraceSceneDebugMode(
+	const ray& pathRay,
+	const Hitable* world,
+	const RayPayload& settings,
+	ERenderMode debugMode)
+{
 	vec3 debugValue = vec3(0.0f);
 	HitResult hitResult;
-	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult)) {
-		if (debugMode == EDebugMode::SurfaceNormal) {
+	if (world->Hit(pathRay, settings.rayTMin, FLOAT_MAX, hitResult))
+	{
+		if (debugMode == ERenderMode::RAYLIB_RENDERMODE_Albedo)
+		{
+			debugValue = hitResult.material->GetAlbedo(hitResult.paramU, hitResult.paramV);
+		}
+		else if (debugMode == ERenderMode::RAYLIB_RENDERMODE_SurfaceNormal)
+		{
 			debugValue = vec3(0.5f) + 0.5f * hitResult.n;
-		} else if (debugMode == EDebugMode::MicrosurfaceNormal) {
+		}
+		else if (debugMode == ERenderMode::RAYLIB_RENDERMODE_MicrosurfaceNormal)
+		{
 			vec3 N = hitResult.material->GetMicrosurfaceNormal(hitResult);
 			N = hitResult.LocalToWorld(N);
 			debugValue = 0.5f + 0.5f * N;
-		} else if (debugMode == EDebugMode::Texcoord) {
+		}
+		else if (debugMode == ERenderMode::RAYLIB_RENDERMODE_Texcoord)
+		{
 			debugValue = vec3(hitResult.paramU, hitResult.paramV, 0.0f);
-		} else if (debugMode == EDebugMode::Reflectance) {
+		}
+		else if (debugMode == ERenderMode::RAYLIB_RENDERMODE_Emission)
+		{
+			debugValue = hitResult.material->Emitted(hitResult, pathRay.d);
+		}
+		else if (debugMode == ERenderMode::RAYLIB_RENDERMODE_Reflectance)
+		{
 			ray dummy; float dummy2;
 			debugValue = vec3(1.0f, 0.75f, 0.8f);
 			hitResult.material->Scatter(pathRay, hitResult, debugValue, dummy, dummy2);
-		} else if (debugMode == EDebugMode::ReflectanceFromOneBounce) {
-			debugValue = vec3(1.0f, 0.75f, 0.8f);
-			ray scatteredRay; float dummyPdf;
-			if (hitResult.material->Scatter(pathRay, hitResult, debugValue, scatteredRay, dummyPdf))
-			{
-				if (world->Hit(scatteredRay, settings.rayTMin, FLOAT_MAX, hitResult))
-				{
-					ray dummy;
-					hitResult.material->Scatter(scatteredRay, hitResult, debugValue, dummy, dummyPdf);
-				}
-			}
-		} else if (debugMode == EDebugMode::Albedo) {
-			debugValue = hitResult.material->GetAlbedo(hitResult.paramU, hitResult.paramV);
-		} else if (debugMode == EDebugMode::Emission) {
-			debugValue = hitResult.material->Emitted(hitResult, pathRay.d);
 		}
 	}
 	return debugValue;
@@ -202,7 +188,7 @@ void GenerateCell(const WorkItemParam* param) {
 	const float imageHeight = (float)cell->image->GetHeight();
 
 	// #todo-multithread: Bad utilization of threads; Some cells might take longer than others.
-	if (cell->rendererSettings.debugMode == EDebugMode::None) {
+	if (cell->rendererSettings.renderMode == ERenderMode::RAYLIB_RENDERMODE_Default) {
 		const int32 SPP = std::max(1, cell->rendererSettings.samplesPerPixel);
 		RayPayload rtSettings{
 			cell->rendererSettings.maxPathLength,
@@ -246,7 +232,7 @@ void GenerateCell(const WorkItemParam* param) {
 					cameraRay,
 					cell->world,
 					rtSettings,
-					cell->rendererSettings.debugMode);
+					cell->rendererSettings.renderMode);
 				Pixel px(debugValue.x, debugValue.y, debugValue.z);
 				cell->image->SetPixel(x, y, px);
 			}

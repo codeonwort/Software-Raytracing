@@ -64,27 +64,17 @@ extern "C" {
 	// -----------------------------------------------------------------------
 	// Rendering
 
-	// Generate a noisy path traced image.
+	// Render an image. Default is path tracing, but also can render aux images.
 	// @param scene        [in] The scene to render.
 	// @param camera       [in] Camera from which to look at the scene.
+	// @param renderMode   [in] See ERenderMode enum.
 	// @param outMainImage [out] Rendered image.
-	// @return Returns 0 if successful, -1 otherwise.
+	// @return 0 if successful, -1 otherwise.
 	RAYLIB_API int32_t Raylib_Render(
 		SceneHandle  scene,
 		CameraHandle camera,
+		uint32_t     renderMode,
 		ImageHandle  outMainImage);
-
-	// Render an aux image.
-	// @param scene       [in] The scene to render.
-	// @param camera      [in] Camera from which to look at the scene.
-	// @param auxMode     [in] See EAuxRenderMode enum.
-	// @param outAuxImage [out] Rendered aux image.
-	// @return 0 if successful, -1 otherwise.
-	RAYLIB_API int32_t Raylib_RenderAux(
-		SceneHandle  scene,
-		CameraHandle camera,
-		uint32_t     auxMode,
-		ImageHandle  outAuxImage);
 
 	// Denoise a noisy path traced image using Intel OpenImageDenoise.
 	// You can provide optional aux images (albedo and normal) for better quality.
@@ -102,7 +92,9 @@ extern "C" {
 	// -----------------------------------------------------------------------
 	// Utils
 
-	RAYLIB_API const char* Raylib_GetAuxRenderModeString(uint32_t auxMode);
+	// See ERenderMode enum.
+	// @return NULL if auxMode is invlid.
+	RAYLIB_API const char* Raylib_GetRenderModeString(uint32_t auxMode);
 
 	// Save an image data as a image file to disk.
 	// #todo-lib: Support HDR formats.

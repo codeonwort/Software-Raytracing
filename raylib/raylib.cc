@@ -77,6 +77,25 @@ ImageHandle Raylib_LoadImage(const char* filepath)
 	return (ImageHandle)image;
 }
 
+// -----------------------------------------------------------------------
+// Utils
+
+RAYLIB_API const char* Raylib_GetRenderModeString(uint32_t auxMode)
+{
+	static const char* enumStrs[] = {
+		"Default",
+		"Albedo",
+		"SurfaceNormal",
+		"MicrosurfaceNormal",
+		"Texcoord",
+		"Emission",
+		"Reflectance",
+	};
+
+	bool bValid = (0 <= auxMode && auxMode < RAYLIB_RENDERMODE_MAX);
+	return bValid ? enumStrs[auxMode] : nullptr;
+}
+
 bool Raylib_WriteImageToDisk(ImageHandle imageHandle, const char* filepath, uint32_t fileTypeRaw)
 {
 	if (imageHandle == NULL || filepath == nullptr || fileTypeRaw >= EImageFileType::RAYLIB_IMAGEFILETYPE_MAX)

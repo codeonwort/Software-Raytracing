@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
 	rendererSettings.rayTMin         = RAY_T_MIN;
 	rendererSettings.skyLightFn      = g_sceneDescs[currentSceneID].skyLightFn;
 	rendererSettings.sunLightFn      = g_sceneDescs[currentSceneID].sunLightFn;
-	rendererSettings.debugMode       = EDebugMode::None;
+	rendererSettings.renderMode      = ERenderMode::RAYLIB_RENDERMODE_Default;
 
 	Raylib_FlushLogThread();
 	std::cout << "Type 'help' to see help message" << std::endl;
@@ -399,17 +399,18 @@ int main(int argc, char** argv) {
 			std::cin >> vmode;
 			if (std::cin.good())
 			{
-				const char* vmodeStr = GetRendererDebugModeString(vmode);
-				if (0 <= vmode && vmode < (int32)EDebugMode::MAX)
+				const char* vmodeStr = Raylib_GetRenderModeString(vmode);
+				if (0 <= vmode && vmode < (int32)ERenderMode::RAYLIB_RENDERMODE_MAX)
 				{
-					rendererSettings.debugMode = (EDebugMode)vmode;
+					rendererSettings.renderMode = (ERenderMode)vmode;
 					std::cout << "Set viewmode = " << vmodeStr << std::endl;
 				}
 				else
 				{
-					for (int32 i = 0; i < (int32)EDebugMode::MAX; ++i)
+					std::cout << "Invalid viewmode. Current: " << rendererSettings.renderMode << std::endl;
+					for (int32 i = 0; i < (int32)ERenderMode::RAYLIB_RENDERMODE_MAX; ++i)
 					{
-						std::cout << i << " - " << GetRendererDebugModeString(i) << std::endl;
+						std::cout << i << " - " << Raylib_GetRenderModeString(i) << std::endl;
 					}
 				}
 			}
@@ -485,7 +486,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	renderer.RenderScene(settings, worldBVH, camera, mainImage);
 	// NOTE: I'll input HDR image to denoiser
 
-	if (IsDenoiserSupported() && bRunDenoiser && settings.debugMode == EDebugMode::None)
+	if (IsDenoiserSupported() && bRunDenoiser && settings.renderMode == RAYLIB_RENDERMODE_Default)
 	{
 		LOG("Run denoiser");
 
@@ -498,9 +499,9 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 		debugCamera->lens_radius = 0.0f;
 
 		RendererSettings debugSettings = settings;
-		debugSettings.debugMode = EDebugMode::Albedo;
+		debugSettings.renderMode = RAYLIB_RENDERMODE_Albedo;
 		renderer.RenderScene(debugSettings, worldBVH, debugCamera, albedoImage);
-		debugSettings.debugMode = EDebugMode::MicrosurfaceNormal;
+		debugSettings.renderMode = RAYLIB_RENDERMODE_MicrosurfaceNormal;
 		renderer.RenderScene(debugSettings, worldBVH, debugCamera, wNormalImage);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");

@@ -11,24 +11,6 @@ class Image2D;
 using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
 using FakeSunLightFunction = std::function<void(vec3& outDir, vec3& outIlluminance)>;
 
-// NOTE: When EDebugMode is changed, update following functions also:
-// - GetRendererDebugModeString()
-// - TraceSceneDebugMode()
-enum class EDebugMode : uint32 {
-	None = 0,
-	SurfaceNormal,
-	MicrosurfaceNormal,
-	Texcoord,
-	Reflectance,
-	ReflectanceFromOneBounce, // To debug mirror reflection
-	Albedo,
-	Emission,
-	
-	MAX,
-};
-
-const char* GetRendererDebugModeString(int32 modeIx);
-
 bool IsDenoiserSupported();
 
 struct RendererSettings {
@@ -48,7 +30,7 @@ struct RendererSettings {
 	FakeSunLightFunction sunLightFn      = nullptr;
 
 	// System values
-	EDebugMode           debugMode       = EDebugMode::None;
+	ERenderMode          renderMode      = ERenderMode::RAYLIB_RENDERMODE_Default;
 
 	inline float getViewportAspectWH() const {
 		return (float)viewportWidth / (float)viewportHeight;
