@@ -1,5 +1,6 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
 #include <functional>
@@ -10,8 +11,6 @@ class Image2D;
 
 using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
 using FakeSunLightFunction = std::function<void(vec3& outDir, vec3& outIlluminance)>;
-
-bool IsDenoiserSupported();
 
 struct RendererSettings {
 	// Camera properties
@@ -39,19 +38,19 @@ struct RendererSettings {
 
 class Renderer
 {
-	
 public:
-	void RenderScene(
+	static bool IsDenoiserSupported();
+
+	RAYLIB_API void RenderScene(
 		const RendererSettings& settings,
 		const Hitable* world,
 		const Camera* camera,
 		Image2D* outImage);
 
-	bool DenoiseScene(
+	RAYLIB_API bool DenoiseScene(
 		Image2D* mainImage,
 		bool bMainImageHDR,
 		Image2D* albedoImage,
 		Image2D* normalImage,
 		Image2D*& outDenoisedImage);
-
 };

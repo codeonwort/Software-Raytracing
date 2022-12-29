@@ -89,6 +89,8 @@ extern "C" {
 		ImageHandle inNormalImage,
 		ImageHandle outDenoisedImage);
 
+	RAYLIB_API int32_t Raylib_IsDenoiserSupported();
+
 	// -----------------------------------------------------------------------
 	// Utils
 

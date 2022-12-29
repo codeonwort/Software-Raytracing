@@ -48,7 +48,7 @@ struct RayPayload {
 	float rayTMin;
 };
 
-bool IsDenoiserSupported()
+bool Renderer::IsDenoiserSupported()
 {
 #if INTEL_DENOISER_INTEGRATED
 	return true;

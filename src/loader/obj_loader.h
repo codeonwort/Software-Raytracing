@@ -21,7 +21,6 @@ struct OBJModel
 		: rootObject(nullptr)
 		, localMinBound(vec3(0.0f, 0.0f, 0.0f))
 		, localMaxBound(vec3(0.0f, 0.0f, 0.0f))
-		
 	{
 	}
 

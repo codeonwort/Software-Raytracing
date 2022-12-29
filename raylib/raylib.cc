@@ -4,6 +4,7 @@
 #include "core/logger.h"
 #include "render/camera.h"
 #include "render/image.h"
+#include "render/renderer.h"
 
 #include <iostream>
 
@@ -76,6 +77,15 @@ ImageHandle Raylib_LoadImage(const char* filepath)
 	g_images.push_back(image);
 	return (ImageHandle)image;
 }
+
+// -----------------------------------------------------------------------
+// Rendering
+
+int32_t Raylib_IsDenoiserSupported()
+{
+	return Renderer::IsDenoiserSupported();
+}
+
 
 // -----------------------------------------------------------------------
 // Utils

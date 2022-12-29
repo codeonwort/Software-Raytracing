@@ -325,7 +325,7 @@ int main(int argc, char** argv) {
 			std::cin >> dmode;
 			if (std::cin.good())
 			{
-				if (IsDenoiserSupported())
+				if (Raylib_IsDenoiserSupported())
 				{
 					bRunDenoiser = (dmode != 0);
 					std::cout << "Denoiser " << (bRunDenoiser ? "on" : "off") << std::endl;
@@ -485,7 +485,9 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	Renderer renderer;
 	renderer.RenderScene(settings, worldBVH, camera, mainImage);
 
-	if (IsDenoiserSupported() && bRunDenoiser && settings.renderMode == RAYLIB_RENDERMODE_Default)
+	if (Raylib_IsDenoiserSupported()
+		&& bRunDenoiser
+		&& settings.renderMode == RAYLIB_RENDERMODE_Default)
 	{
 		LOG("Run denoiser");
 

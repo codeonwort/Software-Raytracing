@@ -13,9 +13,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 # Add source to this project's executable.
 include_directories(${PROJECT_SOURCE_DIR}/raylib)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/source)
+include_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/include)
 
 # Link libraries
 link_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries)
+link_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/lib)
 
 file(GLOB_RECURSE RAYLIB_SOURCE_FILES "*.cc")
 
@@ -31,4 +33,12 @@ target_link_libraries(raylib FreeImage)
 add_custom_command(TARGET raylib POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	"${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries/FreeImage.dll"
+	$<TARGET_FILE_DIR:raylib>)
+add_custom_command(TARGET raylib POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/bin/OpenImageDenoise.dll"
+	$<TARGET_FILE_DIR:raylib>)
+add_custom_command(TARGET raylib POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/bin/tbb12.dll"
 	$<TARGET_FILE_DIR:raylib>)
