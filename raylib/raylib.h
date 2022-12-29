@@ -110,4 +110,7 @@ extern "C" {
 	// @return true if successful, false otherwise.
 	RAYLIB_API bool Raylib_WriteImageToDisk(ImageHandle image, const char* filepath, uint32_t fileType);
 
+	// Block current thread and wait for the log thread to emit all remaining logs.
+	RAYLIB_API void Raylib_FlushLogThread();
+
 } // extern "C"

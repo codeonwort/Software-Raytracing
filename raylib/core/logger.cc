@@ -1,4 +1,4 @@
-#include "log.h"
+#include "logger.h"
 #include "core/int_types.h"
 #include "core/assertion.h"
 
@@ -11,49 +11,52 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-
-static bool logThreadStarted = false;
-static bool logThreadPendingKill = false;
+static bool bLogThreadStarted = false;
+static bool bLogThreadPendingKill = false;
 static std::mutex log_mutex;
 static std::list<std::string> logQueue;
 
-
-void StartLogThread()
+namespace Logger
 {
-	if (logThreadStarted)
+
+	void StartLogThread()
 	{
-		return;
+		if (bLogThreadStarted)
+		{
+			return;
+		}
+		bLogThreadStarted = true;
+
+		void LogMain();
+		std::thread logThread(LogMain);
+		logThread.detach();
 	}
-	logThreadStarted = true;
 
-	void LogMain();
-	std::thread logThread(LogMain);
-	logThread.detach();
-}
-
-void FlushLogThread()
-{
-	CHECK(logThreadStarted);
-	while (logQueue.size() > 0)
+	void FlushLogThread()
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		CHECK(bLogThreadStarted);
+		while (logQueue.size() > 0)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
 	}
-}
 
-void WaitForLogThread()
-{
-	CHECK(logThreadStarted);
-	logThreadPendingKill = true;
-
-	while (logQueue.size() > 0)
+	void KillAndWaitForLogThread()
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		CHECK(bLogThreadStarted);
+		bLogThreadPendingKill = true;
+
+		while (logQueue.size() > 0)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
 	}
+
 }
 
 void LOG(const char* format, ...)
 {
-	if (logThreadPendingKill)
+	if (bLogThreadPendingKill)
 	{
 		return;
 	}
@@ -72,7 +75,7 @@ void LOG(const char* format, ...)
 
 void LogMain()
 {
-	while (!logThreadPendingKill)
+	while (!bLogThreadPendingKill)
 	{
 		int32 n = std::min((int32)logQueue.size(), 1000);
 		while (n --> 0)

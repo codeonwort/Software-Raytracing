@@ -6,7 +6,7 @@
 #include "geom/bvh.h"
 #include "render/material.h"
 #include "render/image.h"
-#include "util/log.h"
+#include "core/logger.h"
 
 /* 'illum' cheat sheet
 0. Color on and Ambient off

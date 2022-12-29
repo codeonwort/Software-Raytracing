@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "util/log.h"
+#include "core/logger.h"
 #include <chrono>
 
 struct ScopedCycleCounter

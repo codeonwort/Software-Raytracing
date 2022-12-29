@@ -1,8 +1,7 @@
 #include "image.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
-// #todo-raylib
-//#include "util/log.h"
+#include "core/logger.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4819)
@@ -79,8 +78,7 @@ void Image2D::PostProcess()
 		}
 	}
 
-	// #todo-raylib
-	//LOG("Max white luminance: %f", maxWhiteLuminance);
+	LOG("Max white luminance: %f", maxWhiteLuminance);
 
 	for (size_t i = 0; i < len; ++i)
 	{
@@ -209,8 +207,7 @@ namespace ImageIO
 		{
 			if (imageFormat != FIF_BMP && imageFormat != FIF_JPEG && imageFormat != FIF_PNG)
 			{
-				// #todo-raylib
-				//LOG("%s: unexpected image format. Will be interpreted as rgba8.");
+				LOG("%s: unexpected image format. Will be interpreted as rgba8.");
 			}
 
 			FIBITMAP* dib32 = FreeImage_ConvertTo32Bits(dib);

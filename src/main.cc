@@ -3,6 +3,7 @@
 
 // #todo-raylib: All belongs to raylib
 #include "core/random.h"
+#include "core/logger.h"
 #include "render/image.h"
 #include "render/camera.h"
 #include "render/material.h"
@@ -15,7 +16,6 @@
 #include "geom/transform.h"
 #include "loader/obj_loader.h"
 #include "util/stat.h"
-#include "util/log.h"
 
 #include "raylib/raylib.h"
 
@@ -225,13 +225,11 @@ void InitializeSubsystems() {
 
 	Raylib_Initialize();
 
-	StartLogThread();
 	ResourceFinder::Get().AddDirectory("./content/");
 	OBJLoader::Initialize();
 }
 void DestroySubsystems() {
 	OBJLoader::Destroy();
-	WaitForLogThread();
 
 	Raylib_Terminate();
 }
@@ -262,7 +260,7 @@ int main(int argc, char** argv) {
 	rendererSettings.sunLightFn      = g_sceneDescs[currentSceneID].sunLightFn;
 	rendererSettings.debugMode       = EDebugMode::None;
 
-	FlushLogThread();
+	Raylib_FlushLogThread();
 	std::cout << "Type 'help' to see help message" << std::endl;
 
 	//
@@ -539,7 +537,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	delete camera;
 
 	LOG("=== Rendering has completed ===");
-	FlushLogThread();
+	Raylib_FlushLogThread();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -9,7 +9,7 @@
 #include "geom/ray.h"
 #include "geom/hit.h"
 #include "util/stat.h"
-#include "util/log.h"
+#include "core/logger.h"
 
 #include <algorithm>
 #include <thread>

@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "core/platform.h"
 #include "core/concurrent_vector.h"
+#include "core/logger.h"
 #include "render/camera.h"
 #include "render/image.h"
 
@@ -17,6 +18,7 @@ int32_t Raylib_Initialize()
 {
 	std::cout << "Initialize raylib" << std::endl;
 
+	Logger::StartLogThread();
 	ImageIO::InitializeImageIO();
 
 	return 0;
@@ -27,6 +29,7 @@ int32_t Raylib_Terminate()
 	std::cout << "Terminate raylib" << std::endl;
 
 	ImageIO::TerminateImageIO();
+	Logger::KillAndWaitForLogThread();
 
 	return 0;
 }
@@ -94,4 +97,9 @@ bool Raylib_WriteImageToDisk(ImageHandle imageHandle, const char* filepath, uint
 #endif
 
 	return ImageIO::WriteImage2DToDisk(image, filepath, fileType);
+}
+
+void Raylib_FlushLogThread()
+{
+	Logger::FlushLogThread();
 }
