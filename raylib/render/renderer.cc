@@ -205,7 +205,7 @@ void GenerateCell(const WorkItemParam* param) {
 						u += (randomsAA.Peek() - 0.5f) * 2.0f / imageWidth;
 						v += (randomsAA.Peek() - 0.5f) * 2.0f / imageHeight;
 					}
-					ray cameraRay = cell->camera->GetRay(u, v);
+					ray cameraRay = cell->camera->GetCameraRay(u, v);
 					vec3 scene = TraceScene(
 						cameraRay,
 						cell->world,
@@ -228,7 +228,7 @@ void GenerateCell(const WorkItemParam* param) {
 			for (int32 x = cell->x; x < endX; ++x) {
 				float u = (float)x / imageWidth;
 				float v = (float)y / imageHeight;
-				ray cameraRay = cell->camera->GetRay(u, v);
+				ray cameraRay = cell->camera->GetCameraRay(u, v);
 				vec3 debugValue = TraceSceneDebugMode(
 					cameraRay,
 					cell->world,

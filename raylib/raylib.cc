@@ -47,6 +47,51 @@ CameraHandle Raylib_CreateCamera()
 	return (CameraHandle)camera;
 }
 
+void Raylib_CameraSetPosition(CameraHandle cameraHandle, float x, float y, float z)
+{
+	Camera* camera = (Camera*)cameraHandle;
+	camera->origin = vec3(x, y, z);
+	camera->UpdateInternal();
+}
+
+void Raylib_CameraSetLookAt(CameraHandle cameraHandle, float tx, float ty, float tz)
+{
+	Camera* camera = (Camera*)cameraHandle;
+	camera->lookAt = vec3(tx, ty, tz);
+	camera->UpdateInternal();
+}
+
+void Raylib_CameraSetPerspective(CameraHandle cameraHandle, float fovY_degrees, float aspectWH)
+{
+	Camera* camera = (Camera*)cameraHandle;
+	camera->fovY_degrees = fovY_degrees;
+	camera->aspectWH = aspectWH;
+	camera->UpdateInternal();
+}
+
+void Raylib_CameraSetLens(CameraHandle cameraHandle, float aperture, float focalDistance)
+{
+	Camera* camera = (Camera*)cameraHandle;
+	camera->aperture = aperture;
+	camera->focalDistance = focalDistance;
+	camera->UpdateInternal();
+}
+
+void Raylib_CameraSetMotion(CameraHandle cameraHandle, float beginTime, float endTime)
+{
+	Camera* camera = (Camera*)cameraHandle;
+	camera->beginTime = beginTime;
+	camera->endTime = endTime;
+	camera->UpdateInternal();
+}
+
+void Raylib_CameraCopy(CameraHandle srcCamera, CameraHandle dstCamera)
+{
+	Camera* src = (Camera*)srcCamera;
+	Camera* dst = (Camera*)dstCamera;
+	*dst = *src;
+}
+
 bool Raylib_DestroyCamera(CameraHandle cameraHandle)
 {
 	Camera* camera = (Camera*)cameraHandle;

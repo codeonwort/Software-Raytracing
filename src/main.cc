@@ -38,7 +38,6 @@ static ProgramArguments g_programArgs;
 #define DEFAULT_VIEWPORT_HEIGHT    512
 #define DEFAULT_CAMERA_LOCATION    vec3(0.0f, 0.0f, 0.0f)
 #define DEFAULT_CAMERA_LOOKAT      vec3(0.0f, 0.0f, -1.0f)
-#define DEFAULT_CAMERA_UP          vec3(0.0f, 1.0f, 0.0f)
 #define DEFAULT_FOV_Y              45.0f
 
 std::shared_ptr<Texture2D>         skyTexture;
@@ -452,27 +451,25 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 	LOG("Execute renderer for: %s", sceneDesc.sceneName.c_str());
 
+	const uint32 viewportWidth = settings.viewportWidth;
+	const uint32 viewportHeight = settings.viewportHeight;
+	const float focalDistance = (settings.cameraLocation - settings.cameraLookat).Length();
+
 	SceneHandle scene = sceneDesc.createSceneFn();
 	Raylib_FinalizeScene(scene);
 
-	Camera* camera = new Camera(
-		settings.cameraLocation,
-		settings.cameraLookat,
-		DEFAULT_CAMERA_UP,
-		sceneDesc.fovY,
-		settings.getViewportAspectWH(),
-		CAMERA_APERTURE,
-		(settings.cameraLocation - settings.cameraLookat).Length(),
-		CAMERA_BEGIN_CAPTURE,
-		CAMERA_END_CAPTURE);
+	CameraHandle camera = Raylib_CreateCamera();
+	Raylib_CameraSetPosition(camera, settings.cameraLocation.x, settings.cameraLocation.y, settings.cameraLocation.z);
+	Raylib_CameraSetLookAt(camera, settings.cameraLookat.x, settings.cameraLookat.y, settings.cameraLookat.z);
+	Raylib_CameraSetPerspective(camera, sceneDesc.fovY, settings.getViewportAspectWH());
+	Raylib_CameraSetLens(camera, CAMERA_APERTURE, focalDistance);
+	Raylib_CameraSetMotion(camera, CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
 
 	// Render default image
-	const uint32 viewportWidth = settings.viewportWidth;
-	const uint32 viewportHeight = settings.viewportHeight;
 	ImageHandle mainImage = Raylib_CreateImage(viewportWidth, viewportHeight);
 
 	Renderer renderer;
-	renderer.RenderScene(&settings, (Scene*)scene, camera, (Image2D*)mainImage);
+	renderer.RenderScene(&settings, (Scene*)scene, (Camera*)camera, (Image2D*)mainImage);
 
 	if (Raylib_IsDenoiserSupported()
 		&& bRunDenoiser
@@ -484,15 +481,15 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 		ImageHandle wNormalImage = Raylib_CreateImage(viewportWidth, viewportHeight);
 		ImageHandle albedoImage = Raylib_CreateImage(viewportWidth, viewportHeight);
 
-		Camera* debugCamera = new Camera;
-		*debugCamera = *camera;
-		debugCamera->lens_radius = 0.0f;
+		CameraHandle debugCamera = Raylib_CreateCamera();
+		Raylib_CameraCopy((CameraHandle)camera, debugCamera);
+		Raylib_CameraSetLens(debugCamera, 0.0f, focalDistance);
 
 		RendererSettings debugSettings = settings;
 		debugSettings.renderMode = RAYLIB_RENDERMODE_Albedo;
-		renderer.RenderScene(&debugSettings, (Scene*)scene, debugCamera, (Image2D*)albedoImage);
+		renderer.RenderScene(&debugSettings, (Scene*)scene, (Camera*)debugCamera, (Image2D*)albedoImage);
 		debugSettings.renderMode = RAYLIB_RENDERMODE_MicrosurfaceNormal;
-		renderer.RenderScene(&debugSettings, (Scene*)scene, debugCamera, (Image2D*)wNormalImage);
+		renderer.RenderScene(&debugSettings, (Scene*)scene, (Camera*)debugCamera, (Image2D*)wNormalImage);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
 		std::string normalFilenameJPG = makeFilename("_1.jpg");
@@ -514,7 +511,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 		Raylib_WriteImageToDisk(denoisedOutput, denoiseFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 		LOG("Write denoised image to: %s", denoiseFilenameJPG.c_str());
 
-		delete debugCamera;
+		Raylib_DestroyCamera(debugCamera);
 		Raylib_DestroyImage(wNormalImage);
 		Raylib_DestroyImage(albedoImage);
 		Raylib_DestroyImage(denoisedOutput);
@@ -531,7 +528,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	LOG("Write main image to: %s", resultFilenameJPG.c_str());
 
 	Raylib_DestroyScene(scene);
-	delete camera;
+	Raylib_DestroyCamera(camera);
 	Raylib_DestroyImage(mainImage);
 
 	LOG("=== Rendering has completed ===");

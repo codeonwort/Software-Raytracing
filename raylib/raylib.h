@@ -59,6 +59,13 @@ extern "C" {
 	RAYLIB_API bool Raylib_DestroyScene(SceneHandle sceneHandle);
 
 	RAYLIB_API CameraHandle Raylib_CreateCamera();
+	RAYLIB_API void Raylib_CameraSetPosition(CameraHandle camera, float x, float y, float z);
+	RAYLIB_API void Raylib_CameraSetLookAt(CameraHandle camera, float tx, float ty, float tz);
+	RAYLIB_API void Raylib_CameraSetPerspective(CameraHandle camera, float fovY_degrees, float aspectWH);
+	RAYLIB_API void Raylib_CameraSetLens(CameraHandle camera, float aperture, float focalDistance);
+	RAYLIB_API void Raylib_CameraSetMotion(CameraHandle camera, float beginTime, float endTime);
+	// Copy all camera properties from src to dst.
+	RAYLIB_API void Raylib_CameraCopy(CameraHandle srcCamera, CameraHandle dstCamera);
 	RAYLIB_API bool Raylib_DestroyCamera(CameraHandle cameraHandle);
 
 	// Create an image.

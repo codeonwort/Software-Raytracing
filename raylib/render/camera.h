@@ -10,12 +10,11 @@ constexpr T pi = T(3.1415926535897932385);
 
 class Camera
 {
-
 public:
 	Camera()
 	{
 		Camera(
-			vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f),
+			vec3(0.0f), vec3(0.0f, 0.0f, -1.0f),
 			60.0f, 16.0f / 9.0f,
 			0.0f, 1.0f,
 			0.0f, 0.0f);
@@ -24,46 +23,80 @@ public:
 	// fov_y in degrees
 	// aspect = screen_width / screen_height
 	Camera(
-		const vec3& location, const vec3& lookAt, const vec3& up,
-		float fov_y, float aspect,
-		float aperture, float focus_dist,
-		float timeBeginCapture, float timeEndCapture)
+		const vec3& inLocation, const vec3& inLookAt,
+		float inFovY_degrees, float inAspectWH,
+		float inAperture, float inFocalDistance,
+		float inBeginTime, float inEndTime)
 	{
-		lens_radius       = aperture * 0.5f;
-		float theta       = fov_y * pi<float> / 180.0f;
-		float half_height = tan(theta / 2.0f);
-		float half_width  = aspect * half_height;
+		origin        = inLocation;
+		lookAt        = inLookAt;
+		fovY_degrees  = inFovY_degrees;
+		aspectWH      = inAspectWH;
+		aperture      = inAperture;
+		focalDistance = inFocalDistance;
+		beginTime     = inBeginTime;
+		endTime       = inEndTime;
 
-		origin = location;
-		w = normalize(location - lookAt);
+		UpdateInternal();
+	}
+
+	// s, t: Relative viewport coords in [0.0, 1.0)
+	ray GetCameraRay(float s, float t) const
+	{
+		vec3 rd     = lensRadius * RandomInUnitDisk();
+		vec3 offset = (u * rd.x) + (v * rd.y);
+		float captureTime = beginTime + timePeriod * Random();
+
+		vec3 rayO = origin + offset;
+		vec3 rayD = normalize(top_left + s * horizontal + (1.0f - t) * vertical - origin - offset);
+		return ray(rayO, rayD, captureTime);
+	}
+
+	void UpdateInternal()
+	{
+		lensRadius = aperture * 0.5f;
+		timePeriod = endTime - beginTime;
+
+		w = normalize(origin - lookAt);
+
+		vec3 up(0.0f, 1.0f, 0.0f);
+		if (dot(w, up) >= 0.9f)
+		{
+			up = vec3(1.0f, 0.0f, 0.0f);
+		}
+
 		u = normalize(cross(up, w));
 		v = cross(w, u);
 
-		//top_left = vec3(-half_width, half_height, -1.0f);
-		top_left   = origin - (half_width * focus_dist * u) - (half_height * focus_dist * v) - (focus_dist * w);
-		horizontal = 2.0f * half_width * focus_dist * u;
-		vertical   = 2.0f * half_height * focus_dist * v;
-		//horizontal = vec3(2.0f * half_width, 0.0f, 0.0f);
-		//vertical = vec3(0.0f, -2.0f * half_height, 0.0f);
+		float theta = fovY_degrees * pi<float> / 180.0f;
+		float hh = tan(theta / 2.0f);
+		float hw = aspectWH * hh;
 
-		beginCapture = timeBeginCapture;
-		endCapture = timeEndCapture;
+		top_left = origin - (hw * focalDistance * u) - (hh * focalDistance * v) - (focalDistance * w);
+		horizontal = 2.0f * hw * focalDistance * u;
+		vertical = 2.0f * hh * focalDistance * v;
 	}
 
-	ray GetRay(float s, float t) const
-	{
-		vec3 rd     = lens_radius * RandomInUnitDisk();
-		vec3 offset = (u * rd.x) + (v * rd.y);
-		float captureTime = beginCapture + (endCapture - beginCapture) * Random();
-		return ray(origin + offset, normalize(top_left + s * horizontal + (1.0f - t) * vertical - origin - offset), captureTime);
-	}
-
+// Should call UpdateInternal() whenever one of them changes.
+public:
+	// Position
 	vec3 origin;
+	vec3 lookAt;
+	// Perspective
+	float fovY_degrees;
+	float aspectWH;
+	// Lens
+	float aperture;
+	float focalDistance;
+	// Motion
+	float beginTime, endTime;
+
+private:
+	// Derived
+	float lensRadius;
+	float timePeriod;
 	vec3 top_left;
 	vec3 horizontal;
 	vec3 vertical;
 	vec3 u, v, w;
-	float beginCapture, endCapture;
-	float lens_radius;
-
 };
