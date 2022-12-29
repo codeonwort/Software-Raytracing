@@ -719,12 +719,12 @@ HitableList* CreateScene_CarShowRoom()
 	pillar->Finalize();
 #endif
 
-	list.push_back(new sphere(vec3(3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.9f, 0.2f, 0.2f))));
-	list.push_back(new sphere(vec3(-3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.2f, 0.9f, 0.2f))));
-	list.push_back(new sphere(vec3(0.0f, 1.0f, 3.0f), 1.0f, new Lambertian(vec3(0.2f, 0.2f, 0.9f))));
+	list.push_back(new Sphere(vec3(3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.9f, 0.2f, 0.2f))));
+	list.push_back(new Sphere(vec3(-3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.2f, 0.9f, 0.2f))));
+	list.push_back(new Sphere(vec3(0.0f, 1.0f, 3.0f), 1.0f, new Lambertian(vec3(0.2f, 0.2f, 0.9f))));
 
 	// Ground
-	sphere* ground = new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f)));
+	Sphere* ground = new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f)));
 	list.push_back(ground);
 
 	return new HitableList(list);
@@ -834,8 +834,8 @@ HitableList* CreateScene_ObjModel()
 #if OBJTEST_LOCAL_LIGHTS
 	Material* pointLight0 = new DiffuseLight(vec3(5.0f, 0.0f, 0.0f));
 	Material* pointLight1 = new DiffuseLight(vec3(0.0f, 4.0f, 5.0f));
-	list.push_back(new sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
-	list.push_back(new sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
+	list.push_back(new Sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
+	list.push_back(new Sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
 #endif
 
 #if OBJTEST_INCLUDE_TOADTTE
@@ -921,7 +921,7 @@ HitableList* CreateScene_ObjModel()
 	}
 
 	// Ground
-	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+	list.push_back(new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
 
 	return new HitableList(list);
 }
@@ -930,7 +930,7 @@ HitableList* CreateScene_RandomSpheres()
 {
 	std::vector<Hitable*> list;
 
-	list.push_back(new sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+	list.push_back(new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
 
 	for(int32 a = -6; a < 6; ++a)
 	{
@@ -942,24 +942,24 @@ HitableList* CreateScene_RandomSpheres()
 			{
 				if(choose_material < 0.8f)
 				{
-					list.push_back(new sphere(center, 0.2f,
+					list.push_back(new Sphere(center, 0.2f,
 						new Lambertian(vec3(Random()*Random(), Random()*Random(), Random()*Random()))));
 				}
 				else if(choose_material < 0.95f)
 				{
-					list.push_back(new sphere(center, 0.2f,
+					list.push_back(new Sphere(center, 0.2f,
 						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random())));
 				}
 				else
 				{
-					list.push_back(new sphere(center, 0.2f, new Dielectric(1.5f)));
+					list.push_back(new Sphere(center, 0.2f, new Dielectric(1.5f)));
 				}
 			}
 		}
 	}
-	list.push_back(new sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f)));
-	list.push_back(new sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f))));
-	list.push_back(new sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f)));
+	list.push_back(new Sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f)));
+	list.push_back(new Sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f))));
+	list.push_back(new Sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f)));
 
 	return new HitableList(list);
 }
@@ -975,10 +975,10 @@ HitableList* CreateScene_FourSpheres()
 	Material* M_right = new Metal(vec3(0.8f, 0.6f, 0.2f), 0.0f);
 
 	std::vector<Hitable*> list;
-	list.push_back(new sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, M_ground));
-	list.push_back(new sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, M_left));
-	list.push_back(new sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, M_center));
-	list.push_back(new sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, M_right));
+	list.push_back(new Sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, M_ground));
+	list.push_back(new Sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, M_left));
+	list.push_back(new Sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, M_center));
+	list.push_back(new Sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, M_right));
 	HitableList* world = new HitableList(list);
 	return world;
 }

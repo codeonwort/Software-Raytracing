@@ -1,6 +1,6 @@
 #include "sphere.h"
 
-bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
+bool Sphere::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const
 {
 	vec3 oc = r.o - center;
 	float a = dot(r.d, r.d);
@@ -44,7 +44,7 @@ bool sphere::Hit(const ray& r, float t_min, float t_max, HitResult& outResult) c
 	return false;
 }
 
-bool sphere::BoundingBox(float t0, float t1, AABB& outBox) const
+bool Sphere::BoundingBox(float t0, float t1, AABB& outBox) const
 {
 	vec3 R = vec3(radius, radius, radius);
 	outBox = AABB(center - R, center + R);

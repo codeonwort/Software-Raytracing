@@ -4,11 +4,11 @@
 
 class Material;
 
-class sphere : public Hitable
+class Sphere : public Hitable
 {
 
 public:
-	sphere(const vec3& inCenter, float inRadius, Material* inMaterial)
+	Sphere(const vec3& inCenter, float inRadius, Material* inMaterial)
 		: center(inCenter)
 		, radius(inRadius)
 		, material(inMaterial)
