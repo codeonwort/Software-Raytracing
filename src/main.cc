@@ -218,20 +218,6 @@ struct OBJModelContainer
 
 OBJModelContainer g_objContainer;
 
-void InitializeSubsystems() {
-	SCOPED_CPU_COUNTER(InitializeSubsystems);
-
-	Raylib_Initialize();
-
-	ResourceFinder::Get().AddDirectory("./content/");
-	OBJLoader::Initialize();
-}
-void DestroySubsystems() {
-	OBJLoader::Destroy();
-
-	Raylib_Terminate();
-}
-
 void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& settings);
 
 int main(int argc, char** argv) {
@@ -241,7 +227,8 @@ int main(int argc, char** argv) {
 	// Initialize
 	//
 	g_programArgs.init(argc, argv);
-	InitializeSubsystems();
+	Raylib_Initialize();
+	ResourceFinder::Get().AddDirectory("./content/");
 
 	uint32 currentSceneID = 0;
 	bool bRunDenoiser = true;
@@ -433,7 +420,7 @@ int main(int argc, char** argv) {
 	//
 	// Cleanup
 	//
-	DestroySubsystems();
+	Raylib_Terminate();
 
 	return 0;
 }
@@ -565,7 +552,7 @@ bool GetOrCreateOBJ(const char* filename, OBJModel*& outModel, OBJTransformer tr
 		return true;
 	}
 	model = new OBJModel;
-	if (OBJLoader::SyncLoad(fullpath.c_str(), *model))
+	if (OBJLoader::LoadModelFromFile(fullpath.c_str(), *model))
 	{
 		if (transformer)
 		{

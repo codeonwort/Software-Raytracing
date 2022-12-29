@@ -1,5 +1,6 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "core/noncopyable.h"
 #include "core/vec3.h"
 
@@ -24,7 +25,7 @@ struct OBJModel
 	{
 	}
 
-	void FinalizeAllMeshes();
+	RAYLIB_API void FinalizeAllMeshes();
 
 	Hitable* rootObject;
 	std::vector<StaticMesh*> staticMeshes;
@@ -41,13 +42,13 @@ public:
 	static void Initialize();
 	static void Destroy();
 
-	static bool SyncLoad(const char* filepath, OBJModel& outModel);
+	RAYLIB_API static bool LoadModelFromFile(const char* filepath, OBJModel& outModel);
 
 public:
 	explicit OBJLoader();
 	~OBJLoader();
 
-	bool LoadSynchronous(const char* filepath, OBJModel& outModel);
+	bool LoadFromFile(const char* filepath, OBJModel& outModel);
 
 private:
 	void PreloadImages(

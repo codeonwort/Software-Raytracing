@@ -5,6 +5,7 @@
 #include "render/camera.h"
 #include "render/image.h"
 #include "render/renderer.h"
+#include "loader/obj_loader.h"
 
 #include <iostream>
 
@@ -21,6 +22,7 @@ int32_t Raylib_Initialize()
 
 	Logger::StartLogThread();
 	ImageIO::InitializeImageIO();
+	OBJLoader::Initialize();
 
 	return 0;
 }
@@ -29,6 +31,7 @@ int32_t Raylib_Terminate()
 {
 	std::cout << "Terminate raylib" << std::endl;
 
+	OBJLoader::Destroy();
 	ImageIO::TerminateImageIO();
 	Logger::KillAndWaitForLogThread();
 

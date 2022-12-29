@@ -1,12 +1,15 @@
 #include "obj_loader.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
+#include "core/logger.h"
 #include "geom/static_mesh.h"
 #include "geom/triangle.h"
 #include "geom/bvh.h"
 #include "render/material.h"
 #include "render/image.h"
-#include "core/logger.h"
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 
 /* 'illum' cheat sheet
 0. Color on and Ambient off
@@ -59,10 +62,10 @@ void OBJLoader::Destroy()
 	LOG("Destroy obj loader");
 }
 
-bool OBJLoader::SyncLoad(const char* filepath, OBJModel& outModel)
+bool OBJLoader::LoadModelFromFile(const char* filepath, OBJModel& outModel)
 {
 	OBJLoader loader;
-	bool bLoaded = loader.LoadSynchronous(filepath, outModel);
+	bool bLoaded = loader.LoadFromFile(filepath, outModel);
 	return bLoaded;
 }
 
@@ -75,7 +78,7 @@ OBJLoader::~OBJLoader()
 	// #todo-obj: cancel async load
 }
 
-bool OBJLoader::LoadSynchronous(const char* filepath, OBJModel& outModel)
+bool OBJLoader::LoadFromFile(const char* filepath, OBJModel& outModel)
 {
 	if (filepath == nullptr)
 	{

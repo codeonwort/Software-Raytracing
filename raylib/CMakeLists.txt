@@ -14,6 +14,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 include_directories(${PROJECT_SOURCE_DIR}/raylib)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/source)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/include)
+include_directories(${CMAKE_SOURCE_DIR}/thirdparty/tinyobjloader/source)
 
 # Link libraries
 link_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries)
