@@ -190,16 +190,16 @@ SceneDesc g_sceneDescs[] = {
 // when rendering a same scene multiple times.
 struct OBJModelContainer
 {
-	OBJModel* find(const std::string& filename) const
+	OBJModelHandle find(const std::string& filename) const
 	{
 		auto it = modelDB.find(filename);
 		if (it == modelDB.end())
 		{
-			return nullptr;
+			return NULL;
 		}
 		return it->second;
 	}
-	void insert(const std::string& filename, OBJModel* model)
+	void insert(const std::string& filename, OBJModelHandle model)
 	{
 		modelDB.insert(std::make_pair(filename, model));
 	}
@@ -207,13 +207,13 @@ struct OBJModelContainer
 	{
 		for (auto& it : modelDB)
 		{
-			OBJModel* model = it.second;
-			delete model;
+			OBJModelHandle model = it.second;
+			Raylib_UnloadOBJModel(model);
 		}
 		modelDB.clear();
 	}
 
-	std::map<std::string, OBJModel*> modelDB;
+	std::map<std::string, OBJModelHandle> modelDB;
 };
 
 OBJModelContainer g_objContainer;
@@ -539,30 +539,30 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 // Demo scene generator functions
 
 using OBJTransformer = std::function<void(OBJModel* inModel)>;
-bool GetOrCreateOBJ(const char* filename, OBJModel*& outModel, OBJTransformer transformer = nullptr)
+bool GetOrCreateOBJ(const char* filename, OBJModelHandle& outModel, OBJTransformer transformer = nullptr)
 {
 	std::string fullpath = ResourceFinder::Get().Find(filename);
 
-	OBJModel* model = g_objContainer.find(filename);
-	if (model != nullptr)
+	OBJModelHandle model = g_objContainer.find(filename);
+	if (model != NULL)
 	{
 		outModel = model;
 		return true;
 	}
-	model = new OBJModel;
-	if (OBJLoader::LoadModelFromFile(fullpath.c_str(), *model))
+
+	model = Raylib_LoadOBJModel(fullpath.c_str());
+	if (model != NULL)
 	{
 		if (transformer)
 		{
-			transformer(model);
+			transformer((OBJModel*)model);
 		}
-		model->FinalizeAllMeshes();
+		((OBJModel*)model)->FinalizeAllMeshes();
 		g_objContainer.insert(filename, model);
 		outModel = model;
 		return true;
 	}
-	delete model;
-	model = outModel = nullptr;
+	model = outModel = NULL;
 	return false;
 }
 
@@ -571,10 +571,10 @@ SceneHandle CreateScene_CornellBox() {
 
 	SceneHandle scene = Raylib_CreateScene();
 
-	OBJModel* objModel;
+	OBJModelHandle objModel;
 	if (GetOrCreateOBJ("content/cornell_box/CornellBox-Mirror.obj", objModel))
 	{
-		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
+		Raylib_AddOBJModelToScene(scene, objModel);
 	}
 
 	return scene;
@@ -731,10 +731,10 @@ SceneHandle CreateScene_BreakfastRoom()
 
 	SceneHandle scene = Raylib_CreateScene();
 
-	OBJModel* objModel;
+	OBJModelHandle objModel;
 	if (GetOrCreateOBJ("content/breakfast_room/breakfast_room.obj", objModel))
 	{
-		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
+		Raylib_AddOBJModelToScene(scene, objModel);
 	}
 
 	return scene;
@@ -746,10 +746,10 @@ SceneHandle CreateScene_DabrovicSponza()
 
 	SceneHandle scene = Raylib_CreateScene();
 
-	OBJModel* objModel;
+	OBJModelHandle objModel;
 	if (GetOrCreateOBJ("content/dabrovic_sponza/sponza.obj", objModel))
 	{
-		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
+		Raylib_AddOBJModelToScene(scene, objModel);
 	}
 
 	return scene;
@@ -761,10 +761,10 @@ SceneHandle CreateScene_FireplaceRoom()
 
 	SceneHandle scene = Raylib_CreateScene();
 
-	OBJModel* objModel;
+	OBJModelHandle objModel;
 	if (GetOrCreateOBJ("content/fireplace_room/fireplace_room.obj", objModel))
 	{
-		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
+		Raylib_AddOBJModelToScene(scene, objModel);
 	}
 
 	return scene;
@@ -776,10 +776,10 @@ SceneHandle CreateScene_LivingRoom()
 
 	SceneHandle scene = Raylib_CreateScene();
 
-	OBJModel* objModel;
+	OBJModelHandle objModel;
 	if (GetOrCreateOBJ("content/living_room/living_room.obj", objModel))
 	{
-		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
+		Raylib_AddOBJModelToScene(scene, objModel);
 	}
 
 	return scene;
@@ -791,10 +791,10 @@ SceneHandle CreateScene_SibenikCathedral()
 
 	SceneHandle scene = Raylib_CreateScene();
 
-	OBJModel* objModel;
+	OBJModelHandle objModel;
 	if (GetOrCreateOBJ("content/sibenik/sibenik.obj", objModel))
 	{
-		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
+		Raylib_AddOBJModelToScene(scene, objModel);
 	}
 
 	return scene;
@@ -806,10 +806,10 @@ SceneHandle CreateScene_SanMiguel()
 
 	SceneHandle scene = Raylib_CreateScene();
 
-	OBJModel* objModel;
+	OBJModelHandle objModel;
 	if (GetOrCreateOBJ("content/San_Miguel/san-miguel.obj", objModel))
 	{
-		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
+		Raylib_AddOBJModelToScene(scene, objModel);
 	}
 
 	return scene;
@@ -836,7 +836,7 @@ SceneHandle CreateScene_ObjModel()
 #endif
 
 #if OBJTEST_INCLUDE_TOADTTE
-	OBJModel* model;
+	OBJModelHandle model;
 	auto transformer = [](OBJModel* inModel) {
 		Transform transform;
 		transform.Init(

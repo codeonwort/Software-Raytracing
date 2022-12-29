@@ -27,11 +27,11 @@ extern "C" {
 	// Manage media files
 
 	// Load Wavefront OBJ model.
-	RAYLIB_API OBJModelHandle Raylib_LoadOBJModel(const char* objPath, const char* mtldir);
+	RAYLIB_API OBJModelHandle Raylib_LoadOBJModel(const char* objPath);
 
 	// Unload Wavefront OBJ model.
-	// @return true if successful, false otherwise.
-	RAYLIB_API bool Raylib_UnloadOBJModel(OBJModelHandle objHandle);
+	// @return 1 if successful, 0 otherwise.
+	RAYLIB_API int32_t Raylib_UnloadOBJModel(OBJModelHandle objHandle);
 
 	// Load an image from an external image file.
 	// To create an image on-the-fly, use Raylib_CreateImage().

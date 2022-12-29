@@ -42,7 +42,7 @@ public:
 	static void Initialize();
 	static void Destroy();
 
-	RAYLIB_API static bool LoadModelFromFile(const char* filepath, OBJModel& outModel);
+	RAYLIB_API static bool LoadModelFromFile(const char* filepath, OBJModel* outModel);
 
 public:
 	explicit OBJLoader();

@@ -62,10 +62,11 @@ void OBJLoader::Destroy()
 	LOG("Destroy obj loader");
 }
 
-bool OBJLoader::LoadModelFromFile(const char* filepath, OBJModel& outModel)
+bool OBJLoader::LoadModelFromFile(const char* filepath, OBJModel* outModel)
 {
+	CHECK(outModel != nullptr);
 	OBJLoader loader;
-	bool bLoaded = loader.LoadFromFile(filepath, outModel);
+	bool bLoaded = loader.LoadFromFile(filepath, *outModel);
 	return bLoaded;
 }
 

@@ -12,9 +12,10 @@
 
 // -----------------------------------------------------------------------
 
-static concurrent_vector<Camera*>  g_cameras;
-static concurrent_vector<Image2D*> g_images;
-static concurrent_vector<Scene*>   g_scenes;
+static concurrent_vector<OBJModel*> g_objModels;
+static concurrent_vector<Camera*>   g_cameras;
+static concurrent_vector<Image2D*>  g_images;
+static concurrent_vector<Scene*>    g_scenes;
 
 // -----------------------------------------------------------------------
 
@@ -39,6 +40,45 @@ int32_t Raylib_Terminate()
 
 	return 0;
 }
+
+// -----------------------------------------------------------------------
+// Manage media files
+
+OBJModelHandle Raylib_LoadOBJModel(const char* objPath)
+{
+	OBJModel* objModel = new OBJModel;
+	if (OBJLoader::LoadModelFromFile(objPath, objModel))
+	{
+		g_objModels.push_back(objModel);
+		return (OBJModelHandle)objModel;
+	}
+	else
+	{
+		delete objModel;
+	}
+	return NULL;
+}
+
+int32_t Raylib_UnloadOBJModel(OBJModelHandle objHandle)
+{
+	OBJModel* objModel = (OBJModel*)objHandle;
+	if (g_objModels.erase_first(objModel))
+	{
+		delete objModel;
+		return true;
+	}
+	return false;
+}
+
+ImageHandle Raylib_LoadImage(const char* filepath)
+{
+	Image2D* image = ImageIO::LoadImage2DFromFile(filepath);
+	g_images.push_back(image);
+	return (ImageHandle)image;
+}
+
+// -----------------------------------------------------------------------
+// Scene
 
 CameraHandle Raylib_CreateCamera()
 {
@@ -121,16 +161,6 @@ bool Raylib_DestroyImage(ImageHandle imageHandle)
 	return false;
 }
 
-ImageHandle Raylib_LoadImage(const char* filepath)
-{
-	Image2D* image = ImageIO::LoadImage2DFromFile(filepath);
-	g_images.push_back(image);
-	return (ImageHandle)image;
-}
-
-// -----------------------------------------------------------------------
-// Scene
-
 SceneHandle Raylib_CreateScene()
 {
 	Scene* scene = new Scene;
@@ -156,7 +186,6 @@ bool Raylib_DestroyScene(SceneHandle sceneHandle)
 
 // -----------------------------------------------------------------------
 // Rendering
-
 
 int32_t Raylib_Render(
 	//const RendererSettings* settings,
