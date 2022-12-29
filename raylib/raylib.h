@@ -33,7 +33,8 @@ extern "C" {
 
 	// Load an image from an external image file.
 	// To create an image on-the-fly, use Raylib_CreateImage().
-	RAYLIB_API ImageHandle Raylib_LoadImage(const char* imagePath);
+	// @return NULL if failed to load.
+	RAYLIB_API ImageHandle Raylib_LoadImage(const char* filepath);
 
 	// -----------------------------------------------------------------------
 	// Construct scenes
@@ -76,7 +77,7 @@ extern "C" {
 	// @param camera      [in] Camera from which to look at the scene.
 	// @param auxMode     [in] See EAuxRenderMode enum.
 	// @param outAuxImage [out] Rendered aux image.
-	// @return Returns 0 if successful, -1 otherwise.
+	// @return 0 if successful, -1 otherwise.
 	RAYLIB_API int32_t Raylib_RenderAux(
 		SceneHandle  scene,
 		CameraHandle camera,
@@ -89,7 +90,7 @@ extern "C" {
 	// @param inAlbedoImage    [in] (optional) albedo image.
 	// @param inNormalImage    [in] (optional) world normal image.
 	// @param outDenoisedImage [out] denoised image.
-	// @return Returns 0 if successful, -1 otherwise.
+	// @return 0 if successful, -1 otherwise.
 	RAYLIB_API int32_t Raylib_Denoise(
 		ImageHandle inMainImage,
 		ImageHandle inAlbedoImage,
@@ -106,6 +107,7 @@ extern "C" {
 	// @param image    The image to write.
 	// @param filepath Target filepath.
 	// @param fileType See EImageFileType. (bmp, jpg, png, ...)
-	RAYLIB_API void Raylib_WriteImageToDisk(ImageHandle image, const char* filepath, uint32_t fileType);
+	// @return true if successful, false otherwise.
+	RAYLIB_API bool Raylib_WriteImageToDisk(ImageHandle image, const char* filepath, uint32_t fileType);
 
 } // extern "C"

@@ -1,5 +1,4 @@
 #include "obj_loader.h"
-#include "image_loader.h"
 #include "core/int_types.h"
 #include "core/vec3.h"
 #include "geom/static_mesh.h"
@@ -267,9 +266,8 @@ void OBJLoader::PreloadImages(
 				basedir = objpath.substr(0, objpath.find_last_of("/\\") + 1);
 				std::string filepath = basedir + inFilename;
 
-				std::shared_ptr<Image2D> image = std::make_shared<Image2D>();
-				ImageLoader::SyncLoad(filepath.data(), *image);
-				imageDB.insert(std::make_pair(inFilename, image));
+				Image2D* image = ImageIO::LoadImage2DFromFile(filepath.c_str());
+				imageDB.insert(std::make_pair(inFilename, std::shared_ptr<Image2D>(image)));
 			}
 		}
 	};

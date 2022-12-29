@@ -14,7 +14,6 @@
 #include "geom/static_mesh.h"
 #include "geom/transform.h"
 #include "loader/obj_loader.h"
-#include "loader/image_loader.h"
 #include "util/stat.h"
 #include "util/log.h"
 
@@ -228,12 +227,10 @@ void InitializeSubsystems() {
 
 	StartLogThread();
 	ResourceFinder::Get().AddDirectory("./content/");
-	ImageLoader::Initialize();
 	OBJLoader::Initialize();
 }
 void DestroySubsystems() {
 	OBJLoader::Destroy();
-	ImageLoader::Destroy();
 	WaitForLogThread();
 
 	Raylib_Terminate();
@@ -448,15 +445,18 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 {
 	const SceneDesc& sceneDesc = g_sceneDescs[sceneID];
 
+	// #todo-raylib: How to deal with ImageHandle and shared_ptr<Image2D>
+#if 0
 	if (skyTexture == nullptr)
 	{
-		std::shared_ptr<Image2D> skyHDRI;
 		std::string filepath = ResourceFinder::Get().Find("content/Ridgecrest_Road_Ref.hdr");
-		if (ImageLoader::SyncLoad(filepath.c_str(), skyHDRI))
+		ImageHandle skyImage = Raylib_LoadImage(filepath.c_str());
+		if (skyImage != NULL)
 		{
-			skyTexture = std::shared_ptr<Texture2D>(Texture2D::CreateFromImage2D(skyHDRI));
+			skyTexture = std::shared_ptr<Texture2D>(Texture2D::CreateFromImage2D(skyImage));
 		}
 	}
+#endif
 	
 	auto makeFilename = [&sceneDesc](const char* prefix) {
 		std::string name = SOLUTION_DIR "test_";
@@ -864,9 +864,11 @@ HitableList* CreateScene_ObjModel()
 	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat2));
 #endif
 
-	std::shared_ptr<Image2D> img;
+	// #todo-raylib: How to deal with ImageHandle and shared_ptr<Image2D>
+#if 0
 	std::string imgpath = ResourceFinder::Get().Find("content/Toadette/Toadette_body.png");
-	if (ImageLoader::SyncLoad(imgpath.c_str(), img))
+	ImageHandle img = Raylib_LoadImage(imgpath.c_str());
+	if (img != NULL)
 	{
 		MicrofacetMaterial* pbr_mat = new MicrofacetMaterial;
 		pbr_mat->SetAlbedoTexture(img);
@@ -888,6 +890,7 @@ HitableList* CreateScene_ObjModel()
 			list.push_back(T);
  		}
 	}
+#endif
 
 	const int32 numFans = 8;
 	const float fanAngle = 1.0f / (float)(numFans + 1);

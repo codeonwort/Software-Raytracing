@@ -4,6 +4,11 @@
 // #todo-raylib
 //#include "util/log.h"
 
+#pragma warning(push)
+#pragma warning(disable: 4819)
+#include "FreeImage.h"
+#pragma warning(pop)
+
 #define TONE_MAP         1    // Still some artifact around borders that I don't quite get
 #define FORCE_MAX_WHITE  1    // Clamp the tone mapping result to white
 #define GAMMA_CORRECTION 1    // linear to sRGB
@@ -127,5 +132,140 @@ void Image2D::DumpFloatRGBs(std::vector<float>& outArray)
 			outArray.push_back(image[k].b);
 			++k;
 		}
+	}
+}
+
+// -----------------------------------------------------------------------
+
+static FREE_IMAGE_FORMAT ToFreeImageType(EImageFileType inType)
+{
+	switch (inType)
+	{
+		case RAYLIB_IMAGEFILETYPE_Bitmap: return FIF_BMP;
+		case RAYLIB_IMAGEFILETYPE_Jpg:    return FIF_JPEG;
+		case RAYLIB_IMAGEFILETYPE_Png:    return FIF_PNG;
+	}
+	CHECKF(false, "Unexpected EImageFileType value");
+	return FIF_UNKNOWN;
+}
+
+namespace ImageIO
+{
+	void InitializeImageIO()
+	{
+		FreeImage_Initialise();
+	}
+
+	void TerminateImageIO()
+	{
+		FreeImage_DeInitialise();
+	}
+
+	Image2D* LoadImage2DFromFile(const char* filepath)
+	{
+		if (filepath == nullptr)
+		{
+			return nullptr;
+		}
+	
+		FREE_IMAGE_FORMAT imageFormat = FreeImage_GetFIFFromFilename(filepath);
+		FIBITMAP* dib = FreeImage_Load(imageFormat, filepath, 0);
+
+		if (dib == nullptr)
+		{
+			return nullptr;
+		}
+
+		Image2D* image = new Image2D;
+
+		if (imageFormat == FIF_HDR)
+		{
+			FIBITMAP* dibF = FreeImage_ConvertToRGBAF(dib);
+			FreeImage_Unload(dib);
+
+			float* hdrBuffer = reinterpret_cast<float*>(FreeImage_GetBits(dibF));
+			uint32 width = (uint32)FreeImage_GetWidth(dibF);
+			uint32 height = (uint32)FreeImage_GetHeight(dibF);
+			uint32 pitch = (uint32)FreeImage_GetPitch(dibF);
+
+			image->Reallocate(width, height);
+
+			uint32 p = 0;
+			for (int32 y = (int32)height - 1; y >= 0; --y)
+			{
+				for (int32 x = 0; x < (int32)width; ++x)
+				{
+					float r = hdrBuffer[p++];
+					float g = hdrBuffer[p++];
+					float b = hdrBuffer[p++];
+					float a = hdrBuffer[p++];
+					image->SetPixel(x, y, Pixel(r, g, b, a));
+				}
+			}
+
+			FreeImage_Unload(dibF);
+		}
+		else
+		{
+			if (imageFormat != FIF_BMP && imageFormat != FIF_JPEG && imageFormat != FIF_PNG)
+			{
+				// #todo-raylib
+				//LOG("%s: unexpected image format. Will be interpreted as rgba8.");
+			}
+
+			FIBITMAP* dib32 = FreeImage_ConvertTo32Bits(dib);
+			FreeImage_Unload(dib);
+
+			// Row-major
+			BYTE* colorBuffer = FreeImage_GetBits(dib32);
+			uint32 width = (uint32)FreeImage_GetWidth(dib32);
+			uint32 height = (uint32)FreeImage_GetHeight(dib32);
+			uint32 pitch = (uint32)FreeImage_GetPitch(dib32);
+
+			image->Reallocate(width, height);
+
+			uint32 p = 0;
+			for (int32 y = (int32)height - 1; y >= 0; --y)
+			{
+				for (int32 x = 0; x < (int32)width; ++x)
+				{
+					uint8 b = colorBuffer[p++];
+					uint8 g = colorBuffer[p++];
+					uint8 r = colorBuffer[p++];
+					uint8 a = colorBuffer[p++];
+					image->SetPixel(x, y, Pixel(r, g, b, a));
+				}
+			}
+
+			FreeImage_Unload(dib32);
+		}
+
+		return image;
+	}
+
+	bool WriteImage2DToDisk(Image2D* image, const char* filepath, EImageFileType fileType)
+	{
+		std::vector<BYTE> imageBlob;
+		imageBlob.reserve(3 * image->GetWidth() * image->GetHeight());
+		for (int32 y = (int32)image->GetHeight() - 1; y >= 0; --y)
+		{
+			for (uint32 x = 0; x < image->GetWidth(); ++x)
+			{
+				uint32 rgba = image->GetPixel(x, y).ToUint32();
+				imageBlob.push_back(rgba & 0xff);
+				imageBlob.push_back((rgba >> 8) & 0xff);
+				imageBlob.push_back((rgba >> 16) & 0xff);
+			}
+		}
+		FREE_IMAGE_FORMAT fif = ToFreeImageType(fileType);
+		FIBITMAP* dib = FreeImage_ConvertFromRawBits(
+			imageBlob.data(),
+			image->GetWidth(), image->GetHeight(),
+			image->GetWidth() * 3, 3 * 8,
+			0, 0, 0);
+		bool bSuccess = FreeImage_Save(fif, dib, filepath, 0);
+		FreeImage_Unload(dib);
+
+		return bSuccess;
 	}
 }

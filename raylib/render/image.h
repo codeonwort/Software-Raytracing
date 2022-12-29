@@ -84,7 +84,7 @@ struct Pixel
 
 };
 
-// Can be used as a 2D texture mipmap or a 2D render target
+// Can be used as a 2D texture mipmap or a 2D render target.
 class Image2D
 {
 
@@ -116,3 +116,11 @@ private:
 	std::vector<Pixel> image; // row-major
 
 };
+
+namespace ImageIO
+{
+	void InitializeImageIO();
+	void TerminateImageIO();
+	RAYLIB_API Image2D* LoadImage2DFromFile(const char* filepath);
+	bool WriteImage2DToDisk(Image2D* image, const char* filepath, EImageFileType fileType);
+}
