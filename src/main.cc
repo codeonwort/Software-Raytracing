@@ -83,6 +83,8 @@ SceneDesc g_sceneDescs[] = {
 		vec3(0.0f, 1.0f, 5.0f),
 		vec3(0.0f, 1.0f, -1.0f),
 		60.0f,
+		true,
+		vec3(20.0f), vec3(-1.0f, -1.0f, 0.0f) // Sun
 	},
 	{
 		CreateScene_DabrovicSponza,
@@ -453,8 +455,7 @@ void ExecuteRenderer(
 	// Render default image
 	ImageHandle mainImage = Raylib_CreateImage(viewportWidth, viewportHeight);
 
-	Renderer renderer;
-	renderer.RenderScene(&settings, (Scene*)scene, (Camera*)camera, (Image2D*)mainImage);
+	Raylib_Render(&settings, scene, camera, mainImage);
 
 	if (Raylib_IsDenoiserSupported()
 		&& bRunDenoiser
@@ -472,9 +473,9 @@ void ExecuteRenderer(
 
 		RendererSettings debugSettings = settings;
 		debugSettings.renderMode = RAYLIB_RENDERMODE_Albedo;
-		renderer.RenderScene(&debugSettings, (Scene*)scene, (Camera*)debugCamera, (Image2D*)albedoImage);
+		Raylib_Render(&debugSettings, scene, debugCamera, albedoImage);
 		debugSettings.renderMode = RAYLIB_RENDERMODE_MicrosurfaceNormal;
-		renderer.RenderScene(&debugSettings, (Scene*)scene, (Camera*)debugCamera, (Image2D*)wNormalImage);
+		Raylib_Render(&debugSettings, scene, debugCamera, wNormalImage);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
 		std::string normalFilenameJPG = makeFilename("_1.jpg");

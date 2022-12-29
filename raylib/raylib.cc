@@ -187,14 +187,14 @@ int32_t Raylib_DestroyScene(SceneHandle sceneHandle)
 // -----------------------------------------------------------------------
 // Rendering
 
-int32_t Raylib_Render(
-	//const RendererSettings* settings,
+void Raylib_Render(
+	const RendererSettings* settings,
 	SceneHandle scene,
 	CameraHandle camera,
 	ImageHandle outMainImage)
 {
-	// #todo-raylib
-	return true;
+	Renderer renderer;
+	renderer.RenderScene(settings, (Scene*)scene, (Camera*)camera, (Image2D*)outMainImage);
 }
 
 int32_t Raylib_Denoise(
@@ -279,15 +279,6 @@ int32_t Raylib_WriteImageToDisk(ImageHandle imageHandle, const char* filepath, u
 
 	Image2D* image = (Image2D*)imageHandle;
 	EImageFileType fileType = (EImageFileType)fileTypeRaw;
-
-	// #todo-raylib: Activate after all images are allocated by Raylib_CreateImage().
-#if 0
-	if (!g_images.contains(image))
-	{
-		// LOG("Invalid image handle")
-		return 0;
-	}
-#endif
 
 	bool bRet = ImageIO::WriteImage2DToDisk(image, filepath, fileType);
 	return bRet ? 1 : 0;

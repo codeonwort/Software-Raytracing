@@ -80,13 +80,12 @@ extern "C" {
 	// Rendering
 
 	// Render `scene` viewed from `camera` with given `settings`.
-	// @param 
+	// @param settings     [in] Rendering settings. (viewport size, SPP, render mode, ...)
 	// @param scene        [in] The scene to render.
 	// @param camera       [in] Camera from which to look at the scene.
 	// @param outMainImage [out] Rendered image.
-	// @return 1 if successful, 0 otherwise.
-	RAYLIB_API int32_t Raylib_Render(
-		//const RendererSettings* settings,
+	RAYLIB_API void Raylib_Render(
+		const RendererSettings* settings,
 		SceneHandle  scene,
 		CameraHandle camera,
 		ImageHandle  outMainImage);

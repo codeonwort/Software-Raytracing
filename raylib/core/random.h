@@ -65,13 +65,9 @@ private:
 };
 
 // #todo-raylib: Temp RAYLIB_API
-RAYLIB_API vec3 RandomInUnitSphere();
-
-RAYLIB_API vec3 RandomInHemisphere(const vec3& axis);
-
 RAYLIB_API float Random();
-
-RAYLIB_API vec3 RandomInUnitDisk();
-
+RAYLIB_API vec3 RandomInUnitSphere();
+vec3 RandomInHemisphere(const vec3& axis);
+vec3 RandomInUnitDisk();
 // Cosine-weighted samples on a hemisphere around (0,0,1)
-RAYLIB_API vec3 RandomInCosineHemisphere();
+vec3 RandomInCosineHemisphere();

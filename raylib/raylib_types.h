@@ -37,3 +37,21 @@ enum EImageFileType
 
 	RAYLIB_IMAGEFILETYPE_MAX
 };
+
+struct RendererSettings {
+	// Camera properties
+	uint32_t             viewportWidth;
+	uint32_t             viewportHeight;
+
+	// Path tracing options
+	int32_t              samplesPerPixel;
+	int32_t              maxPathLength;
+	float                rayTMin;
+
+	// System values
+	ERenderMode          renderMode      = ERenderMode::RAYLIB_RENDERMODE_Default;
+
+	inline float getViewportAspectWH() const {
+		return (float)viewportWidth / (float)viewportHeight;
+	}
+};
