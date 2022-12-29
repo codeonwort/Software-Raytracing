@@ -14,13 +14,14 @@
 #include "geom/static_mesh.h"
 #include "geom/transform.h"
 #include "geom/scene.h"
-#include "loader/obj_loader.h"
 
 #include "raylib/raylib.h"
+#include "raylib/raylib_types.h"
 
 #include <functional>
 #include <iostream>
 #include <vector>
+#include <map>
 
 // -----------------------------------------------------------------------
 
@@ -524,8 +525,11 @@ void ExecuteRenderer(
 //////////////////////////////////////////////////////////////////////////
 // Demo scene generator functions
 
-using OBJTransformer = std::function<void(OBJModel* inModel)>;
-bool GetOrCreateOBJ(const char* filename, OBJModelHandle& outModel, OBJTransformer transformer = nullptr)
+using OBJTransformer = std::function<void(OBJModelHandle inModel)>;
+bool GetOrCreateOBJ(
+	const char* filename,
+	OBJModelHandle& outModel,
+	OBJTransformer transformer = nullptr)
 {
 	std::string fullpath = ResourceFinder::Get().Find(filename);
 
@@ -541,9 +545,9 @@ bool GetOrCreateOBJ(const char* filename, OBJModelHandle& outModel, OBJTransform
 	{
 		if (transformer)
 		{
-			transformer((OBJModel*)model);
+			transformer(model);
 		}
-		((OBJModel*)model)->FinalizeAllMeshes();
+		Raylib_FinalizeOBJModel(model);
 		g_objContainer.insert(filename, model);
 		outModel = model;
 		return true;
@@ -822,19 +826,15 @@ SceneHandle CreateScene_ObjModel()
 #endif
 
 #if OBJTEST_INCLUDE_TOADTTE
-	OBJModelHandle model;
-	auto transformer = [](OBJModel* inModel) {
-		Transform transform;
-		transform.Init(
-			vec3(0.0f, 0.0f, 0.0f),
-			Rotator(-10.0f, 0.0f, 0.0f),
-			vec3(0.07f, 0.07f, 0.07f));
-		std::for_each(
-			inModel->staticMeshes.begin(),
-			inModel->staticMeshes.end(),
-			[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); }
+	auto transformer = [](OBJModelHandle inModel){
+		Raylib_TransformOBJModel(
+			inModel,
+			0.0f, 0.0f, 0.0f,
+			-10.0f, 0.0f, 0.0f,
+			0.07f, 0.07f, 0.07f
 		);
 	};
+	OBJModelHandle model;
 	if (GetOrCreateOBJ("content/Toadette/Toadette.obj", model, transformer))
 	{
 		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)model);

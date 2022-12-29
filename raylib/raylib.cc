@@ -3,6 +3,8 @@
 #include "core/concurrent_vector.h"
 #include "core/logger.h"
 #include "geom/scene.h"
+#include "geom/transform.h"
+#include "geom/static_mesh.h"
 #include "render/camera.h"
 #include "render/image.h"
 #include "render/renderer.h"
@@ -57,6 +59,32 @@ OBJModelHandle Raylib_LoadOBJModel(const char* objPath)
 		delete objModel;
 	}
 	return NULL;
+}
+
+void Raylib_TransformOBJModel(
+	OBJModelHandle objModelHandle,
+	float translationX, float translationY, float translationZ,
+	float yaw, float pitch, float roll,
+	float scaleX, float scaleY, float scaleZ)
+{
+	OBJModel* objModel = (OBJModel*)objModelHandle;
+
+	Transform transform;
+	transform.Init(
+		vec3(translationX, translationY, translationZ),
+		Rotator(yaw, pitch, roll),
+		vec3(scaleX, scaleY, scaleZ));
+
+	std::for_each(
+		objModel->staticMeshes.begin(),
+		objModel->staticMeshes.end(),
+		[&transform](StaticMesh* mesh) { mesh->ApplyTransform(transform); }
+	);
+}
+
+void Raylib_FinalizeOBJModel(OBJModelHandle objModel)
+{
+	((OBJModel*)objModel)->FinalizeAllMeshes();
 }
 
 int32_t Raylib_UnloadOBJModel(OBJModelHandle objHandle)

@@ -27,7 +27,17 @@ extern "C" {
 	// Manage media files
 
 	// Load Wavefront OBJ model.
+	// Should finalize via Raylib_FinalizeOBJModel() before adding to scene.
+	// Add to scene via Raylib_AddOBJModelToScene().
 	RAYLIB_API OBJModelHandle Raylib_LoadOBJModel(const char* objPath);
+
+	RAYLIB_API void Raylib_TransformOBJModel(
+		OBJModelHandle objModel,
+		float translationX, float translationY, float translationZ,
+		float yaw, float pitch, float roll,
+		float scaleX, float scaleY, float scaleZ);
+
+	RAYLIB_API void Raylib_FinalizeOBJModel(OBJModelHandle objModel);
 
 	// Unload Wavefront OBJ model.
 	// @return 1 if successful, 0 otherwise.
