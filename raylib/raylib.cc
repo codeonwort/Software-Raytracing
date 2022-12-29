@@ -81,11 +81,32 @@ ImageHandle Raylib_LoadImage(const char* filepath)
 // -----------------------------------------------------------------------
 // Rendering
 
-int32_t Raylib_IsDenoiserSupported()
+int32_t Raylib_Denoise(
+	ImageHandle inMainImage,
+	bool bMainImageHDR,
+	ImageHandle inAlbedoImage,
+	ImageHandle inNormalImage,
+	ImageHandle outDenoisedImage)
 {
-	return Renderer::IsDenoiserSupported();
+	Renderer renderer;
+	bool bRet = renderer.DenoiseScene(
+		(Image2D*)inMainImage,
+		bMainImageHDR,
+		(Image2D*)inAlbedoImage,
+		(Image2D*)inNormalImage,
+		(Image2D*)outDenoisedImage);
+	return (bRet ? 0 : -1);
 }
 
+void Raylib_PostProcess(ImageHandle image)
+{
+	((Image2D*)image)->PostProcess();
+}
+
+int32_t Raylib_IsDenoiserSupported()
+{
+	return Renderer::IsDenoiserSupported() ? 1 : 0;
+}
 
 // -----------------------------------------------------------------------
 // Utils

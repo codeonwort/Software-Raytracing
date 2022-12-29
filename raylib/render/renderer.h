@@ -41,16 +41,17 @@ class Renderer
 public:
 	static bool IsDenoiserSupported();
 
+	// #todo-raylib: Remove dllexport
 	RAYLIB_API void RenderScene(
 		const RendererSettings& settings,
 		const Hitable* world,
 		const Camera* camera,
 		Image2D* outImage);
 
-	RAYLIB_API bool DenoiseScene(
+	bool DenoiseScene(
 		Image2D* mainImage,
 		bool bMainImageHDR,
 		Image2D* albedoImage,
 		Image2D* normalImage,
-		Image2D*& outDenoisedImage);
+		Image2D* outDenoisedImage);
 };

@@ -319,9 +319,10 @@ bool Renderer::DenoiseScene(
 	bool bMainImageHDR,
 	Image2D* albedoImage,
 	Image2D* normalImage,
-	Image2D*& outDenoisedImage)
+	Image2D* outDenoisedImage)
 {
-	CHECK(mainImage != nullptr);
+	CHECKF(mainImage != nullptr, "mainImage should not be null");
+	CHECKF(outDenoisedImage != nullptr, "outDenoisedImage should not be null");
 	if (!IsDenoiserSupported())
 	{
 		return false;
@@ -384,14 +385,7 @@ bool Renderer::DenoiseScene(
 	oidnReleaseFilter(oidnFilter);
 	oidnReleaseDevice(oidnDevice);
 
-	if (outDenoisedImage == nullptr)
-	{
-		outDenoisedImage = new Image2D(viewportWidth, viewportHeight);
-	}
-	else
-	{
-		outDenoisedImage->Reallocate(viewportWidth, viewportHeight, 0x0);
-	}
+	outDenoisedImage->Reallocate(viewportWidth, viewportHeight, 0x0);
 	size_t k = 0;
 	for (uint32_t y = 0; y < viewportHeight; ++y)
 	{

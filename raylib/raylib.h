@@ -78,16 +78,22 @@ extern "C" {
 
 	// Denoise a noisy path traced image using Intel OpenImageDenoise.
 	// You can provide optional aux images (albedo and normal) for better quality.
-	// @param inMainImage      [in] noisy path traced image.
-	// @param inAlbedoImage    [in] (optional) albedo image.
-	// @param inNormalImage    [in] (optional) world normal image.
+	// @param inMainImage      [in] Noisy path traced image.
+	// @param bMainImageHDR    [in] True if the main image has HDR values.
+	// @param inAlbedoImage    [in] (optional) Albedo image.
+	// @param inNormalImage    [in] (optional) World normal image.
 	// @param outDenoisedImage [out] denoised image.
 	// @return 0 if successful, -1 otherwise.
 	RAYLIB_API int32_t Raylib_Denoise(
 		ImageHandle inMainImage,
+		bool bMainImageHDR,
 		ImageHandle inAlbedoImage,
 		ImageHandle inNormalImage,
 		ImageHandle outDenoisedImage);
+
+	// Apply tone mapping and gamma correction.
+	// #todo: Add a flag bits parameter.
+	RAYLIB_API void Raylib_PostProcess(ImageHandle image);
 
 	RAYLIB_API int32_t Raylib_IsDenoiserSupported();
 

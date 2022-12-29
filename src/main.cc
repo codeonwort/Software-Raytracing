@@ -481,9 +481,10 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	// Render default image
 	const uint32 viewportWidth = settings.viewportWidth;
 	const uint32 viewportHeight = settings.viewportHeight;
-	Image2D* mainImage = new Image2D(viewportWidth, viewportHeight);
+	ImageHandle mainImage = Raylib_CreateImage(viewportWidth, viewportHeight);
+
 	Renderer renderer;
-	renderer.RenderScene(settings, worldBVH, camera, mainImage);
+	renderer.RenderScene(settings, worldBVH, camera, (Image2D*)mainImage);
 
 	if (Raylib_IsDenoiserSupported()
 		&& bRunDenoiser
@@ -492,8 +493,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 		LOG("Run denoiser");
 
 		// Render aux images
-		Image2D* wNormalImage = new Image2D(viewportWidth, viewportHeight);
-		Image2D* albedoImage = new Image2D(viewportWidth, viewportHeight);
+		ImageHandle wNormalImage = Raylib_CreateImage(viewportWidth, viewportHeight);
+		ImageHandle albedoImage = Raylib_CreateImage(viewportWidth, viewportHeight);
 
 		Camera* debugCamera = new Camera;
 		*debugCamera = *camera;
@@ -501,45 +502,49 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 		RendererSettings debugSettings = settings;
 		debugSettings.renderMode = RAYLIB_RENDERMODE_Albedo;
-		renderer.RenderScene(debugSettings, worldBVH, debugCamera, albedoImage);
+		renderer.RenderScene(debugSettings, worldBVH, debugCamera, (Image2D*)albedoImage);
 		debugSettings.renderMode = RAYLIB_RENDERMODE_MicrosurfaceNormal;
-		renderer.RenderScene(debugSettings, worldBVH, debugCamera, wNormalImage);
+		renderer.RenderScene(debugSettings, worldBVH, debugCamera, (Image2D*)wNormalImage);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
 		std::string normalFilenameJPG = makeFilename("_1.jpg");
-		Raylib_WriteImageToDisk((ImageHandle)albedoImage, albedoFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
-		Raylib_WriteImageToDisk((ImageHandle)wNormalImage, normalFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+		Raylib_WriteImageToDisk(albedoImage, albedoFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+		Raylib_WriteImageToDisk(wNormalImage, normalFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 		LOG("Write aux albedo image to: %s", albedoFilenameJPG.c_str());
 		LOG("Write aux normal image to: %s", normalFilenameJPG.c_str());
 
-		Image2D* denoisedOutput = nullptr;
-		renderer.DenoiseScene(
-			mainImage, true, albedoImage, wNormalImage,
+		ImageHandle denoisedOutput = Raylib_CreateImage(0, 0);
+		Raylib_Denoise(
+			mainImage,
+			true, // HDR
+			albedoImage,
+			wNormalImage,
 			denoisedOutput);
-		denoisedOutput->PostProcess();
+		Raylib_PostProcess(denoisedOutput);
 
 		std::string denoiseFilenameJPG = makeFilename("_2.jpg");
-		Raylib_WriteImageToDisk((ImageHandle)denoisedOutput, denoiseFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+		Raylib_WriteImageToDisk(denoisedOutput, denoiseFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 		LOG("Write denoised image to: %s", denoiseFilenameJPG.c_str());
 
-		delete wNormalImage;
-		delete albedoImage;
-		delete denoisedOutput;
 		delete debugCamera;
+		Raylib_DestroyImage(wNormalImage);
+		Raylib_DestroyImage(albedoImage);
+		Raylib_DestroyImage(denoisedOutput);
 	}
 
 	// Apply postprocessing after denoising
-	mainImage->PostProcess();
+	Raylib_PostProcess(mainImage);
+	
 	std::string resultFilenameBMP = makeFilename(".bmp");
 	std::string resultFilenameJPG = makeFilename(".jpg");
-	Raylib_WriteImageToDisk((ImageHandle)mainImage, resultFilenameBMP.c_str(), RAYLIB_IMAGEFILETYPE_Bitmap);
-	Raylib_WriteImageToDisk((ImageHandle)mainImage, resultFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
+	Raylib_WriteImageToDisk(mainImage, resultFilenameBMP.c_str(), RAYLIB_IMAGEFILETYPE_Bitmap);
+	Raylib_WriteImageToDisk(mainImage, resultFilenameJPG.c_str(), RAYLIB_IMAGEFILETYPE_Jpg);
 	LOG("Write main image to: %s", resultFilenameBMP.c_str());
 	LOG("Write main image to: %s", resultFilenameJPG.c_str());
 
 	delete worldBVH;
-	delete mainImage;
 	delete camera;
+	Raylib_DestroyImage(mainImage);
 
 	LOG("=== Rendering has completed ===");
 	Raylib_FlushLogThread();
