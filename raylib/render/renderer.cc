@@ -10,6 +10,7 @@
 #include "core/assertion.h"
 #include "geom/ray.h"
 #include "geom/hit.h"
+#include "geom/scene.h"
 
 #include <algorithm>
 #include <thread>
@@ -241,11 +242,13 @@ void GenerateCell(const WorkItemParam* param) {
 }
 
 void Renderer::RenderScene(
-	const RendererSettings& settings,
-	const Hitable* world,
+	const RendererSettings* settingsPtr,
+	const Scene* world,
 	const Camera* camera,
 	Image2D* outImage)
 {
+	CHECK(settingsPtr != nullptr && world != nullptr && camera != nullptr && outImage != nullptr);
+
 #if SINGLE_THREADED_RENDERING
 	const uint32 numCores = 1;
 	LOG("CAUTION: Rendering is forced to be single threaded - search for 'SINGLE_THREADED_RENDERING'");
@@ -253,6 +256,8 @@ void Renderer::RenderScene(
 	const uint32 numCores = std::max((uint32)1, (uint32)std::thread::hardware_concurrency());
 	//LOG("Number of logical cores: %u", numCores);
 #endif
+
+	const RendererSettings& settings = *settingsPtr;
 
 	const int32 imageWidth = outImage->GetWidth();
 	const int32 imageHeight = outImage->GetHeight();
@@ -271,7 +276,7 @@ void Renderer::RenderScene(
 			cell.height = std::min(WORKGROUP_SIZE_Y, imageHeight - y);
 			cell.image = outImage;
 			cell.camera = camera;
-			cell.world = world;
+			cell.world = world->GetAccelStruct();
 			cell.rendererSettings = settings;
 			workCells.emplace_back(cell);
 		}

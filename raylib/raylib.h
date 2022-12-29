@@ -39,10 +39,14 @@ extern "C" {
 	RAYLIB_API ImageHandle Raylib_LoadImage(const char* filepath);
 
 	// -----------------------------------------------------------------------
-	// Construct scenes
+	// Scene
 
 	// Create an empty scene.
 	RAYLIB_API SceneHandle Raylib_CreateScene();
+
+	// Add scene element. (SceneElementHandle = Hitable*)
+	// OBJModel should be added by Raylib_AddOBJModelToScene().
+	RAYLIB_API void Raylib_AddSceneElement(SceneHandle scene, SceneElementHandle element);
 
 	// Add OBJ model to scene.
 	RAYLIB_API void Raylib_AddOBJModelToScene(SceneHandle scene, OBJModelHandle objModel);
@@ -64,16 +68,16 @@ extern "C" {
 	// -----------------------------------------------------------------------
 	// Rendering
 
-	// Render an image. Default is path tracing, but also can render aux images.
+	// Render `scene` viewed from `camera` with given `settings`.
+	// @param 
 	// @param scene        [in] The scene to render.
 	// @param camera       [in] Camera from which to look at the scene.
-	// @param renderMode   [in] See ERenderMode enum.
 	// @param outMainImage [out] Rendered image.
 	// @return 0 if successful, -1 otherwise.
 	RAYLIB_API int32_t Raylib_Render(
+		//const RendererSettings* settings,
 		SceneHandle  scene,
 		CameraHandle camera,
-		uint32_t     renderMode,
 		ImageHandle  outMainImage);
 
 	// Denoise a noisy path traced image using Intel OpenImageDenoise.

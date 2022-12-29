@@ -7,6 +7,7 @@
 
 class Hitable;
 class Camera;
+class Scene;
 class Image2D;
 
 using FakeSkyLightFunction = std::function<vec3(const vec3& rayDir)>;
@@ -43,8 +44,8 @@ public:
 
 	// #todo-raylib: Remove dllexport
 	RAYLIB_API void RenderScene(
-		const RendererSettings& settings,
-		const Hitable* world,
+		const RendererSettings* settings,
+		const Scene* world,
 		const Camera* camera,
 		Image2D* outImage);
 

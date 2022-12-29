@@ -2,6 +2,7 @@
 #include "core/platform.h"
 #include "core/concurrent_vector.h"
 #include "core/logger.h"
+#include "geom/scene.h"
 #include "render/camera.h"
 #include "render/image.h"
 #include "render/renderer.h"
@@ -13,6 +14,7 @@
 
 static concurrent_vector<Camera*>  g_cameras;
 static concurrent_vector<Image2D*> g_images;
+static concurrent_vector<Scene*>   g_scenes;
 
 // -----------------------------------------------------------------------
 
@@ -82,7 +84,44 @@ ImageHandle Raylib_LoadImage(const char* filepath)
 }
 
 // -----------------------------------------------------------------------
+// Scene
+
+SceneHandle Raylib_CreateScene()
+{
+	Scene* scene = new Scene;
+	g_scenes.push_back(scene);
+	return (SceneHandle)scene;
+}
+
+void Raylib_FinalizeScene(SceneHandle scene)
+{
+	((Scene*)scene)->Finalize();
+}
+
+bool Raylib_DestroyScene(SceneHandle sceneHandle)
+{
+	Scene* scene = (Scene*)sceneHandle;
+	if (g_scenes.erase_first(scene))
+	{
+		delete scene;
+		return true;
+	}
+	return false;
+}
+
+// -----------------------------------------------------------------------
 // Rendering
+
+
+int32_t Raylib_Render(
+	//const RendererSettings* settings,
+	SceneHandle scene,
+	CameraHandle camera,
+	ImageHandle outMainImage)
+{
+	// #todo-raylib
+	return 0;
+}
 
 int32_t Raylib_Denoise(
 	ImageHandle inMainImage,
@@ -99,6 +138,18 @@ int32_t Raylib_Denoise(
 		(Image2D*)inNormalImage,
 		(Image2D*)outDenoisedImage);
 	return (bRet ? 0 : -1);
+}
+
+void Raylib_AddSceneElement(SceneHandle scene, SceneElementHandle element)
+{
+	Hitable* hitable = (Hitable*)element;
+	((Scene*)scene)->AddSceneElement(hitable);
+}
+
+void Raylib_AddOBJModelToScene(SceneHandle scene, OBJModelHandle objModel)
+{
+	Hitable* objModelRoot = ((OBJModel*)objModel)->rootObject;
+	((Scene*)scene)->AddSceneElement(objModelRoot);
 }
 
 void Raylib_PostProcess(ImageHandle image)

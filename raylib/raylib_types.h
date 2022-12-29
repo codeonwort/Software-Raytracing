@@ -13,6 +13,7 @@
 typedef uintptr_t OBJModelHandle;
 typedef uintptr_t ImageHandle;
 typedef uintptr_t SceneHandle;
+typedef uintptr_t SceneElementHandle;
 typedef uintptr_t CameraHandle;
 
 enum ERenderMode

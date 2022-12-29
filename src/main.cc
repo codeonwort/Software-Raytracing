@@ -13,6 +13,7 @@
 #include "geom/triangle.h"
 #include "geom/static_mesh.h"
 #include "geom/transform.h"
+#include "geom/scene.h"
 #include "loader/obj_loader.h"
 
 #include "raylib/raylib.h"
@@ -72,21 +73,21 @@ void FAKE_SUN_LIGHT(vec3& outDir, vec3& outIlluminance)
 }
 
 // Demo scenes
-HitableList* CreateScene_CornellBox();
-HitableList* CreateScene_CarShowRoom();
-HitableList* CreateScene_BreakfastRoom();
-HitableList* CreateScene_DabrovicSponza();
-HitableList* CreateScene_FireplaceRoom();
-HitableList* CreateScene_LivingRoom();
-HitableList* CreateScene_SibenikCathedral();
-HitableList* CreateScene_SanMiguel();
-HitableList* CreateScene_ObjModel();
-HitableList* CreateScene_RandomSpheres();
-HitableList* CreateScene_FourSpheres();
+SceneHandle CreateScene_CornellBox();
+SceneHandle CreateScene_CarShowRoom();
+SceneHandle CreateScene_BreakfastRoom();
+SceneHandle CreateScene_DabrovicSponza();
+SceneHandle CreateScene_FireplaceRoom();
+SceneHandle CreateScene_LivingRoom();
+SceneHandle CreateScene_SibenikCathedral();
+SceneHandle CreateScene_SanMiguel();
+SceneHandle CreateScene_ObjModel();
+SceneHandle CreateScene_RandomSpheres();
+SceneHandle CreateScene_FourSpheres();
 
 struct SceneDesc
 {
-	std::function<HitableList*(void)> createSceneFn;
+	std::function<SceneHandle(void)> createSceneFn;
 	std::string sceneName;
 	vec3 cameraLocation             = DEFAULT_CAMERA_LOCATION;
 	vec3 cameraLookat               = DEFAULT_CAMERA_LOOKAT;
@@ -451,8 +452,8 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 	LOG("Execute renderer for: %s", sceneDesc.sceneName.c_str());
 
-	BVHNode* worldBVH = new BVHNode(
-		sceneDesc.createSceneFn(), CAMERA_BEGIN_CAPTURE, CAMERA_END_CAPTURE);
+	SceneHandle scene = sceneDesc.createSceneFn();
+	Raylib_FinalizeScene(scene);
 
 	Camera* camera = new Camera(
 		settings.cameraLocation,
@@ -471,7 +472,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	ImageHandle mainImage = Raylib_CreateImage(viewportWidth, viewportHeight);
 
 	Renderer renderer;
-	renderer.RenderScene(settings, worldBVH, camera, (Image2D*)mainImage);
+	renderer.RenderScene(&settings, (Scene*)scene, camera, (Image2D*)mainImage);
 
 	if (Raylib_IsDenoiserSupported()
 		&& bRunDenoiser
@@ -489,9 +490,9 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 
 		RendererSettings debugSettings = settings;
 		debugSettings.renderMode = RAYLIB_RENDERMODE_Albedo;
-		renderer.RenderScene(debugSettings, worldBVH, debugCamera, (Image2D*)albedoImage);
+		renderer.RenderScene(&debugSettings, (Scene*)scene, debugCamera, (Image2D*)albedoImage);
 		debugSettings.renderMode = RAYLIB_RENDERMODE_MicrosurfaceNormal;
-		renderer.RenderScene(debugSettings, worldBVH, debugCamera, (Image2D*)wNormalImage);
+		renderer.RenderScene(&debugSettings, (Scene*)scene, debugCamera, (Image2D*)wNormalImage);
 
 		std::string albedoFilenameJPG = makeFilename("_0.jpg");
 		std::string normalFilenameJPG = makeFilename("_1.jpg");
@@ -529,7 +530,7 @@ void ExecuteRenderer(uint32 sceneID, bool bRunDenoiser, const RendererSettings& 
 	LOG("Write main image to: %s", resultFilenameBMP.c_str());
 	LOG("Write main image to: %s", resultFilenameJPG.c_str());
 
-	delete worldBVH;
+	Raylib_DestroyScene(scene);
 	delete camera;
 	Raylib_DestroyImage(mainImage);
 
@@ -568,25 +569,25 @@ bool GetOrCreateOBJ(const char* filename, OBJModel*& outModel, OBJTransformer tr
 	return false;
 }
 
-HitableList* CreateScene_CornellBox() {
+SceneHandle CreateScene_CornellBox() {
 	SCOPED_CPU_COUNTER(CreateScene_CornellBox);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	OBJModel* objModel;
 	if (GetOrCreateOBJ("content/cornell_box/CornellBox-Mirror.obj", objModel))
 	{
-		list.push_back(objModel->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
 	}
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_CarShowRoom()
+SceneHandle CreateScene_CarShowRoom()
 {
-	SCOPED_CPU_COUNTER(CreateRandomScene);
+	SCOPED_CPU_COUNTER(CreateScene_CarShowRoom);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	// #todo-showroom: Include bmw-m6 model from https://www.pbrt.org/scenes-v3
 	// to make this scene a real show room.
@@ -610,7 +611,7 @@ HitableList* CreateScene_CarShowRoom()
 
 #if USE_STATIC_MESH_PILLAR
 	StaticMesh* pillar = new StaticMesh;
-	list.push_back(pillar);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)pillar);
 #endif
 
 	for (int32 row = 0; row < numRows; ++row) {
@@ -713,123 +714,128 @@ HitableList* CreateScene_CarShowRoom()
 	pillar->Finalize();
 #endif
 
-	list.push_back(new Sphere(vec3(3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.9f, 0.2f, 0.2f))));
-	list.push_back(new Sphere(vec3(-3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.2f, 0.9f, 0.2f))));
-	list.push_back(new Sphere(vec3(0.0f, 1.0f, 3.0f), 1.0f, new Lambertian(vec3(0.2f, 0.2f, 0.9f))));
+	auto sphere0 = new Sphere(vec3(3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.9f, 0.2f, 0.2f)));
+	auto sphere1 = new Sphere(vec3(-3.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.2f, 0.9f, 0.2f)));
+	auto sphere2 = new Sphere(vec3(0.0f, 1.0f, 3.0f), 1.0f, new Lambertian(vec3(0.2f, 0.2f, 0.9f)));
+	Raylib_AddSceneElement(scene, (SceneElementHandle)sphere0);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)sphere1);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)sphere2);
 
 	// Ground
 	Sphere* ground = new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f)));
-	list.push_back(ground);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)ground);
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_BreakfastRoom()
+SceneHandle CreateScene_BreakfastRoom()
 {
 	SCOPED_CPU_COUNTER(CreateScene_BreakfastRoom);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	OBJModel* objModel;
 	if (GetOrCreateOBJ("content/breakfast_room/breakfast_room.obj", objModel))
 	{
-		list.push_back(objModel->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
 	}
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_DabrovicSponza()
+SceneHandle CreateScene_DabrovicSponza()
 {
 	SCOPED_CPU_COUNTER(CreateScene_DabrovicSponza);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	OBJModel* objModel;
 	if (GetOrCreateOBJ("content/dabrovic_sponza/sponza.obj", objModel))
 	{
-		list.push_back(objModel->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
 	}
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_FireplaceRoom()
+SceneHandle CreateScene_FireplaceRoom()
 {
 	SCOPED_CPU_COUNTER(CreateScene_FireplaceRoom);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	OBJModel* objModel;
 	if (GetOrCreateOBJ("content/fireplace_room/fireplace_room.obj", objModel))
 	{
-		list.push_back(objModel->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
 	}
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_LivingRoom()
+SceneHandle CreateScene_LivingRoom()
 {
 	SCOPED_CPU_COUNTER(CreateScene_LivingRoom);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	OBJModel* objModel;
 	if (GetOrCreateOBJ("content/living_room/living_room.obj", objModel))
 	{
-		list.push_back(objModel->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
 	}
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_SibenikCathedral()
+SceneHandle CreateScene_SibenikCathedral()
 {
 	SCOPED_CPU_COUNTER(CreateScene_SibenikCathedral);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	OBJModel* objModel;
 	if (GetOrCreateOBJ("content/sibenik/sibenik.obj", objModel))
 	{
-		list.push_back(objModel->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
 	}
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_SanMiguel()
+SceneHandle CreateScene_SanMiguel()
 {
 	SCOPED_CPU_COUNTER(CreateScene_SanMiguel);
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	OBJModel* objModel;
 	if (GetOrCreateOBJ("content/San_Miguel/san-miguel.obj", objModel))
 	{
-		list.push_back(objModel->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)objModel);
 	}
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_ObjModel()
+SceneHandle CreateScene_ObjModel()
 {
-	SCOPED_CPU_COUNTER(CreateRandomScene);
+	SCOPED_CPU_COUNTER(CreateScene_ObjModel);
 
 #define OBJTEST_LOCAL_LIGHTS            1
 #define OBJTEST_INCLUDE_TOADTTE         1
 #define OBJTEST_INCLUDE_CUBE            1
 
-	std::vector<Hitable*> list;
+	SceneHandle scene = Raylib_CreateScene();
 
 	// Light source
 #if OBJTEST_LOCAL_LIGHTS
-	Material* pointLight0 = new DiffuseLight(vec3(5.0f, 0.0f, 0.0f));
-	Material* pointLight1 = new DiffuseLight(vec3(0.0f, 4.0f, 5.0f));
-	list.push_back(new Sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, pointLight0));
-	list.push_back(new Sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, pointLight1));
+	Material* M_pointLight0 = new DiffuseLight(vec3(5.0f, 0.0f, 0.0f));
+	Material* M_pointLight1 = new DiffuseLight(vec3(0.0f, 4.0f, 5.0f));
+	auto light0 = new Sphere(vec3(2.0f, 2.0f, 0.0f), 0.5f, M_pointLight0);
+	auto light1 = new Sphere(vec3(-1.0f, 2.0f, 1.0f), 0.3f, M_pointLight1);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)light0);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)light1);
 #endif
 
 #if OBJTEST_INCLUDE_TOADTTE
@@ -848,15 +854,17 @@ HitableList* CreateScene_ObjModel()
 	};
 	if (GetOrCreateOBJ("content/Toadette/Toadette.obj", model, transformer))
 	{
-		list.push_back(model->rootObject);
+		Raylib_AddOBJModelToScene(scene, (OBJModelHandle)model);
 	}
 #endif
 
 #if OBJTEST_INCLUDE_CUBE
-	Material* cube_mat = new Lambertian(vec3(0.9f, 0.1f, 0.1f));
-	Material* cube_mat2 = new Lambertian(vec3(0.1f, 0.1f, 0.9f));
-	list.push_back(new Cube(vec3(-4.0f, 0.3f, 0.0f), vec3(-3.0f, 0.5f, 1.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat));
-	list.push_back(new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), cube_mat2));
+	Material* M_cube0 = new Lambertian(vec3(0.9f, 0.1f, 0.1f));
+	Material* M_cube1 = new Lambertian(vec3(0.1f, 0.1f, 0.9f));
+	auto cube0 = new Cube(vec3(-4.0f, 0.3f, 0.0f), vec3(-3.0f, 0.5f, 1.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), M_cube0);
+	auto cube1 = new Cube(vec3(-5.5f, 0.0f, 0.0f), vec3(-4.5f, 2.0f, 2.0f), CAMERA_BEGIN_CAPTURE, vec3(0.0f, 0.05f, 0.0f), M_cube1);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)cube0);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)cube1);
 #endif
 
 	// #todo-raylib: How to deal with ImageHandle and shared_ptr<Image2D>
@@ -911,20 +919,25 @@ HitableList* CreateScene_ObjModel()
 		//mat->SetMetallicFallback(1.0f);
 #endif
 
-		list.push_back(new Triangle(v0, v1, v2, n, n, n, mat));
+		auto tri = new Triangle(v0, v1, v2, n, n, n, mat);
+		Raylib_AddSceneElement(scene, (SceneElementHandle)tri);
 	}
 
 	// Ground
-	list.push_back(new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+	auto ground = new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f)));
+	Raylib_AddSceneElement(scene, (SceneElementHandle)ground);
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_RandomSpheres()
+SceneHandle CreateScene_RandomSpheres()
 {
-	std::vector<Hitable*> list;
+	SCOPED_CPU_COUNTER(CreateScene_RandomSpheres);
 
-	list.push_back(new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f))));
+	SceneHandle scene = Raylib_CreateScene();
+
+	auto ground = new Sphere(vec3(0.0f, -1000.0f, 0.0f), 1000.0f, new Lambertian(vec3(0.5f, 0.5f, 0.5f)));
+	Raylib_AddSceneElement(scene, (SceneElementHandle)ground);
 
 	for(int32 a = -6; a < 6; ++a)
 	{
@@ -936,30 +949,40 @@ HitableList* CreateScene_RandomSpheres()
 			{
 				if(choose_material < 0.8f)
 				{
-					list.push_back(new Sphere(center, 0.2f,
-						new Lambertian(vec3(Random()*Random(), Random()*Random(), Random()*Random()))));
+					auto sphere = new Sphere(center, 0.2f,
+						new Lambertian(vec3(Random() * Random(), Random() * Random(), Random() * Random())));
+					Raylib_AddSceneElement(scene, (SceneElementHandle)sphere);
 				}
 				else if(choose_material < 0.95f)
 				{
-					list.push_back(new Sphere(center, 0.2f,
-						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random())));
+					auto sphere = new Sphere(center, 0.2f,
+						new Metal(vec3(0.5f * (1.0f + Random()), 0.5f * (1.0f + Random()), 0.5f * (1.0f + Random())), 0.5f * Random()));
+					Raylib_AddSceneElement(scene, (SceneElementHandle)sphere);
 				}
 				else
 				{
-					list.push_back(new Sphere(center, 0.2f, new Dielectric(1.5f)));
+					auto sphere = new Sphere(center, 0.2f, new Dielectric(1.5f));
+					Raylib_AddSceneElement(scene, (SceneElementHandle)sphere);
 				}
 			}
 		}
 	}
-	list.push_back(new Sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f)));
-	list.push_back(new Sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f))));
-	list.push_back(new Sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f)));
+	auto bigSphere0 = new Sphere(vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f));
+	auto bigSphere1 = new Sphere(vec3(-2.0f, 1.0f, 0.0f), 1.0f, new Lambertian(vec3(0.4f, 0.2f, 0.1f)));
+	auto bigSphere2 = new Sphere(vec3(2.0f, 1.0f, 0.0f), 1.0f, new Metal(vec3(0.7f, 0.6f, 0.5f), 0.0f));
+	Raylib_AddSceneElement(scene, (SceneElementHandle)bigSphere0);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)bigSphere1);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)bigSphere2);
 
-	return new HitableList(list);
+	return scene;
 }
 
-HitableList* CreateScene_FourSpheres()
+SceneHandle CreateScene_FourSpheres()
 {
+	SCOPED_CPU_COUNTER(CreateScene_FourSpheres);
+
+	SceneHandle scene = Raylib_CreateScene();
+
 	float groundRoughness = 0.0f;
 	Material* M_ground = MicrofacetMaterial::FromConstants(
 		vec3(1.0f), groundRoughness, 0.0f, vec3(0.0f));
@@ -968,11 +991,14 @@ HitableList* CreateScene_FourSpheres()
 	Material* M_center = new Lambertian(vec3(0.8f, 0.3f, 0.3f));
 	Material* M_right = new Metal(vec3(0.8f, 0.6f, 0.2f), 0.0f);
 
-	std::vector<Hitable*> list;
-	list.push_back(new Sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, M_ground));
-	list.push_back(new Sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, M_left));
-	list.push_back(new Sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, M_center));
-	list.push_back(new Sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, M_right));
-	HitableList* world = new HitableList(list);
-	return world;
+	auto sphere0 = new Sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f, M_ground);
+	auto sphere1 = new Sphere(vec3(-1.0f, 0.0f, -1.0f), 0.5f, M_left);
+	auto sphere2 = new Sphere(vec3(0.0f, 0.0f, -1.0f), 0.5f, M_center);
+	auto sphere3 = new Sphere(vec3(1.0f, 0.0f, -1.0f), 0.5f, M_right);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)sphere0);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)sphere1);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)sphere2);
+	Raylib_AddSceneElement(scene, (SceneElementHandle)sphere3);
+
+	return scene;
 }
