@@ -1,4 +1,4 @@
-#include "hit.h"
+#include "geom/hit.h"
 
 class BVHNode : public Hitable
 {

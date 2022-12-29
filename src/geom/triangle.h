@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hit.h"
+#include "geom/hit.h"
 
 class Material;
 

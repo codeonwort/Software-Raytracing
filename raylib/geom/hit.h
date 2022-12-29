@@ -1,7 +1,8 @@
 #pragma once
 
+#include "raylib_types.h"
 #include "geom/ray.h"
-#include "aabb.h"
+#include "geom/aabb.h"
 #include "core/assertion.h"
 
 #include <limits>
@@ -25,9 +26,9 @@ struct HitResult
 	Material* material;
 
 public:
-	void BuildOrthonormalBasis();
-	vec3 LocalToWorld(const vec3& localDirection) const;
-	vec3 WorldToLocal(const vec3& worldDirection) const;
+	RAYLIB_API void BuildOrthonormalBasis();
+	RAYLIB_API vec3 LocalToWorld(const vec3& localDirection) const;
+	RAYLIB_API vec3 WorldToLocal(const vec3& worldDirection) const;
 private:
 	// Tangent frame around surface normal
 	vec3 tangent;
@@ -40,7 +41,7 @@ class Hitable
 public:
 	virtual ~Hitable() = default;
 
-	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const = 0;
+	RAYLIB_API virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const = 0;
 
 	// Returns false if bounding box is not supported
 	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const = 0;
@@ -56,7 +57,7 @@ public:
 		: hitables(inList)
 	{}
 
-	virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
+	RAYLIB_API virtual bool Hit(const ray& r, float t_min, float t_max, HitResult& outResult) const;
 
 	virtual bool BoundingBox(float t0, float t1, AABB& outBox) const override
 	{
