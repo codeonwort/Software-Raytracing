@@ -10,6 +10,12 @@ test*.jpg
 test*.png
 test_backup/
 
+# gui-app
+gui-app/JSON/
+gui-app/gui-app/obj/
+*.csproj.user
+*.Designer.cs
+
 # Prerequisites
 *.d
 
