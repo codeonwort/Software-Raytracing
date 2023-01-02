@@ -118,10 +118,13 @@ namespace gui_app
             }
 
             OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
-            runRaytracer(sceneDesc);
+            int spp = Math.Max(1, (int)inputSPP.Value);
+            int pathLen = Math.Max(1, (int)inputPathLen.Value);
+
+            runRaytracer(sceneDesc, spp, pathLen);
         }
 
-        private void runRaytracer(OBJSceneDesc sceneDesc)
+        private void runRaytracer(OBJSceneDesc sceneDesc, int spp, int maxPathLen)
         {
             uint viewportWidth = (uint)viewport.Width;
             uint viewportHeight = (uint)viewport.Height;
@@ -179,8 +182,8 @@ namespace gui_app
             RaylibWrapper.RendererSettings settings = new RaylibWrapper.RendererSettings();
             settings.viewportWidth   = viewportWidth;
             settings.viewportHeight  = viewportHeight;
-            settings.samplesPerPixel = 10;
-            settings.maxPathLength   = 5;
+            settings.samplesPerPixel = spp;
+            settings.maxPathLength   = maxPathLen;
             settings.rayTMin         = 0.0001f;
             settings.renderMode      = (uint)RaylibWrapper.ERenderMode.Default;
 
