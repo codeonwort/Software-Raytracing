@@ -2,21 +2,38 @@ using System.Reflection;
 
 namespace gui_app
 {
+    // I have to do this for every file? :/
+    using OBJModelHandle = System.UInt64;
+
+    record vec3(float x, float y, float z);
+
+    record OBJSceneDesc(
+        string sceneName,
+        string objPath,
+        vec3 cameraLocation,
+        vec3 cameraLookAt);
+
     public partial class MainForm : Form
     {
+        private static OBJSceneDesc[] sceneDescs = {
+            new(
+                "CornellBox",
+                "content/cornell_box/CornellBox-Mirror.obj",
+                new(0.0f, 1.0f, 4.0f),
+                new(0.0f, 1.0f, -1.0f)
+            )
+        };
+
         public MainForm()
         {
             InitializeComponent();
-
-            //string raylibPath = Path.GetFullPath("./raylib.dll");
-            //raylibDLL = Assembly.LoadFile(raylibPath);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             loggerBox.AppendText("= Software Raytracer =" + Environment.NewLine);
-            
-            if (raylibDLL == null)
+
+            if (RaylibWrapper.Raylib_Initialize() == 0)
             {
                 loggerBox.AppendText("Failed to load raylib.dll" + Environment.NewLine);
             }
@@ -25,6 +42,7 @@ namespace gui_app
                 loggerBox.AppendText("Load raylib.dll" + Environment.NewLine);
             }
 
+#if false
             string[] sceneDescs = {
                 "CornellBox",
                 "BreakfastRoom",
@@ -34,9 +52,10 @@ namespace gui_app
                 "SibenikCathedral",
                 "SanMiguel",
             };
-            foreach (string sceneDesc in sceneDescs)
+#endif
+            foreach (OBJSceneDesc sceneDesc in sceneDescs)
             {
-                sceneList.Items.Add(sceneDesc);
+                sceneList.Items.Add(sceneDesc.sceneName);
             }
             sceneList.SelectedIndex = 0;
         }
@@ -44,7 +63,29 @@ namespace gui_app
         private void executeButton_Click(object sender, EventArgs e)
         {
             loggerBox.AppendText(String.Format("viewport: {0}, {1}", viewport.Width, viewport.Height) + Environment.NewLine);
-            
+
+            if (sceneList.SelectedIndex < 0 && sceneList.SelectedIndex >= sceneDescs.Length)
+            {
+                return;
+            }
+
+            OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
+            string fullpath = Path.GetFullPath("../../../../../" + sceneDesc.objPath);
+
+            OBJModelHandle objHandle = RaylibWrapper.Raylib_LoadOBJModel(fullpath);
+            if (objHandle == 0)
+            {
+                loggerBox.AppendText("Failed to load " + fullpath);
+            }
+            else
+            {
+                loggerBox.AppendText("Load " + fullpath);
+            }
+
+            // TODO: Render the loaded OBJ model
+            // ...
+
+            // Create a bitmap to update the viewport.
             Bitmap renderTarget = new Bitmap(
                 viewport.Width,
                 viewport.Height,
@@ -78,7 +119,5 @@ namespace gui_app
 
             viewport.Image = renderTarget;
         }
-
-        private Assembly raylibDLL;
     }
 }
