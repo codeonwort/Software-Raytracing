@@ -19,7 +19,10 @@ extern "C" {
 	// -----------------------------------------------------------------------
 	// Library initialization & termination
 
+	// @return 1 if successful, 0 otherwise.
 	RAYLIB_API int32_t Raylib_Initialize();
+
+	// @return 1 if successful, 0 otherwise.
 	RAYLIB_API int32_t Raylib_Terminate();
 
 	// -----------------------------------------------------------------------

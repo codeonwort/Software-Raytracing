@@ -37,7 +37,7 @@ int32_t Raylib_Initialize()
 
 	OBJLoader::Initialize();
 
-	return 0;
+	return 1;
 }
 
 int32_t Raylib_Terminate()
