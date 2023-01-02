@@ -9,6 +9,7 @@
 #include "render/image.h"
 #include "render/renderer.h"
 #include "loader/obj_loader.h"
+#include "loader/dll_loader.h"
 
 #include <iostream>
 
@@ -26,6 +27,14 @@ int32_t Raylib_Initialize()
 	std::cout << "Initialize raylib" << std::endl;
 
 	Logger::StartLogThread();
+
+	// Runtime-load thirdparty DLLs
+	if (!FreeImage::LoadDLL())
+	{
+		std::cerr << __FUNCTION__ << ": Failed to load FreeImage.dll" << std::endl;
+		return 0;
+	}
+
 	ImageIO::InitializeImageIO();
 	OBJLoader::Initialize();
 
