@@ -92,20 +92,34 @@ namespace gui_app
         {
             loggerBox.AppendText("= Software Raytracer =" + Environment.NewLine);
 
-            if (RaylibWrapper.Raylib_Initialize() == 0)
-            {
-                loggerBox.AppendText("Failed to load raylib.dll" + Environment.NewLine);
-            }
-            else
-            {
-                loggerBox.AppendText("Load raylib.dll" + Environment.NewLine);
-            }
+            bRaylibValid = false;
+            checkRaylibDLL();
 
             foreach (OBJSceneDesc sceneDesc in sceneDescs)
             {
                 sceneList.Items.Add(sceneDesc.sceneName);
             }
             sceneList.SelectedIndex = 0;
+        }
+
+        private void checkRaylibDLL()
+        {
+            try
+            {
+                if (RaylibWrapper.Raylib_Initialize() == 0)
+                {
+                    loggerBox.AppendText("Failed to load raylib.dll" + Environment.NewLine);
+                }
+                else
+                {
+                    loggerBox.AppendText("Load raylib.dll" + Environment.NewLine);
+                    bRaylibValid = true;
+                }
+            }
+            catch (System.DllNotFoundException)
+            {
+                loggerBox.AppendText("raylib.dll not found" + Environment.NewLine);
+            }
         }
 
         private void executeButton_Click(object sender, EventArgs e)
@@ -117,11 +131,18 @@ namespace gui_app
                 return;
             }
 
-            OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
-            int spp = Math.Max(1, (int)inputSPP.Value);
-            int pathLen = Math.Max(1, (int)inputPathLen.Value);
+            if (bRaylibValid)
+            {
+                OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
+                int spp = Math.Max(1, (int)inputSPP.Value);
+                int pathLen = Math.Max(1, (int)inputPathLen.Value);
 
-            runRaytracer(sceneDesc, spp, pathLen);
+                runRaytracer(sceneDesc, spp, pathLen);
+            }
+            else
+            {
+                loggerBox.AppendText("raylib.dll was not loaded. Can't start rendering." + Environment.NewLine);
+            }
         }
 
         private void runRaytracer(OBJSceneDesc sceneDesc, int spp, int maxPathLen)
@@ -289,5 +310,6 @@ namespace gui_app
             return "";
         }
 
+        private bool bRaylibValid;
     }
 }
