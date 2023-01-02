@@ -2,11 +2,7 @@
 #include "core/int_types.h"
 #include "core/vec3.h"
 #include "core/logger.h"
-
-#pragma warning(push)
-#pragma warning(disable: 4819)
-#include "FreeImage.h"
-#pragma warning(pop)
+#include "loader/dll_loader.h"
 
 #define TONE_MAP         1    // Still some artifact around borders that I don't quite get
 #define FORCE_MAX_WHITE  1    // Clamp the tone mapping result to white
@@ -91,7 +87,7 @@ void Image2D::PostProcess()
 
 #if FORCE_MAX_WHITE
 		// Still needs to clamp to white?
-		rgb = min(vec3(1.0f, 1.0f, 1.0f), rgb);
+		rgb = (min)(vec3(1.0f, 1.0f, 1.0f), rgb);
 #endif
 
 		// Gamma correction
@@ -149,16 +145,6 @@ static FREE_IMAGE_FORMAT ToFreeImageType(EImageFileType inType)
 
 namespace ImageIO
 {
-	void InitializeImageIO()
-	{
-		FreeImage_Initialise();
-	}
-
-	void TerminateImageIO()
-	{
-		FreeImage_DeInitialise();
-	}
-
 	Image2D* LoadImage2DFromFile(const char* filepath)
 	{
 		if (filepath == nullptr)
@@ -166,8 +152,8 @@ namespace ImageIO
 			return nullptr;
 		}
 	
-		FREE_IMAGE_FORMAT imageFormat = FreeImage_GetFIFFromFilename(filepath);
-		FIBITMAP* dib = FreeImage_Load(imageFormat, filepath, 0);
+		FREE_IMAGE_FORMAT imageFormat = FreeImage::GetFIFFromFilename(filepath);
+		FIBITMAP* dib = FreeImage::Load(imageFormat, filepath, 0);
 
 		if (dib == nullptr)
 		{
@@ -178,13 +164,13 @@ namespace ImageIO
 
 		if (imageFormat == FIF_HDR)
 		{
-			FIBITMAP* dibF = FreeImage_ConvertToRGBAF(dib);
-			FreeImage_Unload(dib);
+			FIBITMAP* dibF = FreeImage::ConvertToRGBAF(dib);
+			FreeImage::Unload(dib);
 
-			float* hdrBuffer = reinterpret_cast<float*>(FreeImage_GetBits(dibF));
-			uint32 width = (uint32)FreeImage_GetWidth(dibF);
-			uint32 height = (uint32)FreeImage_GetHeight(dibF);
-			uint32 pitch = (uint32)FreeImage_GetPitch(dibF);
+			float* hdrBuffer = reinterpret_cast<float*>(FreeImage::GetBits(dibF));
+			uint32 width = (uint32)FreeImage::GetWidth(dibF);
+			uint32 height = (uint32)FreeImage::GetHeight(dibF);
+			uint32 pitch = (uint32)FreeImage::GetPitch(dibF);
 
 			image->Reallocate(width, height);
 
@@ -201,7 +187,7 @@ namespace ImageIO
 				}
 			}
 
-			FreeImage_Unload(dibF);
+			FreeImage::Unload(dibF);
 		}
 		else
 		{
@@ -210,14 +196,14 @@ namespace ImageIO
 				LOG("%s: unexpected image format. Will be interpreted as rgba8.");
 			}
 
-			FIBITMAP* dib32 = FreeImage_ConvertTo32Bits(dib);
-			FreeImage_Unload(dib);
+			FIBITMAP* dib32 = FreeImage::ConvertTo32Bits(dib);
+			FreeImage::Unload(dib);
 
 			// Row-major
-			BYTE* colorBuffer = FreeImage_GetBits(dib32);
-			uint32 width = (uint32)FreeImage_GetWidth(dib32);
-			uint32 height = (uint32)FreeImage_GetHeight(dib32);
-			uint32 pitch = (uint32)FreeImage_GetPitch(dib32);
+			BYTE* colorBuffer = FreeImage::GetBits(dib32);
+			uint32 width = (uint32)FreeImage::GetWidth(dib32);
+			uint32 height = (uint32)FreeImage::GetHeight(dib32);
+			uint32 pitch = (uint32)FreeImage::GetPitch(dib32);
 
 			image->Reallocate(width, height);
 
@@ -234,7 +220,7 @@ namespace ImageIO
 				}
 			}
 
-			FreeImage_Unload(dib32);
+			FreeImage::Unload(dib32);
 		}
 
 		return image;
@@ -255,13 +241,13 @@ namespace ImageIO
 			}
 		}
 		FREE_IMAGE_FORMAT fif = ToFreeImageType(fileType);
-		FIBITMAP* dib = FreeImage_ConvertFromRawBits(
+		FIBITMAP* dib = FreeImage::ConvertFromRawBits(
 			imageBlob.data(),
 			image->GetWidth(), image->GetHeight(),
 			image->GetWidth() * 3, 3 * 8,
-			0, 0, 0);
-		bool bSuccess = FreeImage_Save(fif, dib, filepath, 0);
-		FreeImage_Unload(dib);
+			0, 0, 0, false);
+		bool bSuccess = FreeImage::Save(fif, dib, filepath, 0);
+		FreeImage::Unload(dib);
 
 		return bSuccess;
 	}

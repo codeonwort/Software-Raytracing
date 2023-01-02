@@ -119,8 +119,7 @@ private:
 
 namespace ImageIO
 {
-	void InitializeImageIO();
-	void TerminateImageIO();
 	RAYLIB_API Image2D* LoadImage2DFromFile(const char* filepath);
+
 	bool WriteImage2DToDisk(Image2D* image, const char* filepath, EImageFileType fileType);
 }

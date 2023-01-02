@@ -15,6 +15,7 @@ PFN_GetWidth           GetWidth           = NULL;
 PFN_GetHeight          GetHeight          = NULL;
 PFN_GetPitch           GetPitch           = NULL;
 PFN_ConvertTo32Bits    ConvertTo32Bits    = NULL;
+PFN_ConvertFromRawBits ConvertFromRawBits = NULL;
 PFN_Save               Save               = NULL;
 
 bool LoadDLL()
@@ -42,6 +43,7 @@ bool LoadDLL()
 	BAIL_IF_FALSE(FreeImage::GetHeight,          PFN_GetHeight,          "FreeImage_GetHeight");
 	BAIL_IF_FALSE(FreeImage::GetPitch,           PFN_GetPitch,           "FreeImage_GetPitch");
 	BAIL_IF_FALSE(FreeImage::ConvertTo32Bits,    PFN_ConvertTo32Bits,    "FreeImage_ConvertTo32Bits");
+	BAIL_IF_FALSE(FreeImage::ConvertFromRawBits, PFN_ConvertFromRawBits, "FreeImage_ConvertFromRawBits");
 	BAIL_IF_FALSE(FreeImage::Save,               PFN_Save,               "FreeImage_Save");
 #undef BAIL_IF_FALSE
 #else

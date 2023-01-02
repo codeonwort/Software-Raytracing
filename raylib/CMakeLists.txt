@@ -17,7 +17,7 @@ include_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/include)
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/tinyobjloader/source)
 
 # Link libraries
-link_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries)
+#link_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries)
 link_directories(${CMAKE_SOURCE_DIR}/thirdparty/OpenImageDenoise/lib)
 
 file(GLOB_RECURSE RAYLIB_SOURCE_FILES "*.cc")
@@ -28,7 +28,7 @@ add_library(raylib SHARED ${RAYLIB_SOURCE_FILES})
 
 # TODO: Is this an equivalent of
 #     pragma comment(lib, "FreeImage.lib")
-target_link_libraries(raylib FreeImage)
+#target_link_libraries(raylib FreeImage)
 
 # Copy third-party DLLs after build
 add_custom_command(TARGET raylib POST_BUILD

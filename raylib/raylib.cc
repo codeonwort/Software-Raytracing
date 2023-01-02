@@ -35,7 +35,6 @@ int32_t Raylib_Initialize()
 		return 0;
 	}
 
-	ImageIO::InitializeImageIO();
 	OBJLoader::Initialize();
 
 	return 0;
@@ -46,7 +45,6 @@ int32_t Raylib_Terminate()
 	std::cout << "Terminate raylib" << std::endl;
 
 	OBJLoader::Destroy();
-	ImageIO::TerminateImageIO();
 	Logger::KillAndWaitForLogThread();
 
 	return 0;

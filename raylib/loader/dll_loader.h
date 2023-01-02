@@ -10,12 +10,16 @@
 
 // Wanna hide these third-party includes but a) not this is not a C++20 project
 // and b) C++ module support is not universal afaik.
+#pragma warning(push)
+#pragma warning(disable: 4819)
 #include <FreeImage.h>
+#pragma warning(pop)
 
 namespace FreeImage
 {
 	bool LoadDLL();
 
+	// FreeImage does not have function pointer typedefs? :/
 	using PFN_Initialise          = decltype(&FreeImage_Initialise);
 	using PFN_DeInitialise        = decltype(&FreeImage_DeInitialise);
 	using PFN_GetFIFFromFilename  = decltype(&FreeImage_GetFIFFromFilename);
@@ -27,6 +31,7 @@ namespace FreeImage
 	using PFN_GetHeight           = decltype(&FreeImage_GetHeight);
 	using PFN_GetPitch            = decltype(&FreeImage_GetPitch);
 	using PFN_ConvertTo32Bits     = decltype(&FreeImage_ConvertTo32Bits);
+	using PFN_ConvertFromRawBits  = decltype(&FreeImage_ConvertFromRawBits);
 	using PFN_Save                = decltype(&FreeImage_Save);
 
 	extern PFN_Initialise         Initialise;
@@ -40,5 +45,6 @@ namespace FreeImage
 	extern PFN_GetHeight          GetHeight;
 	extern PFN_GetPitch           GetPitch;
 	extern PFN_ConvertTo32Bits    ConvertTo32Bits;
+	extern PFN_ConvertFromRawBits ConvertFromRawBits;
 	extern PFN_Save               Save;
 }

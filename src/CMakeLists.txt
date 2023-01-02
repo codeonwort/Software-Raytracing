@@ -11,7 +11,6 @@ include_directories(${PROJECT_SOURCE_DIR}/raylib)
 
 # TODO: Why do I need them here
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/tinyobjloader/source)
-link_directories(${CMAKE_SOURCE_DIR}/thirdparty/FreeImage/binaries)
 
 file(GLOB_RECURSE SRCFILES "*.cc")
 add_executable(RayTracer ${SRCFILES})
