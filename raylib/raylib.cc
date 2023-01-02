@@ -185,6 +185,12 @@ ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height)
 	return (ImageHandle)image;
 }
 
+void Raylib_DumpImageData(ImageHandle imageHandle, float* outDest)
+{
+	Image2D* image = (Image2D*)imageHandle;
+	image->DumpFloatRGBs(outDest);
+}
+
 int32_t Raylib_DestroyImage(ImageHandle imageHandle)
 {
 	Image2D* image = (Image2D*)imageHandle;

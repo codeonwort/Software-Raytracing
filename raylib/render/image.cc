@@ -111,19 +111,23 @@ Image2D Image2D::Clone() const
 	return img;
 }
 
-void Image2D::DumpFloatRGBs(std::vector<float>& outArray)
+void Image2D::DumpFloatRGBs(std::vector<float>& outArray) const
 {
 	outArray.clear();
-	outArray.reserve(3 * width * height);
+	outArray.resize(3 * width * height);
+	DumpFloatRGBs(outArray.data());
+}
 
+void Image2D::DumpFloatRGBs(float* outArray) const
+{
 	size_t k = 0;
 	for (uint32_t y = 0; y < height; ++y)
 	{
 		for (uint32_t x = 0; x < width; ++x)
 		{
-			outArray.push_back(image[k].r);
-			outArray.push_back(image[k].g);
-			outArray.push_back(image[k].b);
+			outArray[3 * k + 0] = image[k].r;
+			outArray[3 * k + 1] = image[k].g;
+			outArray[3 * k + 2] = image[k].b;
 			++k;
 		}
 	}

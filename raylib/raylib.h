@@ -86,6 +86,13 @@ extern "C" {
 
 	// Create an image.
 	RAYLIB_API ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height);
+
+	// Copy RGB data to outDest.
+	// Preallocate for outDest at least (3 * sizeof(float) * width * height) bytes.
+	// Output is row-major, rgb order.
+	RAYLIB_API void Raylib_DumpImageData(ImageHandle image, float* outDest);
+
+	// @return 1 if successful, 0 otherwise.
 	RAYLIB_API int32_t Raylib_DestroyImage(ImageHandle imageHandle);
 
 	// -----------------------------------------------------------------------

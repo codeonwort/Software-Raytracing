@@ -253,7 +253,7 @@ void GenerateCell(const WorkItemParam* param) {
 					cameraRay,
 					cell->world,
 					rtSettings,
-					cell->rendererSettings.renderMode);
+					(ERenderMode)cell->rendererSettings.renderMode);
 				Pixel px(debugValue.x, debugValue.y, debugValue.z);
 				cell->image->SetPixel(x, y, px);
 			}

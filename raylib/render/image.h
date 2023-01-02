@@ -106,7 +106,8 @@ public:
 	inline const std::vector<Pixel>& GetPixelArray() const { return image; }
 
 	Image2D Clone() const;
-	RAYLIB_API void DumpFloatRGBs(std::vector<float>& outArray);
+	void DumpFloatRGBs(std::vector<float>& outArray) const;
+	void DumpFloatRGBs(float* outArray) const;
 
 private:
 	inline int32 ix(int32 x, int32 y) const { return y * width + x; }

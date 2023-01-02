@@ -49,7 +49,7 @@ struct RendererSettings {
 	float                rayTMin;
 
 	// System values
-	ERenderMode          renderMode      = ERenderMode::RAYLIB_RENDERMODE_Default;
+	uint32_t             renderMode      = ERenderMode::RAYLIB_RENDERMODE_Default;
 
 	inline float getViewportAspectWH() const {
 		return (float)viewportWidth / (float)viewportHeight;
