@@ -200,7 +200,11 @@ int main(int argc, char** argv) {
 	// Initialize
 	//
 	g_programArgs.init(argc, argv);
-	Raylib_Initialize();
+	if (Raylib_Initialize() == false)
+	{
+		std::cerr << "Failed to initialize raylib" << std::endl;
+		return -1;
+	}
 	ResourceFinder::Get().AddDirectory("./content/");
 
 	uint32 currentSceneID = 0;

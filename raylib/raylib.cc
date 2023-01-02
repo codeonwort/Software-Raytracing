@@ -9,6 +9,7 @@
 #include "render/image.h"
 #include "render/renderer.h"
 #include "loader/obj_loader.h"
+#include "loader/dll_loader.h"
 
 #include <iostream>
 
@@ -26,10 +27,17 @@ int32_t Raylib_Initialize()
 	std::cout << "Initialize raylib" << std::endl;
 
 	Logger::StartLogThread();
-	ImageIO::InitializeImageIO();
+
+	// Runtime-load thirdparty DLLs
+	if (!FreeImage::LoadDLL())
+	{
+		std::cerr << __FUNCTION__ << ": Failed to load FreeImage.dll" << std::endl;
+		return 0;
+	}
+
 	OBJLoader::Initialize();
 
-	return 0;
+	return 1;
 }
 
 int32_t Raylib_Terminate()
@@ -37,7 +45,6 @@ int32_t Raylib_Terminate()
 	std::cout << "Terminate raylib" << std::endl;
 
 	OBJLoader::Destroy();
-	ImageIO::TerminateImageIO();
 	Logger::KillAndWaitForLogThread();
 
 	return 0;
@@ -176,6 +183,12 @@ ImageHandle Raylib_CreateImage(uint32_t width, uint32_t height)
 	Image2D* image = new Image2D(width, height, 0x0);
 	g_images.push_back(image);
 	return (ImageHandle)image;
+}
+
+void Raylib_DumpImageData(ImageHandle imageHandle, float* outDest)
+{
+	Image2D* image = (Image2D*)imageHandle;
+	image->DumpFloatRGBs(outDest);
 }
 
 int32_t Raylib_DestroyImage(ImageHandle imageHandle)

@@ -1,13 +1,36 @@
-# Goal
+# Overview
 
-Implement CPU ray tracing
+Implement CPU raytracer.
+
+**Project structure**
+
+```
+raylib/  : Contains raytracing implementation. Built as a DLL.
+src/     : CUI application that performs basic Read-Eval-Print loop.
+           Select a demo scene, adjust rendering options, and execute raytracer.
+gui-app/ : GUI version of the CUI app. Written in C# for practice.
+```
+
+**How to build**
+
+1. Run `Setup.ps1`.
+2. Build at the top level using CMake. This should build `raylib` and `src`.
+3. Build `gui-app`. Copy `FreeImage.dll`, `OpenImageDenoise.dll`, `raylib.dll`,
+   and `tbb12.dll` from `raylib` output to `gui-app` output directory.
 
 # Environment
 
+**Raylib and CUI app**
+
 * Language   : C++11
-* IDE        : Visual Studio 2019 or newer
-* Build tool : Cmake
+* IDE        : Visual Studio 2022
+* Build tool : CMake
 * OS         : Windows 10 or newer
+
+**GUI app**
+
+* Language   : C# 11 (.NET SDK 7)
+* IDE        : Visual Studio 2022
 
 # Sample images
 
@@ -43,3 +66,5 @@ Living Room
 ![preview3](https://user-images.githubusercontent.com/11644393/51801447-49746080-2281-11e9-9d56-2954ab4039c1.jpg)
 ![preview5](https://user-images.githubusercontent.com/11644393/153760159-e1e8b09c-00b9-4ca9-97c9-9e8421bbecd8.jpg)
 ![preview6](https://user-images.githubusercontent.com/11644393/186878829-f7ce3927-c30e-4686-abec-94df6e6a5ccb.jpg)
+
+![guiapp](https://user-images.githubusercontent.com/11644393/210278173-a86309b6-df5d-4bed-b4ec-37719b3b44c0.jpg)
