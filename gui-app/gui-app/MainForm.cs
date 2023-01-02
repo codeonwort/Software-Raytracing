@@ -80,6 +80,10 @@ namespace gui_app
             CameraHandle cameraHandle = RaylibWrapper.Raylib_CreateCamera();
             ImageHandle mainImage = RaylibWrapper.Raylib_CreateImage(viewportWidth, viewportHeight);
 
+            //
+            // Scene
+            //
+
             // TODO: Hard-coded only for x64 config
             OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
             string fullpath = Path.GetFullPath("../../../../../../" + sceneDesc.objPath);
@@ -91,6 +95,7 @@ namespace gui_app
             }
             else
             {
+                RaylibWrapper.Raylib_FinalizeOBJModel(objHandle);
                 loggerBox.AppendText("Load " + fullpath + Environment.NewLine);
             }
 
@@ -98,33 +103,27 @@ namespace gui_app
 
             RaylibWrapper.Raylib_FinalizeScene(sceneHandle);
 
+            // Camera
             RaylibWrapper.Raylib_CameraSetPosition(cameraHandle, sceneDesc.cameraLocation.x, sceneDesc.cameraLocation.y, sceneDesc.cameraLocation.z);
             RaylibWrapper.Raylib_CameraSetLookAt(cameraHandle, sceneDesc.cameraLookAt.x, sceneDesc.cameraLookAt.y, sceneDesc.cameraLookAt.z);
             RaylibWrapper.Raylib_CameraSetPerspective(cameraHandle, 60.0f, (float)viewportWidth / viewportHeight);
             RaylibWrapper.Raylib_CameraSetLens(cameraHandle, 0.01f, 5.0f);
             RaylibWrapper.Raylib_CameraSetMotion(cameraHandle, 0.0f, 0.0f);
 
+            // RendererSettings
             RaylibWrapper.RendererSettings settings = new RaylibWrapper.RendererSettings();
-            settings.viewportWidth = viewportWidth;
-            settings.viewportHeight = viewportHeight;
+            settings.viewportWidth   = viewportWidth;
+            settings.viewportHeight  = viewportHeight;
             settings.samplesPerPixel = 10;
-            settings.maxPathLength = 5;
-            settings.rayTMin = 0.0001f;
-            settings.renderMode = 0;
+            settings.maxPathLength   = 5;
+            settings.rayTMin         = 0.0001f;
+            settings.renderMode      = 0;
 
+            // Render the scene.
             loggerBox.AppendText("Render..." + Environment.NewLine);
-            Debug.WriteLine("Render...");
 
-            // TODO: Crashes here (access violation?)
             RaylibWrapper.Raylib_Render(ref settings, sceneHandle, cameraHandle, mainImage);
-
-            loggerBox.AppendText("PostProcess..." + Environment.NewLine);
-            Debug.WriteLine("PostProcess...");
-
             RaylibWrapper.Raylib_PostProcess(mainImage);
-
-            loggerBox.AppendText("Display..." + Environment.NewLine);
-            Debug.WriteLine("Display...");
 
             float[] mainImageData = new float[viewportWidth * viewportHeight * 3];
             RaylibWrapper.Raylib_DumpImageData(mainImage, mainImageData);
@@ -144,21 +143,16 @@ namespace gui_app
             int nBytes = Math.Abs(rawBuffer.Stride) * renderTarget.Height;
             byte[] rgbValues = new byte[nBytes];
 
-            // Fill random data.
-            // TODO: Fill ray traced image.
+            // Fill the bitmap with raytracing output.
             int k = 0;
             for (int y = 0; y < renderTarget.Height; ++y)
             {
                 for (int x = 0; x < renderTarget.Width; ++x)
                 {
                     int p = y * rawBuffer.Stride + (3 * x);
-                    //byte k = (byte)((x ^ y) & 0xff);
-                    //rgbValues[p + 0] = k;
-                    //rgbValues[p + 1] = k;
-                    //rgbValues[p + 2] = k;
-                    rgbValues[p + 0] = (byte)(mainImageData[k + 0] * 255.0f);
+                    rgbValues[p + 2] = (byte)(mainImageData[k + 0] * 255.0f);
                     rgbValues[p + 1] = (byte)(mainImageData[k + 1] * 255.0f);
-                    rgbValues[p + 2] = (byte)(mainImageData[k + 2] * 255.0f);
+                    rgbValues[p + 0] = (byte)(mainImageData[k + 2] * 255.0f);
                     k += 3;
                 }
             }

@@ -41,10 +41,12 @@ namespace gui_app
         // Manage media files
 
         [DllImport("raylib.dll")]
-        internal static extern OBJModelHandle Raylib_LoadOBJModel(String objPath);
+        internal static extern OBJModelHandle Raylib_LoadOBJModel(string objPath);
 
         //Raylib_TransformOBJModel
-        //Raylib_FinalizeOBJModel
+
+        [DllImport("raylib.dll")]
+        internal static extern void Raylib_FinalizeOBJModel(OBJModelHandle objModel);
 
         [DllImport("raylib.dll")]
         internal static extern int Raylib_UnloadOBJModel(OBJModelHandle objHandle);
