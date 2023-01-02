@@ -15,6 +15,19 @@ namespace gui_app
     // Wrapper for raylib.dll which is built from my C++ project.
     internal static class RaylibWrapper
     {
+        internal enum ERenderMode : uint
+        {
+            Default            = 0, // Path tracing.
+	        Albedo             = 1,
+	        SurfaceNormal      = 2, // In world space.
+	        MicrosurfaceNormal = 3, // In world space.
+	        Texcoord           = 4, // Surface parameterization.
+	        Emission           = 5,
+	        Reflectance        = 6, // Can be very noisy for surfaces with diffuse materials.
+
+	        MAX
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct RendererSettings
         {
@@ -26,7 +39,7 @@ namespace gui_app
             internal float rayTMin;
 
             internal uint  renderMode;
-        };
+        }
 
         // -----------------------------------------------------------------------
         // Library initialization & termination
@@ -65,8 +78,12 @@ namespace gui_app
         internal static extern void Raylib_AddOBJModelToScene(SceneHandle scene, OBJModelHandle obj);
 
         //Raylib_SetSkyPanorama
-        //Raylib_SetSunIlluminance
-        //Raylib_SetSunDirection
+
+        [DllImport("raylib.dll")]
+        internal static extern void Raylib_SetSunIlluminance(SceneHandle scene, float r, float g, float b);
+
+        [DllImport("raylib.dll")]
+        internal static extern void Raylib_SetSunDirection(SceneHandle scene, float x, float y, float z);
 
         [DllImport("raylib.dll")]
         internal static extern void Raylib_FinalizeScene(SceneHandle scene);
@@ -92,7 +109,8 @@ namespace gui_app
         [DllImport("raylib.dll")]
         internal static extern void Raylib_CameraSetMotion(CameraHandle camera, float beginTime, float endTime);
 
-        //Raylib_CameraCopy
+        [DllImport("raylib.dll")]
+        internal static extern void Raylib_CameraCopy(CameraHandle srcCamera, CameraHandle dstCamera);
 
         [DllImport("raylib.dll")]
         internal static extern void Raylib_DestroyCamera(CameraHandle camera);
@@ -116,12 +134,19 @@ namespace gui_app
             CameraHandle camera,
             ImageHandle outMainImage);
 
-        //Raylib_Denoise
+        [DllImport("raylib.dll")]
+        internal static extern int Raylib_Denoise(
+            ImageHandle mainImage,
+            int bMainImageHDR,
+            ImageHandle albedoImage,
+            ImageHandle normalImage,
+            ImageHandle outDenoisedImage);
 
         [DllImport("raylib.dll")]
         internal static extern void Raylib_PostProcess(ImageHandle image);
 
-        //Raylib_IsDenoiserSupported
+        [DllImport("raylib.dll")]
+        internal static extern int Raylib_IsDenoiserSupported();
 
         // -----------------------------------------------------------------------
         // Utils
