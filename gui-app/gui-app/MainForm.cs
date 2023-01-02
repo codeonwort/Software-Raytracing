@@ -25,6 +25,42 @@ namespace gui_app
                 "content/cornell_box/CornellBox-Mirror.obj",
                 new(0.0f, 1.0f, 4.0f),
                 new(0.0f, 1.0f, -1.0f)
+            ),
+            new(
+                "BreakfastRoom",
+                "content/breakfast_room/breakfast_room.obj",
+                new(0.0f, 1.0f, 5.0f),
+                new(0.0f, 1.0f, -1.0f)
+            ),
+            new(
+                "DabrovicSponza",
+                "content/dabrovic_sponza/sponza.obj",
+                new(10.0f, 2.0f, 0.0f),
+                new(0.0f, 3.0f, 0.0f)
+            ),
+            new(
+                "FireplaceRoom",
+                "content/fireplace_room/fireplace_room.obj",
+                new(5.0f, 1.0f, -1.5f),
+                new(0.0f, 1.0f, -1.0f)
+            ),
+            new(
+                "LivingRoom",
+                "content/living_room/living_room.obj",
+                new(3.0f, 2.0f, 2.0f),
+                new(0.0f, 1.5f, 2.5f)
+            ),
+            new(
+                "SibenikCathedral",
+                "content/sibenik/sibenik.obj",
+                new(-10.0f, -12.0f, 0.0f),
+                new(0.0f, -11.5f, 0.0f)
+            ),
+            new(
+                "SanMiguel",
+                "content/San_Miguel/san-miguel.obj",
+                new(10.0f, 3.0f, 5.0f),
+                new(15.0f, 3.0f, 5.0f)
             )
         };
 
@@ -46,17 +82,6 @@ namespace gui_app
                 loggerBox.AppendText("Load raylib.dll" + Environment.NewLine);
             }
 
-#if false
-            string[] sceneDescs = {
-                "CornellBox",
-                "BreakfastRoom",
-                "DabrovicSponza",
-                "FireplaceRoom",
-                "LivingRoom",
-                "SibenikCathedral",
-                "SanMiguel",
-            };
-#endif
             foreach (OBJSceneDesc sceneDesc in sceneDescs)
             {
                 sceneList.Items.Add(sceneDesc.sceneName);
@@ -73,6 +98,12 @@ namespace gui_app
                 return;
             }
 
+            OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
+            runRaytracer(sceneDesc);
+        }
+
+        private void runRaytracer(OBJSceneDesc sceneDesc)
+        {
             uint viewportWidth = (uint)viewport.Width;
             uint viewportHeight = (uint)viewport.Height;
 
@@ -85,7 +116,6 @@ namespace gui_app
             //
 
             // TODO: Hard-coded only for x64 config
-            OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
             string fullpath = Path.GetFullPath("../../../../../../" + sceneDesc.objPath);
 
             OBJModelHandle objHandle = RaylibWrapper.Raylib_LoadOBJModel(fullpath);
@@ -107,7 +137,7 @@ namespace gui_app
             RaylibWrapper.Raylib_CameraSetPosition(cameraHandle, sceneDesc.cameraLocation.x, sceneDesc.cameraLocation.y, sceneDesc.cameraLocation.z);
             RaylibWrapper.Raylib_CameraSetLookAt(cameraHandle, sceneDesc.cameraLookAt.x, sceneDesc.cameraLookAt.y, sceneDesc.cameraLookAt.z);
             RaylibWrapper.Raylib_CameraSetPerspective(cameraHandle, 60.0f, (float)viewportWidth / viewportHeight);
-            RaylibWrapper.Raylib_CameraSetLens(cameraHandle, 0.01f, 5.0f);
+            RaylibWrapper.Raylib_CameraSetLens(cameraHandle, 0.0f, 1.0f);
             RaylibWrapper.Raylib_CameraSetMotion(cameraHandle, 0.0f, 0.0f);
 
             // RendererSettings
@@ -168,5 +198,6 @@ namespace gui_app
             RaylibWrapper.Raylib_DestroyCamera(cameraHandle);
             RaylibWrapper.Raylib_DestroyImage(mainImage);
         }
+
     }
 }
