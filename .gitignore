@@ -14,7 +14,6 @@ test_backup/
 gui-app/JSON/
 gui-app/gui-app/obj/
 *.csproj.user
-*.Designer.cs
 
 # Prerequisites
 *.d
