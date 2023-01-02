@@ -13,6 +13,7 @@ namespace gui_app
     using ImageHandle = System.UInt64;
 
     // Wrapper for raylib.dll which is built from my C++ project.
+    // See raylib.h for original definitions.
     internal static class RaylibWrapper
     {
         internal enum ERenderMode : uint

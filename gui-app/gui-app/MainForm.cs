@@ -128,27 +128,31 @@ namespace gui_app
 
             bool bRunDenoiser = (0 != RaylibWrapper.Raylib_IsDenoiserSupported());
 
-            SceneHandle sceneHandle = RaylibWrapper.Raylib_CreateScene();
-            CameraHandle cameraHandle = RaylibWrapper.Raylib_CreateCamera();
-            ImageHandle mainImage = RaylibWrapper.Raylib_CreateImage(viewportWidth, viewportHeight);
-
             //
             // Scene
             //
 
-            // TODO: Hard-coded only for x64 config
-            string fullpath = Path.GetFullPath("../../../../../../" + sceneDesc.objPath);
+            string fullpath = findContentPath(sceneDesc.objPath);
+            OBJModelHandle objHandle = 0;
+            if (fullpath.Length > 0)
+            {
+                objHandle = RaylibWrapper.Raylib_LoadOBJModel(fullpath);
+            }
 
-            OBJModelHandle objHandle = RaylibWrapper.Raylib_LoadOBJModel(fullpath);
             if (objHandle == 0)
             {
-                loggerBox.AppendText("Failed to load " + fullpath + Environment.NewLine);
+                loggerBox.AppendText("Failed to load " + sceneDesc.objPath + Environment.NewLine);
+                return;
             }
             else
             {
                 RaylibWrapper.Raylib_FinalizeOBJModel(objHandle);
                 loggerBox.AppendText("Load " + fullpath + Environment.NewLine);
             }
+
+            SceneHandle sceneHandle = RaylibWrapper.Raylib_CreateScene();
+            CameraHandle cameraHandle = RaylibWrapper.Raylib_CreateCamera();
+            ImageHandle mainImage = RaylibWrapper.Raylib_CreateImage(viewportWidth, viewportHeight);
 
             RaylibWrapper.Raylib_AddOBJModelToScene(sceneHandle, objHandle);
 
@@ -257,11 +261,29 @@ namespace gui_app
 
             viewport.Image = renderTarget;
 
+            loggerBox.AppendText("Done." + Environment.NewLine);
+
             // Cleanup
             RaylibWrapper.Raylib_UnloadOBJModel(objHandle);
             RaylibWrapper.Raylib_DestroyScene(sceneHandle);
             RaylibWrapper.Raylib_DestroyCamera(cameraHandle);
             RaylibWrapper.Raylib_DestroyImage(mainImage);
+        }
+
+        private static string findContentPath(string subpath)
+        {
+            string cd = "./";
+            int cnt = 10;
+            while (cnt-- > 0)
+            {
+                string fullpath = Path.Combine(cd, subpath);
+                if (Path.Exists(fullpath))
+                {
+                    return Path.GetFullPath(fullpath);
+                }
+                cd = cd + "../";
+            }
+            return "";
         }
 
     }
