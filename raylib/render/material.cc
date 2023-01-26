@@ -375,6 +375,15 @@ float MicrofacetMaterial::ScatteringPdf(
 	return D * absDot(wh, n);
 }
 
+bool MicrofacetMaterial::IsMirrorLike(float paramU, float paramV) const
+{
+	float roughness = roughnessFallback;
+	if (roughnessTexture) {
+		roughness = roughnessTexture->Sample(paramU, paramV).r;
+	}
+	return roughness < 0.1f;
+}
+
 vec3 MicrofacetMaterial::GetAlbedo(float paramU, float paramV) const
 {
 	vec3 albedo = albedoFallback;

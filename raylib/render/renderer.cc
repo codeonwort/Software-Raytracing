@@ -72,6 +72,15 @@ vec3 TraceSceneDebugMode(
 		if (debugMode == ERenderMode::RAYLIB_RENDERMODE_Albedo)
 		{
 			debugValue = hitResult.material->GetAlbedo(hitResult.paramU, hitResult.paramV);
+			if (hitResult.material->IsMirrorLike(hitResult.paramU, hitResult.paramV))
+			{
+				ray secondRay(hitResult.p, reflect(pathRay.d, hitResult.n), pathRay.t);
+				HitResult secondResult;
+				if (world->GetAccelStruct()->Hit(secondRay, settings.rayTMin, FLOAT_MAX, secondResult))
+				{
+					debugValue = secondResult.material->GetAlbedo(secondResult.paramU, secondResult.paramV);
+				}
+			}
 		}
 		else if (debugMode == ERenderMode::RAYLIB_RENDERMODE_SurfaceNormal)
 		{

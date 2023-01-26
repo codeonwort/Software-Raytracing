@@ -40,6 +40,7 @@ public:
 		return 1.0f / BRDF::PI;
 	}
 
+	virtual bool IsMirrorLike(float paramU, float paramV) const { return false; }
 	RAYLIB_API virtual vec3 GetAlbedo(float paramU, float paramV) const { return vec3(0.0f); }
 	RAYLIB_API virtual bool AlphaTest(float paramU, float paramV) const { return true; }
 	// In local tangent space
@@ -131,6 +132,8 @@ public:
 		vec3& outReflectance, ray& outScatteredRay,
 		float& outPdf) const override;
 
+	virtual bool IsMirrorLike(float paramU, float paramV) const override { return true; }
+
 public:
 	float ref_idx;
 	vec3 transmissionFilter;
@@ -159,6 +162,9 @@ public:
 		return 1.0f;
 	}
 
+	virtual bool IsMirrorLike(float paramU, float paramV) const override { return true; }
+
+public:
 	vec3 baseColor;
 };
 
@@ -238,6 +244,8 @@ public:
 		const HitResult& hitResult,
 		const vec3& Wo,
 		const vec3& Wi) const override;
+
+	virtual bool IsMirrorLike(float paramU, float paramV) const override;
 
 	RAYLIB_API virtual vec3 GetAlbedo(float paramU, float paramV) const override;
 	RAYLIB_API virtual bool AlphaTest(float texcoordU, float texcoordV) const override;
