@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using System.Reflection;
-
 namespace gui_app
 {
     // I have to do this for every file? :/
