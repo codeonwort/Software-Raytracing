@@ -1,0 +1,62 @@
+{
+	"defaultSunIlluminance": [20, 20, 20],
+	"defaultSunDirection": [0.0, -1.0, -0.5],
+	"scenes": [
+		{
+			"name": "CornellBox",
+			"filepath": "content/cornell_box/CornellBox-Mirror.obj",
+			"cameraLocation": [0.0, 1.0, 4.0],
+			"cameraLookAt": [0.0, 1.0, -1.0],
+			"sunIlluminance": [0, 0, 0],
+			"sunDirection": "default"
+		},
+		{
+			"name": "BreakfastRoom",
+			"filepath": "content/breakfast_room/breakfast_room.obj",
+			"cameraLocation": [0.0, 1.0, 5.0],
+			"cameraLookAt": [0.0, 1.0, -1.0],
+			"sunIlluminance": "default",
+			"sunDirection": [-1.0, -1.0, 0.0]
+		},
+		{
+			"name": "DabrovicSponza",
+			"filepath": "content/dabrovic_sponza/sponza.obj",
+			"cameraLocation": [10.0, 2.0, 0.0],
+			"cameraLookAt": [0.0, 3.0, 0.0],
+			"sunIlluminance": "default",
+			"sunDirection": "default"
+		},
+		{
+			"name": "FireplaceRoom",
+			"filepath": "content/fireplace_room/fireplace_room.obj",
+			"cameraLocation": [5.0, 1.0, -1.5],
+			"cameraLookAt": [0.0, 1.0, -1.0],
+			"sunIlluminance": "default",
+			"sunDirection": "default"
+		},
+		{
+			"name": "LivingRoom",
+			"filepath": "content/living_room/living_room.obj",
+			"cameraLocation": [3.0, 2.0, 2.0],
+			"cameraLookAt": [0.0, 1.5, 2.5],
+			"sunIlluminance": "default",
+			"sunDirection": "default"
+		},
+		{
+			"name": "SibenikCathedral",
+			"filepath": "content/sibenik/sibenik.obj",
+			"cameraLocation": [-10.0, -12.0, 0.0],
+			"cameraLookAt": [0.0, -11.5, 0.0],
+			"sunIlluminance": "default",
+			"sunDirection": "default"
+		},
+		{
+			"name": "SanMiguel",
+			"filepath": "content/San_Miguel/san-miguel.obj",
+			"cameraLocation": [10.0, 3.0, 5.0],
+			"cameraLookAt": [15.0, 3.0, 5.0],
+			"sunIlluminance": "default",
+			"sunDirection": "default"
+		}
+	]
+}

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace GuiApp
 {
     // I have to do this for every file? :/
@@ -6,82 +8,12 @@ namespace GuiApp
     using CameraHandle = System.UInt64;
     using ImageHandle = System.UInt64;
 
-    record vec3(float x, float y, float z);
-
-    record OBJSceneDesc(
-        string sceneName,
-        string objPath,
-        vec3 cameraLocation,
-        vec3 cameraLookAt,
-        vec3 sunIlluminance,
-        vec3 sunDirection);
-
     public partial class MainForm : Form
     {
-        private static vec3 ZERO_VEC3 = new(0.0f, 0.0f, 0.0f);
-        private static vec3 DEFAULT_SUN_ILLUMINANCE = new(20.0f, 20.0f, 20.0f);
-        private static vec3 DEFAULT_SUN_DIRECTION = new(0.0f, -1.0f, -0.5f);
-        // #todo: Read from text file.
-        private static OBJSceneDesc[] sceneDescs = {
-            new(
-                "CornellBox",
-                "content/cornell_box/CornellBox-Mirror.obj",
-                new(0.0f, 1.0f, 4.0f),
-                new(0.0f, 1.0f, -1.0f),
-                ZERO_VEC3,
-                DEFAULT_SUN_DIRECTION
-            ),
-            new(
-                "BreakfastRoom",
-                "content/breakfast_room/breakfast_room.obj",
-                new(0.0f, 1.0f, 5.0f),
-                new(0.0f, 1.0f, -1.0f),
-                DEFAULT_SUN_ILLUMINANCE,
-                new(-1.0f, -1.0f, 0.0f)
-            ),
-            new(
-                "DabrovicSponza",
-                "content/dabrovic_sponza/sponza.obj",
-                new(10.0f, 2.0f, 0.0f),
-                new(0.0f, 3.0f, 0.0f),
-                DEFAULT_SUN_ILLUMINANCE,
-                DEFAULT_SUN_DIRECTION
-            ),
-            new(
-                "FireplaceRoom",
-                "content/fireplace_room/fireplace_room.obj",
-                new(5.0f, 1.0f, -1.5f),
-                new(0.0f, 1.0f, -1.0f),
-                DEFAULT_SUN_ILLUMINANCE,
-                DEFAULT_SUN_DIRECTION
-            ),
-            new(
-                "LivingRoom",
-                "content/living_room/living_room.obj",
-                new(3.0f, 2.0f, 2.0f),
-                new(0.0f, 1.5f, 2.5f),
-                DEFAULT_SUN_ILLUMINANCE,
-                DEFAULT_SUN_DIRECTION
-            ),
-            new(
-                "SibenikCathedral",
-                "content/sibenik/sibenik.obj",
-                new(-10.0f, -12.0f, 0.0f),
-                new(0.0f, -11.5f, 0.0f),
-                DEFAULT_SUN_ILLUMINANCE,
-                DEFAULT_SUN_DIRECTION
-            ),
-            new(
-                "SanMiguel",
-                "content/San_Miguel/san-miguel.obj",
-                new(10.0f, 3.0f, 5.0f),
-                new(15.0f, 3.0f, 5.0f),
-                DEFAULT_SUN_ILLUMINANCE,
-                DEFAULT_SUN_DIRECTION
-            )
-        };
+        private const string SCENE_FILE = "scenes.json";
 
         private bool bRaylibValid;
+        private SceneDescriptions sceneDescs = null;
 
         public MainForm()
         {
@@ -95,9 +27,11 @@ namespace GuiApp
             bRaylibValid = false;
             CheckRaylibDLL();
 
-            foreach (OBJSceneDesc sceneDesc in sceneDescs)
+            LoadSceneFile();
+
+            foreach (var sceneDesc in sceneDescs.scenes)
             {
-                sceneList.Items.Add(sceneDesc.sceneName);
+                sceneList.Items.Add(sceneDesc.name);
             }
             sceneList.SelectedIndex = 0;
         }
@@ -122,18 +56,46 @@ namespace GuiApp
             }
         }
 
+        private void LoadSceneFile()
+        {
+            string jsonPath = FindContentPath(SCENE_FILE);
+            string document = File.ReadAllText(jsonPath);
+            try
+            {
+                sceneDescs = JsonSerializer.Deserialize<SceneDescriptions>(document);
+                if (sceneDescs == null)
+                {
+                    loggerBox.AppendText($"{SCENE_FILE} was not loaded" + Environment.NewLine);
+                }
+                else
+                {
+                    loggerBox.AppendText($"Load {SCENE_FILE}" + Environment.NewLine);
+                }
+            }
+            catch (Exception)
+            {
+                loggerBox.AppendText($"{SCENE_FILE} was not loaded" + Environment.NewLine);
+            }
+        }
+
         private void ExecuteButton_Click(object sender, EventArgs e)
         {
             loggerBox.AppendText(String.Format("viewport: {0}, {1}", viewport.Width, viewport.Height) + Environment.NewLine);
 
-            if (sceneList.SelectedIndex < 0 && sceneList.SelectedIndex >= sceneDescs.Length)
+            if (sceneDescs == null)
             {
+                loggerBox.AppendText($"{SCENE_FILE} was not loaded. Can't start rendering." + Environment.NewLine);
+                return;
+            }
+            if (sceneList.SelectedIndex < 0 && sceneList.SelectedIndex >= sceneDescs.scenes.Length)
+            {
+                loggerBox.AppendText($"Selected scene index {sceneList.SelectedIndex} is wrong");
                 return;
             }
 
             if (bRaylibValid)
             {
-                OBJSceneDesc sceneDesc = sceneDescs[sceneList.SelectedIndex];
+                var sceneDesc = sceneDescs.scenes[sceneList.SelectedIndex];
                 int spp = Math.Max(1, (int)inputSPP.Value);
                 int pathLen = Math.Max(1, (int)inputPathLen.Value);
 
@@ -145,7 +107,7 @@ namespace GuiApp
             }
         }
 
-        private void RunRaytracer(OBJSceneDesc sceneDesc, int spp, int maxPathLen)
+        private void RunRaytracer(SceneDescriptions.Scene sceneDesc, int spp, int maxPathLen)
         {
             uint viewportWidth = (uint)viewport.Width;
             uint viewportHeight = (uint)viewport.Height;
@@ -156,7 +118,7 @@ namespace GuiApp
             // Scene
             //
 
-            string fullpath = FindContentPath(sceneDesc.objPath);
+            string fullpath = FindContentPath(sceneDesc.filepath);
             OBJModelHandle objHandle = 0;
             if (fullpath.Length > 0)
             {
@@ -165,7 +127,7 @@ namespace GuiApp
 
             if (objHandle == 0)
             {
-                loggerBox.AppendText("Failed to load " + sceneDesc.objPath + Environment.NewLine);
+                loggerBox.AppendText("Failed to load " + sceneDesc.filepath + Environment.NewLine);
                 return;
             }
             else
