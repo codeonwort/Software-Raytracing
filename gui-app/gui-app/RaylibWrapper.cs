@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace gui_app
+namespace GuiApp
 {
     using OBJModelHandle = System.UInt64;
     using SceneHandle = System.UInt64;

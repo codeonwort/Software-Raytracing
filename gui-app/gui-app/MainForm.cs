@@ -1,4 +1,4 @@
-namespace gui_app
+namespace GuiApp
 {
     // I have to do this for every file? :/
     using OBJModelHandle = System.UInt64;
@@ -21,6 +21,7 @@ namespace gui_app
         private static vec3 ZERO_VEC3 = new(0.0f, 0.0f, 0.0f);
         private static vec3 DEFAULT_SUN_ILLUMINANCE = new(20.0f, 20.0f, 20.0f);
         private static vec3 DEFAULT_SUN_DIRECTION = new(0.0f, -1.0f, -0.5f);
+        // #todo: Read from text file.
         private static OBJSceneDesc[] sceneDescs = {
             new(
                 "CornellBox",
@@ -80,6 +81,8 @@ namespace gui_app
             )
         };
 
+        private bool bRaylibValid;
+
         public MainForm()
         {
             InitializeComponent();
@@ -90,7 +93,7 @@ namespace gui_app
             loggerBox.AppendText("= Software Raytracer =" + Environment.NewLine);
 
             bRaylibValid = false;
-            checkRaylibDLL();
+            CheckRaylibDLL();
 
             foreach (OBJSceneDesc sceneDesc in sceneDescs)
             {
@@ -99,7 +102,7 @@ namespace gui_app
             sceneList.SelectedIndex = 0;
         }
 
-        private void checkRaylibDLL()
+        private void CheckRaylibDLL()
         {
             try
             {
@@ -119,7 +122,7 @@ namespace gui_app
             }
         }
 
-        private void executeButton_Click(object sender, EventArgs e)
+        private void ExecuteButton_Click(object sender, EventArgs e)
         {
             loggerBox.AppendText(String.Format("viewport: {0}, {1}", viewport.Width, viewport.Height) + Environment.NewLine);
 
@@ -134,7 +137,7 @@ namespace gui_app
                 int spp = Math.Max(1, (int)inputSPP.Value);
                 int pathLen = Math.Max(1, (int)inputPathLen.Value);
 
-                runRaytracer(sceneDesc, spp, pathLen);
+                RunRaytracer(sceneDesc, spp, pathLen);
             }
             else
             {
@@ -142,7 +145,7 @@ namespace gui_app
             }
         }
 
-        private void runRaytracer(OBJSceneDesc sceneDesc, int spp, int maxPathLen)
+        private void RunRaytracer(OBJSceneDesc sceneDesc, int spp, int maxPathLen)
         {
             uint viewportWidth = (uint)viewport.Width;
             uint viewportHeight = (uint)viewport.Height;
@@ -153,7 +156,7 @@ namespace gui_app
             // Scene
             //
 
-            string fullpath = findContentPath(sceneDesc.objPath);
+            string fullpath = FindContentPath(sceneDesc.objPath);
             OBJModelHandle objHandle = 0;
             if (fullpath.Length > 0)
             {
@@ -291,7 +294,7 @@ namespace gui_app
             RaylibWrapper.Raylib_DestroyImage(mainImage);
         }
 
-        private static string findContentPath(string subpath)
+        private static string FindContentPath(string subpath)
         {
             string cd = "./";
             int cnt = 10;
@@ -306,7 +309,5 @@ namespace gui_app
             }
             return "";
         }
-
-        private bool bRaylibValid;
     }
 }

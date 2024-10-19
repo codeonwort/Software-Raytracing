@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace gui_app.Properties {
+namespace GuiApp.Properties {
     using System;
     
     

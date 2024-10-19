@@ -1,4 +1,4 @@
-﻿namespace gui_app
+﻿namespace GuiApp
 {
     partial class MainForm
     {
@@ -72,7 +72,7 @@
             this.executeButton.TabIndex = 2;
             this.executeButton.Text = "Run raytracing";
             this.executeButton.UseVisualStyleBackColor = true;
-            this.executeButton.Click += new System.EventHandler(this.executeButton_Click);
+            this.executeButton.Click += new System.EventHandler(this.ExecuteButton_Click);
             // 
             // sceneList
             // 

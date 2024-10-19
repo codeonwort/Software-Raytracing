@@ -1,4 +1,4 @@
-namespace gui_app
+namespace GuiApp
 {
     internal static class Program
     {
